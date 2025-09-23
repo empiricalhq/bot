@@ -1,0 +1,109 @@
+{
+  "templates": {
+    "waiting_name": {
+      "text": "¡Hola! 💕 Soy Ana de la Escuela de Joyería Tejida del Perú ✨\n\nPara conocerte mejor, ¿cuál es tu nombre?",
+      "stage": "ESPERANDO_NOMBRE"
+    },
+    
+    "greeting_with_name": {
+      "text": "Hola, *{{name}}* 💕 ¿Cómo estás?\n\n¡Felicitaciones por tu deseo de aprender y emprender con esta hermosa técnica!\n\nPermíteme comentarte algo importante:\n\n👉 Nosotros somos Escuela de Joyería Tejida Perú de la maestra *Magally Juro* y tenemos más de *15 años en el mercado*, formando *alumnas y marcas de joyería tejida* en toda América Latina 🌎\n\nY esto lo hacemos a través de Cursos Modalidad Online, Modalidad Presencial, Seminarios internacionales etc.\n\nTe invito a conocer más de la maestra Magally Juro, diseñadora de joyas:\n📹 https://youtu.be/U2E4qRlGMM8\n\nAhora cuéntame:\n\n¿Tú ya sabes joyería tejida o deseas empezar desde cero?\n\n*1* → Desde Cero\n*2* → Ya tengo experiencia",
+      "stage": "NOMBRE_CAPTURADO"
+    },
+    
+    "greeting_returning": {
+      "text": "¡Hola *{{name}}*! 💕 Qué gusto verte de nuevo!\n\n¿En qué puedo ayudarte hoy?\n\n*1* → Información de cursos desde cero\n*2* → Cursos avanzados\n*ONLINE* → Modalidad Online\n*PRESENCIAL* → Modalidad Presencial\n*PRECIO* → Ver costos y promociones\n*HORARIOS* → Ver calendario disponible\n*AYUDA* → Hablar con una asesora",
+      "stage": "MENU_PRINCIPAL"
+    },
+    
+    "beginner_flow": {
+      "text": "Perfect, *{{name}}* 🌸\n\nSi no tienes ningún conocimiento de la técnica de joyería tejida a crochet con hilos metálicos y deseas empezar desde cero, te sugiero el *Curso Integral de Joyería Tejida* 👑\n\nEste incluye los tres niveles: *básico, intermedio y avanzado*.\n\n✔️ Puedes llevarlo *online* o *presencial*\n✔️ No requieres experiencia previa\n✔️ Se te acompaña y guía paso a paso hasta crear tus propias piezas\n✔️ Logras joyas que te permiten recuperar tu inversión desde el primer nivel\n✔️ Recibes Charlas de gestión en Joyería Tejida\n✔️ Recibes E-Books o material de apoyo por clase\n✔️ Y formarás parte de la comunidad más grande de habla hispana que conoce y ama la joyería tejida\n\n¿Qué modalidad prefieres?\n\n*ONLINE* → Ver detalles del Curso Online\n*PRESENCIAL* → Ver detalles del Curso Presencial\n*PRECIO* → Ver precios y formas de pago",
+      "stage": "INTERESADO_BASICO"
+    },
+    
+    "course_online_details": {
+      "text": "*✅ CURSO INTEGRAL ONLINE - CADA NIVEL INCLUYE:*\n\n• 6 clases grabadas\n• Tendrás los videos de cada clase y podrás verlo las veces que desees\n• Se sugiere 10 horas de práctica en casa por cada clase\n• Tendrás el acompañamiento de la maestra Magally Juro durante todo el curso vía WhatsApp\n• 🎁 Y de regalo E-Books o materiales de soporte por clase\n• Y finalizando los 3 niveles, recibes la Certificación como Especialista en Tecnología de Manufactura en Punto Peruano\n\n*PRECIO* → Ver precios y formas de pago\n*MATRICULA* → Inscribirte ahora\n*PRESENCIAL* → Ver modalidad presencial",
+      "stage": "CONSULTO_ONLINE"
+    },
+    
+    "course_presencial_details": {
+      "text": "*✅ CURSO INTEGRAL PRESENCIAL - CADA NIVEL INCLUYE:*\n\n• 6 clases Presenciales con la maestra Magally Juro\n• Se sugiere 10 horas de práctica en casa por cada clase\n• Las clases incluyen todos los materiales\n• Tendrás el acompañamiento de la maestra Magally Juro durante todo el curso\n• Recibes Charlas de gestión y emprendimiento en Joyería Tejida\n• 🎁 E-Books o materiales de soporte de regalo por clase\n• Y finalizando los 3 niveles, recibes la Certificación como Especialista en Tecnología de Manufactura en Punto Peruano\n• Ceremonia de Graduación y Certificación al finalizar el Curso\n\n📍 *Lugar:* Barranco-Perú\n📅 *Horario:* Sábados de 10:00 am a 1:00 pm\n🗓️ *INICIO:* SÁBADO 20 DE SEPTIEMBRE\n\n⚠️ *VACANTES LIMITADAS*\n\n*PRECIO* → Ver precios y formas de pago\n*MATRICULA* → Inscribirte ahora\n*ONLINE* → Ver modalidad online",
+      "stage": "CONSULTO_PRESENCIAL"
+    },
+    
+    "schedule_info": {
+      "text": "*📅 HORARIOS DISPONIBLES*\n\n*MODALIDAD ONLINE:*\n• Acceso inmediato a clases grabadas\n• Disponible 24/7\n• Acompañamiento vía WhatsApp\n\n*MODALIDAD PRESENCIAL:*\n📍 Lugar: Barranco-Perú\n📅 Sábados de 10:00 am a 1:00 pm\n🗓️ INICIO: SÁBADO 20 DE SEPTIEMBRE\n\n*¿Qué modalidad prefieres?*\n*ONLINE* → Ver detalles modalidad online\n*PRESENCIAL* → Ver detalles modalidad presencial\n*MATRICULA* → Inscribirte ahora",
+      "stage": "CONSULTO_HORARIOS"
+    },
+    
+    "pricing_integral": {
+      "text": "*💎 PRECIOS CURSO INTEGRAL*\n\n*💰 PRECIO NORMAL:*\n• Nivel Básico: 220 USD\n• Curso Completo (3 niveles): 660 USD\n\n*🎉 PRECIO ESPECIAL CON DESCUENTO:*\n• Nivel Básico 10% dcto: *198 USD*\n• Curso Completo 20% dcto: *528 USD*\n\n*📱 PAGO CON TARJETA:*\nNivel Básico: https://goe.run/6876946f06f08\nCurso Completo: https://goe.run/687694cd6f4ea\n\n*🏦 PAGO POR TRANSFERENCIA:*\nBanco de Crédito del Perú\nCta Ahorro soles: 192-16056570056\n\n*📱 YAPE o PLIN:* 989 982 183\nA nombre de: Magally Ana Rocio Juro Huerta\n\n¿Listo para matricularte?\n*MATRICULA* → Confirmar inscripción\n*HORARIOS* → Ver horarios disponibles",
+      "stage": "CONSULTO_PRECIO"
+    },
+    
+    "advanced_flow": {
+      "text": "¡Eso es genial, *{{name}}*! 🙌\n\nEn tu caso lo mejor son los *Cursos Avanzados*, tenemos más de *8 opciones* diseñadas para:\n\n💎 Cada clase ha sido diseñada por la maestra Magally Juro y te permitirá perfeccionar tu técnica\n💎 Innovar con nuevos diseños\n💎 Te actualizarás en lo último de la Joyería Tejida o Tecnología de Manufactura en Punto Peruano\n💎 Y contarás con el acompañamiento de la maestra Magally Juro para consultas vía WhatsApp\n\n📹 *VER RESUMEN DE CURSOS AVANZADOS:*\nhttps://www.youtube.com/watch?v=dOeCIBkbfqI\n\n*¿Cómo son las clases?*\n• Son de Acceso automático\n• Las clases ya están grabadas\n• Puedes ver las veces que desees\n\n¿Qué curso te interesa?\n\n*CORAZON* → Curso Joyas Modelo Corazón\n*ANILLOS* → Festival de Anillos\n*VIBRACIONES* → Joyas Tejidas Vibraciones\n*MAMA* → Joyas para Mamá\n*HELICOIDALES* → Joyas Helicoidales\n*FLORES* → Flores para Mamá\n*TIARAS* → Tiaras y Tocados\n*CATALOGO* → Ver todos los cursos",
+      "stage": "INTERESADO_AVANZADO"
+    },
+    
+    "course_corazon": {
+      "text": "*❤️ CURSO DE JOYAS MODELO CORAZÓN*\n\nEste maravilloso curso de gran demanda te permitirá elaborar joyas de alta rotación todo el año.\n\n*PROGRAMA:*\n• 3 videos de regalo de iniciación a la Joyería Tejida\n• Clase 1: Joya de Corazón Engastado\n• Clase 2: Joya Corazón Bombé\n• Clase 3: Joya Corazón Engastado 2\n• Clase 4: Joya Corazón engaste pequeño\n• Clase 5: Joya Corazón Engaste cerrado\n\n*PRECIO NORMAL:* 120 USD\n*🔥 PRECIO ESPECIAL:* 84 USD\n\n*Inscripción directa:*\nhttps://goe.run/600b66d458678\n\n*Ver trabajos de alumnas:*\nhttps://web.facebook.com/media/set/?set=a.501433758224343&type=3\n\n*INSCRIBIR* → Confirmar inscripción\n*VOLVER* → Ver otros cursos avanzados",
+      "stage": "CURSO_CORAZON"
+    },
+    
+    "course_anillos": {
+      "text": "*💍 CURSO FESTIVAL DE ANILLOS*\n\nCon este Curso aprenderás a elaborar 5 anillos hermosos en punto peruano y 1 más de regalo.\n\n*PROGRAMA:*\n• Clase 1: Anillo Cartucho de doble entrada\n• Clase 2: Anillo de Piezas irregulares\n• Clase 3: Anillo engastado con bola Tejida\n• Clase 4: Anillo de base tubular y malla cuadrada\n• Clase 5: Anillo de base tubular ancha con engaste de circón\n• Clase 6 de Regalo: Anillo de engaste abierto con acabado rococó\n\n*PRECIO NORMAL:* 129 USD\n*🔥 PRECIO ESPECIAL:* 98 USD\n\n*Inscripción directa:*\nhttps://goe.run/68b747c3d2996\n\n*INSCRIBIR* → Confirmar inscripción\n*VOLVER* → Ver otros cursos avanzados",
+      "stage": "CURSO_ANILLOS"
+    },
+    
+    "payment_process": {
+      "text": "*💳 PROCESO DE MATRÍCULA*\n\n*Paso 1:* Realiza el pago\n📱 *Yape:* 989 982 183\n🏦 *BCP:* 192-16056570056\nNombre: Magally Ana Rocio Juro Huerta\n\n*Paso 2:* Envía tu voucher aquí 📸\n\n*Paso 3:* Te agregamos al grupo VIP donde Magally te da la bienvenida personalmente 🎉\n\n¿Ya realizaste el pago? Envía tu voucher o escribe *PAGADO*",
+      "stage": "PROCESO_MATRICULA"
+    },
+    
+    "waiting_voucher": {
+      "text": "¡Excelente *{{name}}*! \n\nPara confirmar tu pago, por favor *envía una foto de tu voucher* 📸\n\nSi tienes problemas para enviar la imagen, escribe *AYUDA* para contactar con una asesora.",
+      "stage": "ESPERANDO_VOUCHER"
+    },
+    
+    "payment_confirmed": {
+      "text": "🎉 *¡FELICITACIONES {{name}}!* 🎉\n\n*Tu pago ha sido recibido exitosamente* ✅\n\nPor favor envíanos:\n• Tu nombre completo\n• País\n• Una foto tuya\n\nAl WhatsApp de la escuela: *+51 923 845 189*\n\nYa que te obsequiaremos el E-Book 1 del Taller de Joyería Tejida\n\n¡Bienvenid@ a Escuela de Joyería Tejida!\n\n¡Estamos encantadas de acompañarte en esta nueva aventura, te deseamos muchos éxitos!",
+      "stage": "PAGO_CONFIRMADO"
+    },
+    
+    "human_help": {
+      "text": "*👩‍💼 CONTACTO CON ASESORA PERSONAL*\n\n{{name}}, te voy a conectar con una de nuestras asesoras especializadas.\n\n*Horario de atención:*\n• Lun-Vie: 9am - 7pm\n• Sábados: 10am - 2pm\n\n*Contacto directo:*\n📱 WhatsApp Escuela: *+51 923 845 189*\n📱 WhatsApp Principal: *+51 989 982 183*\n📧 Email: info@joyeriatejida.com\n\n_Tu consulta ha sido registrada. Una asesora te contactará pronto._\n\n¿Es urgente? Escribe *URGENTE*",
+      "stage": "REQUIERE_ASESORA"
+    },
+    
+    "reset_conversation": {
+      "text": "🔄 *Conversación reiniciada*\n\nTu historial ha sido limpiado.\nEscribe *HOLA* para empezar de nuevo.",
+      "stage": "NUEVO"
+    },
+    
+    "conversation_closed": {
+      "text": "¡Ha sido un placer ayudarte! 😊\n\nRecuerda que estamos aquí cuando lo necesites.\nSolo escribe *HOLA* para volver a empezar.\n\n¡Que tengas un excelente día! ✨",
+      "stage": "CONVERSACION_CERRADA"
+    },
+    
+    "fallback": {
+      "text": "No entendí tu mensaje 😊\n\n*{{name}}, opciones disponibles:*\n*1* → Curso desde cero\n*2* → Cursos avanzados\n*ONLINE* → Modalidad Online\n*PRESENCIAL* → Modalidad Presencial  \n*PRECIO* → Ver precios\n*HORARIOS* → Ver calendario\n*MATRICULA* → Inscribirte\n*AYUDA* → Hablar con asesora\n\n¿En qué te puedo ayudar?",
+      "stage": "MENU_PRINCIPAL"
+    }
+  },
+  
+  "quick_responses": {
+    "gracias": "¡De nada! 💕 Estoy aquí para ayudarte con tu camino en la joyería tejida",
+    "ok": "¡Perfecto! ¿Hay algo más que quieras saber?",
+    "bien": "¡Excelente! ¿En qué más puedo ayudarte?",
+    "perfecto": "¡Genial! Si necesitas algo más, aquí estoy",
+    "si": "¡Genial! ¿En qué más puedo ayudarte?",
+    "no": "Entiendo. Si necesitas algo más, aquí estaré 😊",
+    "adios": "¡Hasta pronto! Que tengas un día maravilloso ✨",
+    "bye": "¡Nos vemos! Esperamos verte pronto en la escuela 💕",
+    "chau": "¡Hasta luego! Recuerda que estamos aquí cuando nos necesites 😊",
+    "vale": "¡Perfecto! ¿Hay algo más en lo que pueda ayudarte?",
+    "listo": "¡Excelente! Si tienes más preguntas, no dudes en escribir",
+    "entendido": "¡Perfecto! Estoy aquí si necesitas más información",
+    "claro": "¡Genial! ¿Hay algo más que quieras saber sobre los cursos?"
+  }
+}
