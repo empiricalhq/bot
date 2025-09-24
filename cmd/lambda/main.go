@@ -35,6 +35,7 @@ type App struct {
 	sessionStore  *session.DynamoDBStore
 }
 
+//nolint:gochecknoglobals // lambda requires a global handler
 var app *App
 
 func init() {
