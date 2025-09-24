@@ -34,7 +34,7 @@ func (w *WhatsmeowLogger) Debugf(msg string, args ...interface{}) {
 	w.logger.Debug(fmt.Sprintf("[%s] %s", w.tag, fmt.Sprintf(msg, args...)), nil)
 }
 
-//nolint:ireturn // this method must return an interface to satisfy the whatsmeow logger interface
+//nolint:ireturn // why: method must return an interface to satisfy the whatsmeow logger interface
 func (w *WhatsmeowLogger) Sub(module string) waLog.Logger {
 	subTag := fmt.Sprintf("%s/%s", w.tag, module)
 
