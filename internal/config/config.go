@@ -26,7 +26,7 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		LogLevel:         logger.ParseLevel(utils.GetEnv("BOT_LOG_LEVEL", "INFO")),
 		S3FlowBucket:     utils.GetEnv("BOT_FSM_S3_BUCKET", ""),
-		S3FlowKey:        utils.GetEnv("BOT_FSM_S3_KEY", "conversation_flow.json"),
+		S3FlowKey:        utils.GetEnv("BOT_FSM_S3_KEY", "conversation.json"),
 		UserTableName:    utils.GetEnv("BOT_DYNAMODB_USER_TABLE", "WhatsbotUserState"),
 		HistoryTableName: utils.GetEnv("BOT_DYNAMODB_HISTORY_TABLE", "WhatsbotConversationHistory"),
 		SessionTableName: utils.GetEnv("BOT_DYNAMODB_SESSION_TABLE", "WhatsbotSession"),

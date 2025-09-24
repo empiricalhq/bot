@@ -1,0 +1,373 @@
+{
+  "start_node": "GREETING",
+  "global_transitions": [
+    {
+      "condition": {
+        "type": "keyword",
+        "value": ["ayuda", "asesora", "humano", "contacto"]
+      },
+      "target": "HUMAN_HELP",
+      "action": "escalate_to_human_agent"
+    },
+    {
+      "condition": {
+        "type": "keyword",
+        "value": ["menu", "volver", "inicio", "principal"]
+      },
+      "target": "MAIN_MENU_RETURNING"
+    },
+    {
+      "condition": {
+        "type": "keyword",
+        "value": ["gracias", "ok", "bien"]
+      },
+      "target": "QUICK_THANK_YOU"
+    },
+    {
+      "condition": {
+        "type": "keyword",
+        "value": ["adios", "bye", "hasta luego", "no gracias"]
+      },
+      "target": "GOODBYE"
+    }
+  ],
+  "nodes": {
+    "GREETING": {
+      "message": {
+        "type": "text",
+        "content": "¡Hola! 💕 Soy Ana de la Escuela de Joyería Tejida del Perú ✨\n\nPara conocerte mejor, ¿cuál es tu nombre?"
+      },
+      "transitions": [
+        {
+          "condition": { "type": "any_text" },
+          "action": "save_user_name",
+          "target": "GREETING_WITH_NAME"
+        }
+      ]
+    },
+    "GREETING_WITH_NAME": {
+      "message": {
+        "type": "text",
+        "content": "Hola, *{{name}}* 💕 ¿Cómo estás?\n\n¡Felicitaciones por tu deseo de aprender y emprender con esta hermosa técnica!...\n\n¿Tú ya sabes joyería tejida o deseas empezar desde cero?\n\n*1* → Desde Cero\n*2* → Ya tengo experiencia"
+      },
+      "action": "create_new_lead",
+      "transitions": [
+        {
+          "condition": { "type": "exact", "value": ["1"] },
+          "target": "BEGINNER_FLOW"
+        },
+        {
+          "condition": { "type": "exact", "value": ["2"] },
+          "target": "ADVANCED_FLOW"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["desde cero", "principiante", "basico"]
+          },
+          "target": "BEGINNER_FLOW"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["avanzado", "experiencia"]
+          },
+          "target": "ADVANCED_FLOW"
+        },
+        { "condition": { "type": "any_text" }, "target": "FALLBACK_MENU" }
+      ]
+    },
+    "MAIN_MENU_RETURNING": {
+      "message": {
+        "type": "text",
+        "content": "¡Hola *{{name}}*! 💕 Qué gusto verte de nuevo!\n\n¿En qué puedo ayudarte hoy?\n\n*1* → Información de cursos desde cero\n*2* → Cursos avanzados\n*PRECIO* → Ver costos y promociones\n*HORARIOS* → Ver calendario disponible\n*AYUDA* → Hablar con una asesora"
+      },
+      "transitions": [
+        {
+          "condition": { "type": "exact", "value": ["1"] },
+          "target": "BEGINNER_FLOW"
+        },
+        {
+          "condition": { "type": "exact", "value": ["2"] },
+          "target": "ADVANCED_FLOW"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["precio", "costo", "cuanto"]
+          },
+          "target": "PRICING_INFO"
+        },
+        {
+          "condition": { "type": "keyword", "value": ["horario", "cuando"] },
+          "target": "SCHEDULE_INFO"
+        },
+        { "condition": { "type": "any_text" }, "target": "FALLBACK_MENU" }
+      ]
+    },
+    "BEGINNER_FLOW": {
+      "message": {
+        "type": "text",
+        "content": "Perfecto, *{{name}}* 🌸...\nSi deseas empezar desde cero, te sugiero el *Curso Integral de Joyería Tejida*...\n\n¿Qué modalidad prefieres?\n*ONLINE* → Ver detalles\n*PRESENCIAL* → Ver detalles\n*PRECIO* → Ver precios y formas de pago"
+      },
+      "action": "update_lead_interest_beginner",
+      "transitions": [
+        {
+          "condition": { "type": "keyword", "value": ["precio", "costo"] },
+          "target": "PRICING_INFO"
+        },
+        {
+          "condition": { "type": "keyword", "value": ["online"] },
+          "target": "COURSE_ONLINE_DETAILS"
+        },
+        {
+          "condition": { "type": "keyword", "value": ["presencial"] },
+          "target": "COURSE_PRESENCIAL_DETAILS"
+        },
+        { "condition": { "type": "any_text" }, "target": "FALLBACK_MENU" }
+      ]
+    },
+    "ADVANCED_FLOW": {
+      "message": {
+        "type": "text",
+        "content": "¡Eso es genial, *{{name}}*! 🙌\nEn tu caso lo mejor son los *Cursos Avanzados*, tenemos más de *8 opciones*...\n\n¿Qué curso te interesa?\n*CORAZON* → Curso Joyas Modelo Corazón\n*ANILLOS* → Festival de Anillos\n*CATALOGO* → Ver todos los cursos"
+      },
+      "action": "update_lead_interest_advanced",
+      "transitions": [
+        {
+          "condition": { "type": "keyword", "value": ["corazon", "corazón"] },
+          "target": "COURSE_CORAZON"
+        },
+        {
+          "condition": { "type": "keyword", "value": ["anillos", "anillo"] },
+          "target": "COURSE_ANILLOS"
+        },
+        {
+          "condition": { "type": "keyword", "value": ["catalogo", "cursos"] },
+          "target": "CATALOG_OVERVIEW"
+        },
+        { "condition": { "type": "any_text" }, "target": "FALLBACK_MENU" }
+      ]
+    },
+    "COURSE_ONLINE_DETAILS": {
+      "message": {
+        "type": "text",
+        "content": "*✅ CURSO INTEGRAL ONLINE - CADA NIVEL INCLUYE:*\n• 6 clases grabadas...\n\n*PRECIO* → Ver precios y formas de pago\n*MATRICULA* → Inscribirte ahora"
+      },
+      "transitions": [
+        {
+          "condition": { "type": "keyword", "value": ["precio", "costo"] },
+          "target": "PRICING_INFO"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["matricula", "inscribir"]
+          },
+          "target": "PAYMENT_PROCESS"
+        },
+        { "condition": { "type": "any_text" }, "target": "FALLBACK_MENU" }
+      ]
+    },
+    "COURSE_PRESENCIAL_DETAILS": {
+      "message": {
+        "type": "text",
+        "content": "*✅ CURSO INTEGRAL PRESENCIAL - CADA NIVEL INCLUYE:*\n• 6 clases Presenciales...\n\n*PRECIO* → Ver precios y formas de pago\n*MATRICULA* → Inscribirte ahora"
+      },
+      "transitions": [
+        {
+          "condition": { "type": "keyword", "value": ["precio", "costo"] },
+          "target": "PRICING_INFO"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["matricula", "inscribir"]
+          },
+          "target": "PAYMENT_PROCESS"
+        },
+        { "condition": { "type": "any_text" }, "target": "FALLBACK_MENU" }
+      ]
+    },
+    "PRICING_INFO": {
+      "message": {
+        "type": "text",
+        "content": "*💎 PRECIOS CURSO INTEGRAL*\n\n*💰 PRECIO NORMAL:* 220 USD...\n\n¿Listo para matricularte?\n*MATRICULA* → Confirmar inscripción\n*HORARIOS* → Ver horarios disponibles"
+      },
+      "action": "update_lead_consulted_price",
+      "transitions": [
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["matricula", "inscribir"]
+          },
+          "target": "PAYMENT_PROCESS"
+        },
+        {
+          "condition": { "type": "keyword", "value": ["horario", "cuando"] },
+          "target": "SCHEDULE_INFO"
+        },
+        { "condition": { "type": "any_text" }, "target": "FALLBACK_MENU" }
+      ]
+    },
+    "SCHEDULE_INFO": {
+      "message": {
+        "type": "text",
+        "content": "*📅 HORARIOS DISPONIBLES*\n\n*MODALIDAD ONLINE:*\n• Acceso inmediato...\n\n*MODALIDAD PRESENCIAL:*\n📍 Lugar: Barranco-Perú...\n\n¿Qué modalidad prefieres?\n*ONLINE* / *PRESENCIAL* / *MATRICULA*"
+      },
+      "transitions": [
+        {
+          "condition": { "type": "keyword", "value": ["online"] },
+          "target": "COURSE_ONLINE_DETAILS"
+        },
+        {
+          "condition": { "type": "keyword", "value": ["presencial"] },
+          "target": "COURSE_PRESENCIAL_DETAILS"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["matricula", "inscribir"]
+          },
+          "target": "PAYMENT_PROCESS"
+        },
+        { "condition": { "type": "any_text" }, "target": "FALLBACK_MENU" }
+      ]
+    },
+    "PAYMENT_PROCESS": {
+      "message": {
+        "type": "text",
+        "content": "*💳 PROCESO DE MATRÍCULA*\n\n*Paso 1:* Realiza el pago...\n*Paso 2:* Envía tu voucher aquí 📸\n\n¿Ya realizaste el pago? Envía tu voucher o escribe *PAGADO*"
+      },
+      "transitions": [
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["pagado", "pague", "voucher"]
+          },
+          "target": "PAYMENT_CONFIRMATION"
+        },
+        { "condition": { "type": "any_text" }, "target": "FALLBACK_MENU" }
+      ]
+    },
+    "PAYMENT_CONFIRMATION": {
+      "message": {
+        "type": "text",
+        "content": "🎉 *¡FELICITACIONES {{name}}!* 🎉\nTu pago ha sido recibido exitosamente... ¡Bienvenid@ a Escuela de Joyería Tejida!"
+      },
+      "transitions": [
+        { "condition": { "type": "any_text" }, "target": "QUICK_THANK_YOU" }
+      ]
+    },
+    "COURSE_CORAZON": {
+      "message": {
+        "type": "text",
+        "content": "*❤️ CURSO DE JOYAS MODELO CORAZÓN*\nEste maravilloso curso...\n\n*PRECIO NORMAL:* 120 USD...\n*INSCRIBIR* → Confirmar inscripción\n*VOLVER* → Ver otros cursos avanzados"
+      },
+      "transitions": [
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["inscribir", "matricula"]
+          },
+          "target": "PAYMENT_PROCESS"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["volver", "cursos", "catalogo"]
+          },
+          "target": "ADVANCED_FLOW"
+        },
+        { "condition": { "type": "any_text" }, "target": "FALLBACK_MENU" }
+      ]
+    },
+    "COURSE_ANILLOS": {
+      "message": {
+        "type": "text",
+        "content": "*💍 CURSO FESTIVAL DE ANILLOS*\nCon este Curso aprenderás...\n\n*PRECIO NORMAL:* 129 USD...\n*INSCRIBIR* → Confirmar inscripción\n*VOLVER* → Ver otros cursos avanzados"
+      },
+      "transitions": [
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["inscribir", "matricula"]
+          },
+          "target": "PAYMENT_PROCESS"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["volver", "cursos", "catalogo"]
+          },
+          "target": "ADVANCED_FLOW"
+        },
+        { "condition": { "type": "any_text" }, "target": "FALLBACK_MENU" }
+      ]
+    },
+    "CATALOG_OVERVIEW": {
+      "message": {
+        "type": "text",
+        "content": "*📚 CATÁLOGO COMPLETO DE CURSOS AVANZADOS*\nElige el curso que más despierte tu creatividad:\n*CORAZON* / *ANILLOS* / *VIBRACIONES* / *MAMA* / *HELICOIDALES* / *FLORES* / *TIARAS*\n\nEscribe el nombre del curso que más te interese."
+      },
+      "transitions": [
+        {
+          "condition": { "type": "keyword", "value": ["corazon", "corazón"] },
+          "target": "COURSE_CORAZON"
+        },
+        {
+          "condition": { "type": "keyword", "value": ["anillos", "anillo"] },
+          "target": "COURSE_ANILLOS"
+        },
+        { "condition": { "type": "any_text" }, "target": "FALLBACK_MENU" }
+      ]
+    },
+    "HUMAN_HELP": {
+      "message": {
+        "type": "text",
+        "content": "*👩‍💼 CONTACTO CON ASESORA PERSONAL*\n{{name}}, te voy a conectar con una de nuestras asesoras...\n\n_Tu consulta ha sido registrada. Una asesora te contactará pronto._"
+      },
+      "action": "escalate_to_human_agent",
+      "transitions": [
+        { "condition": { "type": "any_text" }, "target": "QUICK_THANK_YOU" }
+      ]
+    },
+    "QUICK_THANK_YOU": {
+      "message": {
+        "type": "text",
+        "content": "¡De nada! 💕 Estoy aquí para ayudarte con tu camino en la joyería tejida. ¿Hay algo más que quieras saber?"
+      },
+      "transitions": [
+        { "condition": { "type": "any_text" }, "target": "MAIN_MENU_RETURNING" }
+      ]
+    },
+    "GOODBYE": {
+      "message": {
+        "type": "text",
+        "content": "¡Ha sido un placer ayudarte! 😊\nRecuerda que estamos aquí cuando lo necesites.\n¡Que tengas un excelente día! ✨"
+      },
+      "transitions": []
+    },
+    "FALLBACK_MENU": {
+      "message": {
+        "type": "text",
+        "content": "No entendí tu mensaje 😊\n\n*{{name}}, opciones disponibles:*\n*1* → Curso desde cero\n*2* → Cursos avanzados\n*PRECIO* → Ver precios\n*AYUDA* → Hablar con asesora\n\n¿En qué te puedo ayudar?"
+      },
+      "transitions": [
+        {
+          "condition": { "type": "exact", "value": ["1"] },
+          "target": "BEGINNER_FLOW"
+        },
+        {
+          "condition": { "type": "exact", "value": ["2"] },
+          "target": "ADVANCED_FLOW"
+        },
+        {
+          "condition": { "type": "keyword", "value": ["precio", "costo"] },
+          "target": "PRICING_INFO"
+        },
+        { "condition": { "type": "any_text" }, "target": "FALLBACK_MENU" }
+      ]
+    }
+  }
+}
