@@ -140,7 +140,7 @@ func (e *Engine) getOrCreateUserState(ctx context.Context, userID string) (*stat
 	return userState, nil
 }
 
-func (e *Engine) determineNextNode(inputText string, userState *state.UserState) (nextNode string, action string, err error) {
+func (e *Engine) determineNextNode(inputText string, userState *state.UserState) (nextNode, action string, err error) {
 	currentNode, exists := e.flow.Nodes[userState.CurrentNode]
 	if !exists {
 		return "", "", fmt.Errorf("%w: %s", ErrCurrentNodeNotFound, userState.CurrentNode)
