@@ -12,12 +12,15 @@ require (
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-sqlite3 v1.14.32 // indirect
+	github.com/petermattis/goid v0.0.0-20250904145737-900bdf8bb490 // indirect
 	github.com/rs/zerolog v1.34.0 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.27 // indirect
 	go.mau.fi/libsignal v0.2.0 // indirect
 	go.mau.fi/util v0.9.1 // indirect
 	go.mau.fi/whatsmeow v0.0.0-20250922112717-258fd9454b95 // indirect
 	golang.org/x/crypto v0.42.0 // indirect
+	golang.org/x/exp v0.0.0-20250911091902-df9299821621 // indirect
 	golang.org/x/net v0.44.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
