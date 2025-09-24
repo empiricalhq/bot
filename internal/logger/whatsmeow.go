@@ -36,5 +36,6 @@ func (w *WhatsmeowLogger) Debugf(msg string, args ...interface{}) {
 
 func (w *WhatsmeowLogger) Sub(module string) waLog.Logger {
 	subTag := fmt.Sprintf("%s/%s", w.tag, module)
+
 	return NewWhatsmeowLogger(w.logger, subTag)
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"go.mau.fi/whatsmeow/store"
-
 	"whatsbot/internal/logger"
 )
 
@@ -53,6 +52,7 @@ func (s *DynamoDBStore) GetDevice(ctx context.Context) (*store.Device, error) {
 
 	if result.Item == nil {
 		s.logger.Info("No session found, creating new device", nil)
+
 		return new(store.Device), nil
 	}
 
@@ -62,20 +62,24 @@ func (s *DynamoDBStore) GetDevice(ctx context.Context) (*store.Device, error) {
 	}
 
 	var device store.Device
+
 	decoder := gob.NewDecoder(bytes.NewReader(item.Session))
 	if err = decoder.Decode(&device); err != nil {
 		s.logger.Warn("Failed to decode session, returning new device", map[string]interface{}{
 			"error": err.Error(),
 		})
+
 		return new(store.Device), nil
 	}
 
 	s.logger.Info("Session loaded from DynamoDB", nil)
+
 	return &device, nil
 }
 
 func (s *DynamoDBStore) PutDevice(ctx context.Context, device *store.Device) error {
 	var buf bytes.Buffer
+
 	encoder := gob.NewEncoder(&buf)
 	if err := encoder.Encode(device); err != nil {
 		return fmt.Errorf("failed to encode session: %w", err)
@@ -100,6 +104,7 @@ func (s *DynamoDBStore) PutDevice(ctx context.Context, device *store.Device) err
 	}
 
 	s.logger.Info("Session saved to DynamoDB", nil)
+
 	return nil
 }
 
@@ -114,13 +119,14 @@ func InitTable(ctx context.Context, client *dynamodb.Client, tableName string) e
 			{AttributeName: aws.String("SessionID"), KeyType: types.KeyTypeHash},
 		},
 	})
-
 	if err != nil {
 		var resourceInUseException *types.ResourceInUseException
 		if errors.As(err, &resourceInUseException) {
 			return nil // table already exists
 		}
+
 		return fmt.Errorf("failed to create session table %s: %w", tableName, err)
 	}
+
 	return nil
 }

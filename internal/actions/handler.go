@@ -49,6 +49,7 @@ func (h *DefaultHandler) Execute(ctx context.Context, actionName string, userID 
 			"action": actionName,
 			"userID": userID,
 		})
+
 		return fmt.Errorf("unknown action: %s", actionName)
 	}
 }
@@ -68,6 +69,7 @@ func (h *DefaultHandler) saveUserName(ctx context.Context, userID, name string) 
 		"userID": userID,
 		"name":   name,
 	})
+
 	return nil
 }
 
@@ -81,6 +83,7 @@ func (h *DefaultHandler) createNewLead(ctx context.Context, userID string) error
 		"userID":      userID,
 		"currentNode": userState.CurrentNode,
 	})
+
 	return nil
 }
 
@@ -99,6 +102,7 @@ func (h *DefaultHandler) updateLeadInterest(ctx context.Context, userID, interes
 		"userID":   userID,
 		"interest": interest,
 	})
+
 	return nil
 }
 
@@ -114,6 +118,7 @@ func (h *DefaultHandler) updateLeadConsultedPrice(ctx context.Context, userID st
 	}
 
 	h.logger.Info("Lead consulted price", map[string]interface{}{"userID": userID})
+
 	return nil
 }
 
@@ -131,5 +136,6 @@ func (h *DefaultHandler) escalateToHumanAgent(ctx context.Context, userID string
 	h.logger.Warn("Conversation escalated to human agent", map[string]interface{}{
 		"userID": userID,
 	})
+
 	return nil
 }

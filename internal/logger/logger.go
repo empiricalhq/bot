@@ -112,6 +112,7 @@ func (l *Logger) log(level Level, msg string, data map[string]interface{}) {
 	jsonData, err := json.Marshal(entry)
 	if err != nil {
 		fmt.Printf("Logger marshal error: %v\n", err)
+
 		return
 	}
 

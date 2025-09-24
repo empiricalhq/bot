@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-
 	"whatsbot/internal/logger"
 )
 
@@ -87,6 +86,7 @@ func (m *DynamoDBManager) SaveUserState(ctx context.Context, userState *UserStat
 		"userID":      userState.UserID,
 		"currentNode": userState.CurrentNode,
 	})
+
 	return nil
 }
 
@@ -112,6 +112,7 @@ func (m *DynamoDBManager) SaveMessage(ctx context.Context, msg *ConversationMess
 		"direction": msg.Direction,
 		"nodeID":    msg.NodeID,
 	})
+
 	return nil
 }
 
@@ -139,10 +140,12 @@ func InitTables(ctx context.Context, client *dynamodb.Client, userTableName, his
 	}
 
 	for tableName, tableConfig := range tables {
-		if err := createTable(ctx, client, tableName, tableConfig); err != nil {
+		err := createTable(ctx, client, tableName, tableConfig)
+		if err != nil {
 			return fmt.Errorf("failed to create table %s: %w", tableName, err)
 		}
 	}
+
 	return nil
 }
 
@@ -153,7 +156,8 @@ func createTable(ctx context.Context, client *dynamodb.Client, tableName string,
 	SKType       types.ScalarAttributeType
 	TTLEnabled   bool
 	TTLAttribute string
-}) error {
+},
+) error {
 	input := &dynamodb.CreateTableInput{
 		TableName:   aws.String(tableName),
 		BillingMode: types.BillingModePayPerRequest,
@@ -188,6 +192,7 @@ func createTable(ctx context.Context, client *dynamodb.Client, tableName string,
 		if errors.As(err, &resourceInUseException) {
 			return nil // Table already exists
 		}
+
 		return err
 	}
 

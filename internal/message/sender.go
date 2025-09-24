@@ -26,6 +26,7 @@ func (s *Sender) SendText(ctx context.Context, recipient types.JID, text string)
 	if err != nil {
 		return fmt.Errorf("failed to send text message to %s: %w", recipient.String(), err)
 	}
+
 	return nil
 }
 
@@ -54,6 +55,7 @@ func (s *Sender) SendImage(ctx context.Context, recipient types.JID, imageData [
 	if err != nil {
 		return fmt.Errorf("failed to send image message to %s: %w", recipient.String(), err)
 	}
+
 	return nil
 }
 
@@ -80,6 +82,7 @@ func (s *Sender) SendDocument(ctx context.Context, recipient types.JID, document
 	if err != nil {
 		return fmt.Errorf("failed to send document message to %s: %w", recipient.String(), err)
 	}
+
 	return nil
 }
 
@@ -105,5 +108,6 @@ func (s *Sender) SendReaction(ctx context.Context, recipient types.JID, messageI
 	if err != nil {
 		return fmt.Errorf("failed to send reaction message to %s for ID %s: %w", recipient.String(), messageID, err)
 	}
+
 	return nil
 }

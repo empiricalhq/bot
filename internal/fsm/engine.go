@@ -69,7 +69,8 @@ func (e *Engine) ProcessMessage(ctx context.Context, msg *message.Message) (stri
 
 	// execute action
 	if actionToExecute != "" {
-		if err := e.actionHandler.Execute(ctx, actionToExecute, userID, msg); err != nil {
+		err := e.actionHandler.Execute(ctx, actionToExecute, userID, msg)
+		if err != nil {
 			e.logger.Error("Action execution failed", map[string]interface{}{
 				"action": actionToExecute,
 				"error":  err.Error(),
@@ -113,7 +114,8 @@ func (e *Engine) getOrCreateUserState(ctx context.Context, userID string) (*stat
 			CurrentNode: e.flow.StartNode,
 			LastUpdated: time.Now(),
 		}
-		if saveErr := e.stateManager.SaveUserState(ctx, userState); saveErr != nil {
+		saveErr := e.stateManager.SaveUserState(ctx, userState)
+		if saveErr != nil {
 			e.logger.Error("Failed to save new user state", map[string]interface{}{
 				"error": saveErr.Error(),
 			})
@@ -124,6 +126,7 @@ func (e *Engine) getOrCreateUserState(ctx context.Context, userID string) (*stat
 	if userState.CurrentNode == "" {
 		userState.CurrentNode = e.flow.StartNode
 	}
+
 	if _, exists := e.flow.Nodes[userState.CurrentNode]; !exists {
 		userState.CurrentNode = e.flow.StartNode
 	}
@@ -172,7 +175,7 @@ func (e *Engine) matchCondition(inputText string, condition Condition) bool {
 	switch condition.Type {
 	case "exact":
 		for _, val := range condition.Value {
-			if lowerInput == strings.ToLower(val) {
+			if strings.EqualFold(lowerInput, val) {
 				return true
 			}
 		}
@@ -190,13 +193,16 @@ func (e *Engine) matchCondition(inputText string, condition Condition) bool {
 					"regex": condition.Regex,
 					"error": err.Error(),
 				})
+
 				return false
 			}
+
 			return re.MatchString(lowerInput)
 		}
 	case "any_text":
 		return lowerInput != ""
 	}
+
 	return false
 }
 

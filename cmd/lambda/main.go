@@ -16,7 +16,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types/events"
-
 	"whatsbot/internal/actions"
 	"whatsbot/internal/config"
 	"whatsbot/internal/fsm"
@@ -40,6 +39,7 @@ var app *App
 
 func init() {
 	var err error
+
 	app, err = initializeApp(context.Background())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "FATAL: Failed to initialize app: %v\n", err)
@@ -57,6 +57,7 @@ func initializeApp(ctx context.Context) (*App, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create logger factory: %w", err)
 	}
+
 	appLogger := logFactory.GetLogger("WhatsbotApp")
 
 	// configure AWS SDK
@@ -109,16 +110,20 @@ func initializeApp(ctx context.Context) (*App, error) {
 	}
 
 	appLogger.Info("WhatsApp bot initialized successfully", nil)
+
 	return app, nil
 }
 
 func initializeDatabases(ctx context.Context, client *dynamodb.Client, cfg *config.Config) error {
-	if err := state.InitTables(ctx, client, cfg.UserTableName, cfg.HistoryTableName); err != nil {
+	err := state.InitTables(ctx, client, cfg.UserTableName, cfg.HistoryTableName)
+	if err != nil {
 		return fmt.Errorf("failed to init state tables: %w", err)
 	}
-	if err := session.InitTable(ctx, client, cfg.SessionTableName); err != nil {
+	err := session.InitTable(ctx, client, cfg.SessionTableName)
+	if err != nil {
 		return fmt.Errorf("failed to init session table: %w", err)
 	}
+
 	return nil
 }
 
@@ -147,6 +152,7 @@ func loadConversationFlow(ctx context.Context, s3Client *s3.Client, bucket, key 
 
 func initializeWhatsAppClient(ctx context.Context, dynamoClient *dynamodb.Client, cfg *config.Config, logFactory *logger.Factory) (*whatsmeow.Client, *session.DynamoDBStore, error) {
 	deviceStore := session.NewDynamoDBStore(dynamoClient, cfg.SessionTableName, cfg.SessionID, logFactory.GetLogger("SessionStore"))
+
 	device, err := deviceStore.GetDevice(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get device from store: %w", err)
@@ -154,6 +160,7 @@ func initializeWhatsAppClient(ctx context.Context, dynamoClient *dynamodb.Client
 
 	whatsmeowLogger := logger.NewWhatsmeowLogger(logFactory.GetLogger("WhatsmeowClient"), "whatsmeow")
 	client := whatsmeow.NewClient(device, whatsmeowLogger)
+
 	return client, deviceStore, nil
 }
 
@@ -165,16 +172,20 @@ func (a *App) handleEvent(evt interface{}) {
 		a.handleMessage(ctx, v)
 	case *events.QR:
 		a.logger.Info("QR code received for login. Scan with WhatsApp.", nil)
+
 		go func() {
 			for code := range v.Codes {
 				a.logger.Warn("QR code update", map[string]interface{}{"code": code})
 			}
+
 			a.logger.Info("QR channel closed.", nil)
 		}()
 	case *events.Connected:
 		a.logger.Info("WhatsApp client connected", nil)
+
 		if a.client.Store != nil {
-			if err := a.sessionStore.PutDevice(ctx, a.client.Store); err != nil {
+			err := a.sessionStore.PutDevice(ctx, a.client.Store)
+			if err != nil {
 				a.logger.Error("Failed to save device after connection", map[string]interface{}{"error": err.Error()})
 			}
 		}
@@ -198,6 +209,7 @@ func (a *App) handleMessage(ctx context.Context, evt *events.Message) {
 			"sender": msg.GetSenderID(),
 		})
 		_ = a.messageSender.SendText(ctx, msg.Recipient, "Disculpa, hubo un error. Por favor intenta de nuevo.")
+
 		return
 	}
 
@@ -212,12 +224,16 @@ func (a *App) handleMessage(ctx context.Context, evt *events.Message) {
 func Handler(ctx context.Context) error {
 	if !app.client.IsConnected() {
 		app.logger.Warn("Client disconnected, attempting reconnect", nil)
-		if err := app.client.Connect(); err != nil {
+		err := app.client.Connect()
+		if err != nil {
 			app.logger.Error("Failed to reconnect", map[string]interface{}{"error": err.Error()})
+
 			return err
 		}
 	}
+
 	app.logger.Debug("Lambda keep-warm ping successful", nil)
+
 	return nil
 }
 
@@ -225,16 +241,20 @@ func main() {
 	if os.Getenv("AWS_LAMBDA_RUNTIME_API") == "" {
 		// local development mode
 		app.logger.Info("Running in LOCAL mode. Press CTRL+C to exit.", nil)
+
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 		<-c
 
 		app.logger.Info("Shutting down...", nil)
+
 		if app.client.Store != nil {
-			if err := app.sessionStore.PutDevice(context.Background(), app.client.Store); err != nil {
+			err := app.sessionStore.PutDevice(context.Background(), app.client.Store)
+			if err != nil {
 				app.logger.Error("Failed to save device on shutdown", map[string]interface{}{"error": err.Error()})
 			}
 		}
+
 		app.client.Disconnect()
 	} else {
 		lambda.Start(Handler)
