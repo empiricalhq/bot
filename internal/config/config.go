@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/joho/godotenv"
+
 	"whatsbot/internal/logger"
 	"whatsbot/pkg/utils"
-
-	"github.com/joho/godotenv"
 )
 
 var (

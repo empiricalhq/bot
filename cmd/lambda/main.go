@@ -9,6 +9,14 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/types/events"
+
 	"whatsbot/internal/actions"
 	"whatsbot/internal/config"
 	"whatsbot/internal/fsm"
@@ -17,14 +25,6 @@ import (
 	"whatsbot/internal/session"
 	"whatsbot/internal/state"
 	"whatsbot/internal/templates"
-
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	awsConfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"go.mau.fi/whatsmeow"
-	"go.mau.fi/whatsmeow/types/events"
 )
 
 type App struct {
