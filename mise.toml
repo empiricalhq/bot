@@ -1,0 +1,10 @@
+[tools]
+"aqua:golangci/golangci-lint" = "2.5.0"
+go = "1.25.1"
+
+[tasks.lint]
+description = "Format & lint"
+run = [
+    "golangci-lint fmt",
+    "golangci-lint run --fix"
+]
