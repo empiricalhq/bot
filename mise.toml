@@ -2,6 +2,10 @@
 "aqua:golangci/golangci-lint" = "2.5.0"
 go = "1.25.1"
 
+[tasks.build]
+description = "Build the app"
+run = "go build -ldflags="-s -w" -o build/main.exe cmd/lambda/main.go"
+
 [tasks.lint]
 description = "Format & lint"
 run = [
