@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"go.mau.fi/whatsmeow/store"
-
 	"whatsbot/internal/logger"
 )
 
@@ -51,34 +50,35 @@ func (s *DynamoDBStore) GetDevice(ctx context.Context) (*store.Device, error) {
 		return nil, fmt.Errorf("failed to get session from DynamoDB: %w", err)
 	}
 
-	if result.Item != nil {
-		var item SessionItem
-
-		err := attributevalue.UnmarshalMap(result.Item, &item)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal session: %w", err)
-		}
-
-		var device store.Device
-
-		decoder := gob.NewDecoder(bytes.NewReader(item.Session))
-
-		decodeErr := decoder.Decode(&device)
-		if decodeErr == nil {
-			s.logger.Info("Session loaded from DynamoDB", nil)
-
-			return &device, nil
-		} else {
-			// a decode error means the session is (probably) corrupt
-			s.logger.Warn("Failed to decode session, creating new device", map[string]interface{}{
-				"error": decodeErr.Error(),
-			})
-		}
-	} else {
+	if result.Item == nil {
 		s.logger.Info("No session found, creating new device", nil)
+
+		return new(store.Device), nil
 	}
 
-	return new(store.Device), nil
+	var item SessionItem
+
+	err = attributevalue.UnmarshalMap(result.Item, &item)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal session: %w", err)
+	}
+
+	var device store.Device
+
+	decoder := gob.NewDecoder(bytes.NewReader(item.Session))
+
+	decodeErr := decoder.Decode(&device)
+	if decodeErr != nil {
+		s.logger.Warn("Failed to decode session, returning new device", map[string]interface{}{
+			"error": decodeErr.Error(),
+		})
+
+		return new(store.Device), nil
+	}
+
+	s.logger.Info("Session loaded from DynamoDB", nil)
+
+	return &device, nil
 }
 
 func (s *DynamoDBStore) PutDevice(ctx context.Context, device *store.Device) error {

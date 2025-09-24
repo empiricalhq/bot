@@ -48,7 +48,7 @@ version = "2"
 [formatters]
   enable = ["gofumpt", "goimports", "gci"]
   [formatters.settings.gci]
-    sections = ["standard", "default", "prefix(whatsbot)"]
+    sections = ["standard", "default", "prefix(github.com/totallynotdavid/BoTeX)"]
 
 [run]
   timeout = "5m"

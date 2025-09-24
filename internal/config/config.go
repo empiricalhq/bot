@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/joho/godotenv"
-
 	"whatsbot/internal/logger"
 	"whatsbot/pkg/utils"
 )
@@ -29,11 +28,7 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
-	err := godotenv.Load()
-	if err != nil {
-		//nolint:forbidigo // why: linter is not initialized yet
-		fmt.Printf("No .env file found or failed to load: %v\n", err)
-	}
+	godotenv.Load()
 
 	cfg := &Config{
 		LogLevel:         logger.ParseLevel(utils.GetEnv("BOT_LOG_LEVEL", "INFO")),
@@ -45,7 +40,7 @@ func Load() (*Config, error) {
 		SessionID:        utils.GetEnv("BOT_SESSION_ID", "primary-bot-session"),
 	}
 
-	err = cfg.validate()
+	err := cfg.validate()
 	if err != nil {
 		return nil, fmt.Errorf("config validation failed: %w", err)
 	}

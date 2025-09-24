@@ -16,7 +16,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types/events"
-
 	"whatsbot/internal/actions"
 	"whatsbot/internal/config"
 	"whatsbot/internal/fsm"
@@ -36,7 +35,6 @@ type App struct {
 	sessionStore  *session.DynamoDBStore
 }
 
-//nolint:gochecknoglobals // why: lambda requires a global handler
 var app *App
 
 func init() {
@@ -72,8 +70,7 @@ func initializeApp(ctx context.Context) (*App, error) {
 	s3Client := s3.NewFromConfig(awsCfg)
 	dynamoClient := dynamodb.NewFromConfig(awsCfg)
 
-	err = initializeDatabases(ctx, dynamoClient, cfg)
-	if err != nil {
+	if err := initializeDatabases(ctx, dynamoClient, cfg); err != nil {
 		return nil, fmt.Errorf("failed to initialize databases: %w", err)
 	}
 
@@ -104,8 +101,7 @@ func initializeApp(ctx context.Context) (*App, error) {
 
 	client.AddEventHandler(app.handleEvent)
 
-	err = client.Connect()
-	if err != nil {
+	if err := client.Connect(); err != nil {
 		return nil, fmt.Errorf("failed to connect WhatsApp client: %w", err)
 	}
 
@@ -140,13 +136,7 @@ func loadConversationFlow(ctx context.Context, s3Client *s3.Client, bucket, key 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get flow from S3: %w", err)
 	}
-
-	defer func() {
-		err := result.Body.Close()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: failed to close S3 object body: %v\n", err)
-		}
-	}()
+	defer result.Body.Close()
 
 	data, err := io.ReadAll(result.Body)
 	if err != nil {
@@ -154,9 +144,7 @@ func loadConversationFlow(ctx context.Context, s3Client *s3.Client, bucket, key 
 	}
 
 	var flow fsm.Flow
-
-	err = json.Unmarshal(data, &flow)
-	if err != nil {
+	if err := json.Unmarshal(data, &flow); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal flow: %w", err)
 	}
 
@@ -180,14 +168,14 @@ func initializeWhatsAppClient(ctx context.Context, dynamoClient *dynamodb.Client
 func (a *App) handleEvent(evt interface{}) {
 	ctx := context.Background()
 
-	switch event := evt.(type) {
+	switch v := evt.(type) {
 	case *events.Message:
-		a.handleMessage(ctx, event)
+		a.handleMessage(ctx, v)
 	case *events.QR:
 		a.logger.Info("QR code received for login. Scan with WhatsApp.", nil)
 
 		go func() {
-			for code := range event.Codes {
+			for code := range v.Codes {
 				a.logger.Warn("QR code update", map[string]interface{}{"code": code})
 			}
 
@@ -221,17 +209,12 @@ func (a *App) handleMessage(ctx context.Context, evt *events.Message) {
 			"error":  err.Error(),
 			"sender": msg.GetSenderID(),
 		})
-
-		err := a.messageSender.SendText(ctx, msg.Recipient, "Disculpa, hubo un error. Por favor intenta de nuevo.")
-		if err != nil {
-			a.logger.Error("Failed to send error message to user", map[string]interface{}{"error": err.Error()})
-		}
+		_ = a.messageSender.SendText(ctx, msg.Recipient, "Disculpa, hubo un error. Por favor intenta de nuevo.")
 
 		return
 	}
 
-	err = a.messageSender.SendText(ctx, msg.Recipient, response)
-	if err != nil {
+	if err := a.messageSender.SendText(ctx, msg.Recipient, response); err != nil {
 		a.logger.Error("Failed to send response", map[string]interface{}{
 			"error":     err.Error(),
 			"recipient": msg.GetSenderID(),
@@ -247,7 +230,7 @@ func Handler(ctx context.Context) error {
 		if err != nil {
 			app.logger.Error("Failed to reconnect", map[string]interface{}{"error": err.Error()})
 
-			return fmt.Errorf("failed to reconnect client: %w", err)
+			return err
 		}
 	}
 
