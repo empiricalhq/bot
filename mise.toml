@@ -2,13 +2,14 @@
 "aqua:golangci/golangci-lint" = "2.5.0"
 go = "1.25.1"
 
+[tasks.install]
+description = "Install dependencies"
+run = ["go mod tidy", "go mod vendor"]
+
 [tasks.build]
 description = "Build the app"
 run = "go build -o build/main.exe cmd/lambda/main.go"
 
 [tasks.lint]
 description = "Format & lint"
-run = [
-    "golangci-lint fmt",
-    "golangci-lint run --fix"
-]
+run = ["golangci-lint fmt", "golangci-lint run --fix --fast-only"]
