@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/joho/godotenv"
 	"whatsbot/internal/logger"
 	"whatsbot/pkg/utils"
+
+	"github.com/joho/godotenv"
 )
 
 var (
@@ -30,6 +31,7 @@ type Config struct {
 func Load() (*Config, error) {
 	err := godotenv.Load()
 	if err != nil {
+		//nolint:forbidigo // why: linter is not initialized yet
 		fmt.Printf("No .env file found or failed to load: %v\n", err)
 	}
 
