@@ -119,7 +119,8 @@ func initializeDatabases(ctx context.Context, client *dynamodb.Client, cfg *conf
 	if err != nil {
 		return fmt.Errorf("failed to init state tables: %w", err)
 	}
-	err := session.InitTable(ctx, client, cfg.SessionTableName)
+
+	err = session.InitTable(ctx, client, cfg.SessionTableName)
 	if err != nil {
 		return fmt.Errorf("failed to init session table: %w", err)
 	}
@@ -224,6 +225,7 @@ func (a *App) handleMessage(ctx context.Context, evt *events.Message) {
 func Handler(ctx context.Context) error {
 	if !app.client.IsConnected() {
 		app.logger.Warn("Client disconnected, attempting reconnect", nil)
+
 		err := app.client.Connect()
 		if err != nil {
 			app.logger.Error("Failed to reconnect", map[string]interface{}{"error": err.Error()})

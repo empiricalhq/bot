@@ -2,12 +2,15 @@ package actions
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"whatsbot/internal/logger"
 	"whatsbot/internal/message"
 	"whatsbot/internal/state"
 )
+
+var ErrUnknownAction = errors.New("unknown action")
 
 type Handler interface {
 	Execute(ctx context.Context, actionName string, userID string, inputMessage *message.Message) error
@@ -25,7 +28,7 @@ func NewHandler(sm state.Manager, log *logger.Logger) *DefaultHandler {
 	}
 }
 
-func (h *DefaultHandler) Execute(ctx context.Context, actionName string, userID string, inputMessage *message.Message) error {
+func (h *DefaultHandler) Execute(ctx context.Context, actionName, userID string, inputMessage *message.Message) error {
 	h.logger.Debug("Executing action", map[string]interface{}{
 		"action": actionName,
 		"userID": userID,
@@ -50,7 +53,7 @@ func (h *DefaultHandler) Execute(ctx context.Context, actionName string, userID 
 			"userID": userID,
 		})
 
-		return fmt.Errorf("unknown action: %s", actionName)
+		return fmt.Errorf("%w: %s", ErrUnknownAction, actionName)
 	}
 }
 
@@ -61,7 +64,9 @@ func (h *DefaultHandler) saveUserName(ctx context.Context, userID, name string) 
 	}
 
 	userState.UserName = name
-	if err := h.stateManager.SaveUserState(ctx, userState); err != nil {
+
+	err = h.stateManager.SaveUserState(ctx, userState)
+	if err != nil {
 		return fmt.Errorf("failed to save user name: %w", err)
 	}
 
@@ -94,7 +99,9 @@ func (h *DefaultHandler) updateLeadInterest(ctx context.Context, userID, interes
 	}
 
 	userState.CourseInterest = interest
-	if err := h.stateManager.SaveUserState(ctx, userState); err != nil {
+
+	err = h.stateManager.SaveUserState(ctx, userState)
+	if err != nil {
 		return fmt.Errorf("failed to update lead interest: %w", err)
 	}
 
@@ -113,7 +120,9 @@ func (h *DefaultHandler) updateLeadConsultedPrice(ctx context.Context, userID st
 	}
 
 	userState.ConsultedPrice = true
-	if err := h.stateManager.SaveUserState(ctx, userState); err != nil {
+
+	err = h.stateManager.SaveUserState(ctx, userState)
+	if err != nil {
 		return fmt.Errorf("failed to update price consultation: %w", err)
 	}
 
@@ -129,7 +138,9 @@ func (h *DefaultHandler) escalateToHumanAgent(ctx context.Context, userID string
 	}
 
 	userState.RequiresHumanAgent = true
-	if err := h.stateManager.SaveUserState(ctx, userState); err != nil {
+
+	err = h.stateManager.SaveUserState(ctx, userState)
+	if err != nil {
 		return fmt.Errorf("failed to mark for human agent: %w", err)
 	}
 

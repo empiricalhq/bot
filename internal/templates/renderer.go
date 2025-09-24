@@ -12,7 +12,7 @@ func NewTextRenderer() *TextRenderer {
 	return &TextRenderer{}
 }
 
-func (r *TextRenderer) RenderText(template string, userName string) string {
+func (r *TextRenderer) RenderText(template, userName string) string {
 	if userName == "" {
 		userName = "Amig@"
 	}

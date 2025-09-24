@@ -59,7 +59,9 @@ func (m *DynamoDBManager) GetUserState(ctx context.Context, userID string) (*Use
 	}
 
 	var userState UserState
-	if err = attributevalue.UnmarshalMap(result.Item, &userState); err != nil {
+
+	err = attributevalue.UnmarshalMap(result.Item, &userState)
+	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal user state for %s: %w", userID, err)
 	}
 
@@ -193,7 +195,7 @@ func createTable(ctx context.Context, client *dynamodb.Client, tableName string,
 			return nil // Table already exists
 		}
 
-		return err
+		return fmt.Errorf("aws create table failed: %w", err)
 	}
 
 	// Enable TTL if configured

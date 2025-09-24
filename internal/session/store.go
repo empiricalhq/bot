@@ -57,16 +57,20 @@ func (s *DynamoDBStore) GetDevice(ctx context.Context) (*store.Device, error) {
 	}
 
 	var item SessionItem
-	if err = attributevalue.UnmarshalMap(result.Item, &item); err != nil {
+
+	err = attributevalue.UnmarshalMap(result.Item, &item)
+	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal session: %w", err)
 	}
 
 	var device store.Device
 
 	decoder := gob.NewDecoder(bytes.NewReader(item.Session))
-	if err = decoder.Decode(&device); err != nil {
+
+	decodeErr := decoder.Decode(&device)
+	if decodeErr != nil {
 		s.logger.Warn("Failed to decode session, returning new device", map[string]interface{}{
-			"error": err.Error(),
+			"error": decodeErr.Error(),
 		})
 
 		return new(store.Device), nil
@@ -81,7 +85,9 @@ func (s *DynamoDBStore) PutDevice(ctx context.Context, device *store.Device) err
 	var buf bytes.Buffer
 
 	encoder := gob.NewEncoder(&buf)
-	if err := encoder.Encode(device); err != nil {
+
+	err := encoder.Encode(device)
+	if err != nil {
 		return fmt.Errorf("failed to encode session: %w", err)
 	}
 
@@ -90,14 +96,14 @@ func (s *DynamoDBStore) PutDevice(ctx context.Context, device *store.Device) err
 		Session:   buf.Bytes(),
 	}
 
-	av, err := attributevalue.MarshalMap(item)
+	attributeValues, err := attributevalue.MarshalMap(item)
 	if err != nil {
 		return fmt.Errorf("failed to marshal session item: %w", err)
 	}
 
 	_, err = s.client.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName: aws.String(s.tableName),
-		Item:      av,
+		Item:      attributeValues,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to save session to DynamoDB: %w", err)

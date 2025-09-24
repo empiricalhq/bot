@@ -16,7 +16,7 @@ type Message struct {
 
 func New(evt *events.Message) *Message {
 	if evt.Info.IsGroup {
-		return nil // TODO: we should ignore group messages to avoid overloading the server
+		return nil
 	}
 
 	msg := &Message{

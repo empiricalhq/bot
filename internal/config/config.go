@@ -9,6 +9,14 @@ import (
 	"whatsbot/pkg/utils"
 )
 
+var (
+	ErrMissingS3Bucket     = errors.New("BOT_FSM_S3_BUCKET is required")
+	ErrMissingUserTable    = errors.New("BOT_DYNAMODB_USER_TABLE is required")
+	ErrMissingHistoryTable = errors.New("BOT_DYNAMODB_HISTORY_TABLE is required")
+	ErrMissingSessionTable = errors.New("BOT_DYNAMODB_SESSION_TABLE is required")
+	ErrMissingSessionID    = errors.New("BOT_SESSION_ID is required")
+)
+
 type Config struct {
 	LogLevel         logger.Level
 	S3FlowBucket     string
@@ -20,7 +28,7 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
-	_ = godotenv.Load()
+	godotenv.Load()
 
 	cfg := &Config{
 		LogLevel:         logger.ParseLevel(utils.GetEnv("BOT_LOG_LEVEL", "INFO")),
@@ -42,23 +50,23 @@ func Load() (*Config, error) {
 
 func (c *Config) validate() error {
 	if c.S3FlowBucket == "" {
-		return errors.New("BOT_FSM_S3_BUCKET is required")
+		return ErrMissingS3Bucket
 	}
 
 	if c.UserTableName == "" {
-		return errors.New("BOT_DYNAMODB_USER_TABLE is required")
+		return ErrMissingUserTable
 	}
 
 	if c.HistoryTableName == "" {
-		return errors.New("BOT_DYNAMODB_HISTORY_TABLE is required")
+		return ErrMissingHistoryTable
 	}
 
 	if c.SessionTableName == "" {
-		return errors.New("BOT_DYNAMODB_SESSION_TABLE is required")
+		return ErrMissingSessionTable
 	}
 
 	if c.SessionID == "" {
-		return errors.New("BOT_SESSION_ID is required")
+		return ErrMissingSessionID
 	}
 
 	return nil
