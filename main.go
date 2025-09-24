@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"whatsbot/internal/config"
+
+	"whatsbot/internal/logger"
 )
 
 func main() {
@@ -11,5 +13,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
-	fmt.Printf("Config loaded: %+v\n", cfg)
+	logger := logger.NewLogger("main", logger.INFO)
+	logger.Info(fmt.Sprintf("Config loaded: %+v", cfg))
 }

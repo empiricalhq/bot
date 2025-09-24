@@ -24,7 +24,6 @@ func Load() (*Config, error) {
 		S3FlowBucket: utils.GetEnv("BOT_S3_BUCKET", ""),
 	}
 
-	fmt.Printf("DEBUG: BOT_S3_BUCKET='%s'\n", cfg.S3FlowBucket)
 	if err := cfg.validate(); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
