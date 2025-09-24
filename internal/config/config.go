@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"whatsbot/pkg/utils"
 
@@ -23,7 +24,17 @@ func Load() (*Config, error) {
 		S3FlowBucket: utils.GetEnv("BOT_S3_BUCKET", ""),
 	}
 
-	fmt.Printf("[DEBUG]: Configuración cargada: LogLevel=%s, S3Bucket=%s\n", cfg.LogLevel, cfg.S3FlowBucket)
+	fmt.Printf("DEBUG: BOT_S3_BUCKET='%s'\n", cfg.S3FlowBucket)
+	if err := cfg.validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
 
 	return cfg, nil
+}
+
+func (c *Config) validate() error {
+	if c.S3FlowBucket == "" {
+		return errors.New("BOT_S3_BUCKET is required")
+	}
+	return nil
 }

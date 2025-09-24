@@ -1,7 +1,15 @@
 package main
 
-import "whatsbot/internal/config"
+import (
+	"fmt"
+	"log"
+	"whatsbot/internal/config"
+)
 
 func main() {
-	config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
+	}
+	fmt.Printf("Config loaded: %+v\n", cfg)
 }
