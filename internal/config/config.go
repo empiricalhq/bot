@@ -28,7 +28,7 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
-	godotenv.Load()
+	_ = godotenv.Load()
 
 	cfg := &Config{
 		LogLevel:         logger.ParseLevel(utils.GetEnv("BOT_LOG_LEVEL", "INFO")),
