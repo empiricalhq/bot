@@ -3,3 +3,4 @@ vendor
 
 .env
 *.log
+*.ps1
