@@ -16,15 +16,23 @@ type Factory struct {
 	fileLogger *log.Logger
 }
 
+const (
+	logDirPerm  = 0o755 // directory permission: rwxr-xr-x
+	logFilePerm = 0o664 // file permission: rw-rw-r--
+)
+
 func NewFactory(config Config) (*Factory, *os.File, error) {
 	logDir := "log"
-	if err := os.MkdirAll(logDir, 0o755); err != nil {
+
+	err := os.MkdirAll(logDir, logDirPerm)
+	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create log directory: %w", err)
 	}
 
 	fileName := fmt.Sprintf("%s/bot_%s.log.json", logDir, time.Now().Format("2006-01-02T15-04-05"))
 
-	logFile, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o664)
+	// #nosec G304 -- fileName is generated internally, no user input
+	logFile, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, logFilePerm)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to open log file: %w", err)
 	}
