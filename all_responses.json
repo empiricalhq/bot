@@ -1,0 +1,122 @@
+{
+  "templates": {
+    "waiting_name": {
+      "text": "¡Hola! 💕 Soy Ana de la Escuela de Joyería Tejida del Perú ✨\n\nPara conocerte mejor, ¿cuál es tu nombre?",
+      "stage": "ESPERANDO_NOMBRE"
+    },
+    "greeting_with_name": {
+      "text": "Hola, *{{name}}* 💕 ¿Cómo estás?\n\n¡Felicitaciones por tu deseo de aprender y emprender con esta hermosa técnica!\n\nPermíteme comentarte algo importante:\n\n👉 Nosotros somos Escuela de Joyería Tejida Perú de la maestra *Magally Juro* y tenemos más de *15 años en el mercado*, formando *alumnas y marcas de joyería tejida* en toda América Latina 🌎\n\nY esto lo hacemos a través de Cursos Modalidad Online, Modalidad Presencial, Seminarios internacionales etc.\n\nTe invito a conocer más de la maestra Magally Juro, diseñadora de joyas:\n📹 https://youtu.be/U2E4qRlGMM8\n\nAhora cuéntame:\n\n¿Tú ya sabes joyería tejida o deseas empezar desde cero?\n\n*1* → Desde Cero\n*2* → Ya tengo experiencia",
+      "stage": "NOMBRE_CAPTURADO"
+    },
+    "greeting_returning": {
+      "text": "¡Hola *{{name}}*! 💕 Qué gusto verte de nuevo!\n\n¿En qué puedo ayudarte hoy?\n\n*1* → Información de cursos desde cero\n*2* → Cursos avanzados\n*ONLINE* → Modalidad Online\n*PRESENCIAL* → Modalidad Presencial\n*PRECIO* → Ver costos y promociones\n*HORARIOS* → Ver calendario disponible\n*AYUDA* → Hablar con una asesora",
+      "stage": "MENU_PRINCIPAL"
+    },
+    "beginner_flow": {
+      "text": "Perfecto, *{{name}}* 🌸\n\nSi no tienes ningún conocimiento de la técnica de joyería tejida a crochet con hilos metálicos y deseas empezar desde cero, te sugiero el *Curso Integral de Joyería Tejida* 👑\n\nEste incluye los tres niveles: *básico, intermedio y avanzado*.\n\n✔️ Puedes llevarlo *online* o *presencial*\n✔️ No requieres experiencia previa\n✔️ Se te acompaña y guía paso a paso hasta crear tus propias piezas\n✔️ Logras joyas que te permiten recuperar tu inversión desde el primer nivel\n✔️ Recibes Charlas de gestión en Joyería Tejida\n✔️ Recibes E-Books o material de apoyo por clase\n✔️ Y formarás parte de la comunidad más grande de habla hispana que conoce y ama la joyería tejida\n\n¿Qué modalidad prefieres?\n\n*ONLINE* → Ver detalles del Curso Online\n*PRESENCIAL* → Ver detalles del Curso Presencial\n*PRECIO* → Ver precios y formas de pago",
+      "stage": "INTERESADO_BASICO"
+    },
+    "course_online_details": {
+      "text": "*✅CURSO INTEGRAL ONLINE - CADA NIVEL INCLUYE:*\n\n• 6 clases grabadas\n• Tendrás los videos de cada clase y podrás verlo las veces que desees\n• Se sugiere 10 horas de práctica en casa por cada clase\n• Tendrás el acompañamiento de la maestra Magally Juro durante todo el curso vía WhatsApp\n• 🎁 Y de regalo E-Books o materiales de soporte por clase\n• Y finalizando los 3 niveles, recibes la Certificación como Especialista en Tecnología de Manufactura en Punto Peruano\n\n*PRECIO* → Ver precios y formas de pago\n*MATRICULA* → Inscribirte ahora\n*PRESENCIAL* → Ver modalidad presencial",
+      "stage": "CONSULTO_ONLINE"
+    },
+    "course_presencial_details": {
+      "text": "*✅ CURSO INTEGRAL PRESENCIAL - CADA NIVEL INCLUYE:*\n\n• 6 clases Presenciales con la maestra Magally Juro\n• Se sugiere 10 horas de práctica en casa por cada clase\n• Las clases incluyen todos los materiales\n• Tendrás el acompañamiento de la maestra Magally Juro durante todo el curso\n• Recibes Charlas de gestión y emprendimiento en Joyería Tejida\n• 🎁 E-Books o materiales de soporte de regalo por clase\n• Y finalizando los 3 niveles, recibes la Certificación como Especialista en Tecnología de Manufactura en Punto Peruano\n• Ceremonia de Graduación y Certificación al finalizar el Curso\n\n📍 *Lugar:* Barranco-Perú\n📅 *Horario:* Sábados de 10:00 am a 1:00 pm\n🗓️ *INICIO:* SÁBADO 20 DE SEPTIEMBRE\n\n⚠️ *VACANTES LIMITADAS*\n\n*PRECIO* → Ver precios y formas de pago\n*MATRICULA* → Inscribirte ahora\n*ONLINE* → Ver modalidad online",
+      "stage": "CONSULTO_PRESENCIAL"
+    },
+    "schedule_info": {
+      "text": "*📅 HORARIOS DISPONIBLES*\n\n*MODALIDAD ONLINE:*\n• Acceso inmediato a clases grabadas\n• Disponible 24/7\n• Acompañamiento vía WhatsApp\n\n*MODALIDAD PRESENCIAL:*\n📍 Lugar: Barranco-Perú\n📅 Sábados de 10:00 am a 1:00 pm\n🗓️ INICIO: SÁBADO 20 DE SEPTIEMBRE\n\n*¿Qué modalidad prefieres?*\n*ONLINE* → Ver detalles modalidad online\n*PRESENCIAL* → Ver detalles modalidad presencial\n*MATRICULA* → Inscribirte ahora",
+      "stage": "CONSULTO_HORARIOS"
+    },
+    "pricing_integral": {
+      "text": "*💎 PRECIOS CURSO INTEGRAL*\n\n*💰 PRECIO NORMAL:*\n• Nivel Básico: 220 USD\n• Curso Completo (3 niveles): 660 USD\n\n*🎉 PRECIO ESPECIAL CON DESCUENTO:*\n• Nivel Básico 10% dcto: *198 USD*\n• Curso Completo 20% dcto: *528 USD*\n\n*📱 PAGO CON TARJETA:*\nNivel Básico: https://goe.run/6876946f06f08\nCurso Completo: https://goe.run/687694cd6f4ea\n\n*🏦 PAGO POR TRANSFERENCIA:*\nBanco de Crédito del Perú\nCta Ahorro soles: 192-16056570056\n\n*📱 YAPE o PLIN:* 989 982 183\nA nombre de: Magally Ana Rocio Juro Huerta\n\n¿Listo para matricularte?\n*MATRICULA* → Confirmar inscripción\n*HORARIOS* → Ver horarios disponibles",
+      "stage": "CONSULTO_PRECIO"
+    },
+    "advanced_flow": {
+      "text": "¡Eso es genial, *{{name}}*! 🙌\n\nEn tu caso lo mejor son los *Cursos Avanzados*, tenemos más de *8 opciones* diseñadas para:\n\n💎 Cada clase ha sido diseñada por la maestra Magally Juro y te permitirá perfeccionar tu técnica\n💎 Innovar con nuevos diseños\n💎 Te actualizarás en lo último de la Joyería Tejida o Tecnología de Manufactura en Punto Peruano\n💎 Y contarás con el acompañamiento de la maestra Magally Juro para consultas vía WhatsApp\n\n📹 *VER RESUMEN DE CURSOS AVANZADOS:*\nhttps://www.youtube.com/watch?v=dOeCIBkbfqI\n\n*¿Cómo son las clases?*\n• Son de Acceso automático\n• Las clases ya están grabadas\n• Puedes ver las veces que desees\n\n¿Qué curso te interesa?\n\n*CORAZON* → Curso Joyas Modelo Corazón\n*ANILLOS* → Festival de Anillos\n*VIBRACIONES* → Joyas Tejidas Vibraciones\n*MAMA* → Joyas para Mamá\n*HELICOIDALES* → Joyas Helicoidales\n*FLORES* → Flores para Mamá\n*TIARAS* → Tiaras y Tocados\n*CATALOGO* → Ver todos los cursos",
+      "stage": "INTERESADO_AVANZADO"
+    },
+    "course_corazon": {
+      "text": "*💝 CURSO JOYAS MODELO CORAZÓN*\n\nAprende a crear hermosas joyas con la forma más universal del amor.\n\n*PROGRAMA COMPLETO:*\n• Clase 1: Corazón Básico Tradicional\n• Clase 2: Corazón Bombé Volumétrico  \n• Clase 3: Corazón Helicoidal Avanzado\n• Clase 4: Corazón con Textura Especial\n• Clase 5: Corazón Doble Entrelazado\n• Clase 6: Corazón Miniatura para Aretes\n• Clase 7: Corazón XXL Statement\n• Clase 8: Corazón con Incrustaciones\n\n*INCLUYE:*\n✅ 8 clases paso a paso\n✅ Videos HD de alta calidad\n✅ Materiales sugeridos\n✅ Patrones y moldes\n✅ Soporte técnico 24/7\n\n*PRECIO NORMAL:* 98 USD\n*🔥 PRECIO ESPECIAL:* 84 USD\n\n*Inscripción directa:*\nhttps://goe.run/curso-corazon-2024\n\n*INSCRIBIR* → Confirmar inscripción\n*VOLVER* → Ver otros cursos\n*CATALOGO* → Ver todos los cursos",
+      "stage": "CURSO_CORAZON"
+    },
+    "course_anillos": {
+      "text": "*💍 FESTIVAL DE ANILLOS*\n\nEl curso más completo de anillos tejidos. ¡Domina todas las técnicas!\n\n*PROGRAMA FESTIVAL:*\n• Clase 1: Anillo Clásico Base\n• Clase 2: Anillo con Piedra Central\n• Clase 3: Anillo Helicoidal Elegante\n• Clase 4: Anillo Bombé Voluminoso\n• Clase 5: Anillo Trenzado Artesanal\n• Clase 6: Anillo Minimalista Moderno\n• Clase 7: Anillo Vintage Retro\n• Clase 8: Anillo Compromiso Especial\n• Clase 9: Set de 3 Anillos Apilables\n• Clase 10: Anillo Ajustable Universal\n\n*INCLUYE:*\n✅ 10 clases magistrales\n✅ Técnicas para todas las tallas\n✅ Tips de acabados profesionales\n✅ Herramientas recomendadas\n✅ Certificado de especialización\n\n*PRECIO NORMAL:* 128 USD\n*🔥 PRECIO ESPECIAL:* 98 USD\n\n*Inscripción directa:*\nhttps://goe.run/festival-anillos-2024\n\n*INSCRIBIR* → Confirmar inscripción\n*VOLVER* → Ver otros cursos\n*CATALOGO* → Ver todos los cursos",
+      "stage": "CURSO_ANILLOS"
+    },
+    "course_vibraciones": {
+      "text": "*✨ CURSO JOYAS TEJIDAS VIBRACIONES*\n\nTaller de 8 joyas avanzadas que te sorprenderán y movilizarán tu creatividad.\n\n*PROGRAMA VIBRACIONAL:*\n• Clase 1: Joya Malla Relámpago\n• Clase 2: Joya Malla Pentágono Helicoidal\n• Clase 3: Joya Patronaje Cuadrado\n• Clase 4: Joya con Patronaje en Círculo\n• Clase 5: Joya de Malla Multicalibrada\n• Clase 6: Joya Malla Volumétrica\n• Clase 7: Flor Helicoidal Especial\n• Clase 8: Arete Destello Brillante\n\n*TÉCNICAS EXCLUSIVAS:*\n✅ Patronaje geométrico avanzado\n✅ Mallas complejas profesionales\n✅ Efectos visuales únicos\n✅ Combinación de texturas\n✅ Acabados de alta gama\n\n*PRECIO NORMAL:* 112 USD\n*🔥 PRECIO ESPECIAL:* 82 USD\n\nJoyas entregadas por alumnas.\nhttps://web.facebook.com/media/set/?set=a.1018857693582536&type=3&locale=es_LA\n\n\n*Inscripción directa:*\nhttps://goe.run/680daccd010e2\n\n*INSCRIBIR* → Confirmar inscripción\n*VOLVER* → Ver otros cursos\n*CATALOGO* → Ver todos los cursos",
+      "stage": "CURSO_VIBRACIONES"
+    },
+    "course_mama": {
+      "text": "*💐 CURSO JOYAS PARA MAMÁ*\n\nAprenderás a elaborar 10 joyas hermosas más una de regalo especial.\n\n*PROGRAMA MATERNAL:*\n• Clase 1: Joya Medusa Elegante\n• Clase 2: Joya Tulipán Primaveral\n• Clase 3: Joya Tulipán con Recurso Chasis\n• Clase 4: Joya Hespitan Helicoidal\n• Clase 5: Joya Ameba Orgánica\n• Clase 6: Joya Marinera Náutica\n• Clase 7: Joya Corazón Bombé Helicoidal\n• Clase 8: Orquídea Guaria de Costa Rica\n• Clase 9: Joya Colección Madre/Hija\n• Clase 10: Joya Arete Bombé Sofisticado\n• Clase 11: REGALO - Joya Mágica Sorpresa\n\n*IDEAL PARA:*\n✅ Regalo perfecto para mamá\n✅ Día de las madres\n✅ Proyectos madre-hija\n✅ Recuerdos familiares\n✅ Emprendimiento maternal\n\n*PRECIO NORMAL:* 120 USD\n*🔥 PRECIO ESPECIAL:* 84 USD\n\nJoyas entregadas por alumnas.\nhttps://www.facebook.com/media/set/?set=a.1027447639390208&type=3&locale=es_LA&_rdc=1&_rdr#\n\n\n*Inscripción directa:*\nhttps://goe.run/641a560abf92a\n\n*INSCRIBIR* → Confirmar inscripción\n*VOLVER* → Ver otros cursos\n*CATALOGO* → Ver todos los cursos",
+      "stage": "CURSO_MAMA"
+    },
+    "course_helicoidales": {
+      "text": "*🌀 CURSO JOYAS HELICOIDALES*\n\nDomina la técnica más elegante y sofisticada de la joyería tejida.\n\n*PROGRAMA HELICOIDAL:*\n• Clase 1: Fundamentos de la Técnica Helicoidal\n• Clase 2: Helicoidal Simple Básico\n• Clase 3: Helicoidal Doble Entrelazado\n• Clase 4: Helicoidal Triple Complejo\n• Clase 5: Helicoidal con Variaciones de Color\n• Clase 6: Helicoidal Bombé Voluminoso\n• Clase 7: Aretes Helicoidales Pareados\n• Clase 8: Collar Helicoidal Largo\n• Clase 9: Pulsera Helicoidal Ajustable\n\n*TÉCNICAS AVANZADAS:*\n✅ Matemática de la espiral perfecta\n✅ Control de tensión especializado  \n✅ Transiciones suaves de color\n✅ Acabados profesionales\n✅ Variaciones de grosor\n\n*PRECIO NORMAL:* 108 USD\n*🔥 PRECIO ESPECIAL:* 83 USD\n\nJoyas entregadas por alumnas.\nhttps://www.facebook.com/media/set/?set=a.1032230308911941&type=3&locale=es_LA&_rdc=1&_rdr#\n\n*Inscripción directa:*\nhttps://goe.run/curso-helicoidales-2024\n\n*INSCRIBIR* → Confirmar inscripción\n*VOLVER* → Ver otros cursos\n*CATALOGO* → Ver todos los cursos",
+      "stage": "CURSO_HELICOIDALES"
+    },
+    "course_flores": {
+      "text": "*🌸 CURSO FLORES PARA MAMÁ*\n\nCrea las flores más hermosas y realistas en joyería tejida.\n\n*PROGRAMA FLORAL:*\n• Clase 1: Rosa Clásica Tradicional\n• Clase 2: Tulipán Holandés Elegante\n• Clase 3: Orquídea Tropical Exótica\n• Clase 4: Girasol Radiante Alegre\n• Clase 5: Margarita Campestre Dulce\n• Clase 6: Lirio Imperial Majestuoso\n• Clase 7: Gardenia Perfumada Refinada\n• Clase 8: Violeta Africana Delicada\n• Clase 9: Bouquet Combinado Especial\n• Clase 10: Corona Floral Primaveral\n\n*TÉCNICAS BOTÁNICAS:*\n✅ Pétalos realistas en 3D\n✅ Gradientes naturales de color\n✅ Texturas orgánicas auténticas\n✅ Ensamble de bouquets\n✅ Follaje y complementos\n\n*PRECIO NORMAL:* 125 USD\n*🔥 PRECIO ESPECIAL:* 96 USD\n\n*Inscripción directa:*\nhttps://goe.run/curso-flores-mama-2024\n\n*INSCRIBIR* → Confirmar inscripción\n*VOLVER* → Ver otros cursos\n*CATALOGO* → Ver todos los cursos",
+      "stage": "CURSO_FLORES"
+    },
+    "course_tiaras": {
+      "text": "*👑 CURSO TIARAS Y TOCADOS*\n\nEl curso más exclusivo para crear tocados dignos de realeza.\n\n*PROGRAMA REAL:*\n• Clase 1: Tiara Clásica Princesa\n• Clase 2: Corona Reina Majestuosa  \n• Clase 3: Tocado Vintage Gatsby\n• Clase 4: Diadema Griega Antigua\n• Clase 5: Tocado Boho Silvestre\n• Clase 6: Tiara Nupcial Elegante\n• Clase 7: Corona Floral Primaveral\n• Clase 8: Tocado Oriental Zen\n• Clase 9: Tiara Gótica Dramática\n• Clase 10: Corona de Quinceañera\n• Clase 11: Tocado Carnaval Festivo\n• Clase 12: Tiara Minimalista Moderna\n\n*NIVEL PREMIUM:*\n✅ Diseños de alta costura\n✅ Técnicas de joyería fina\n✅ Incrustación de cristales\n✅ Estructuras arquitectónicas\n✅ Acabados de lujo profesional\n\n*PRECIO NORMAL:* 180 USD\n*🔥 PRECIO ESPECIAL:* 139 USD\n\nJoyas entregadas por nuestras alumnas:\nhttps://www.facebook.com/media/set/?set=a.346272843740436&type=3&locale=es_LA&_rdc=1&_rdr#\n\n*Inscripción directa:*\nhttps://goe.run/curso-tiaras-tocados-2024\n\n*INSCRIBIR* → Confirmar inscripción\n*VOLVER* → Ver otros cursos\n*CATALOGO* → Ver todos los cursos",
+      "stage": "CURSO_TIARAS"
+    },
+    "catalog": {
+      "text": "*📚 CATÁLOGO COMPLETO DE CURSOS AVANZADOS*\n\nElige el curso que más despierte tu creatividad:\n\n*💝 CORAZON* → Joyas Modelo Corazón ($84)\n💍 *ANILLOS* → Festival de Anillos ($98)\n✨ *VIBRACIONES* → Joyas Tejidas Vibraciones ($82)\n💐 *MAMA* → Joyas para Mamá ($84)\n🌀 *HELICOIDALES* → Joyas Helicoidales ($83)\n🌸 *FLORES* → Flores para Mamá ($96)\n👑 *TIARAS* → Tiaras y Tocados ($139)\n\n*INFORMACIÓN ADICIONAL:*\n*PRECIOS* → Ver todos los precios\n*HORARIOS* → Consultar horarios disponibles\n*ONLINE* → Modalidad virtual\n*PRESENCIAL* → Modalidad presencial\n\nEscribe el nombre del curso que más te interese para ver el programa completo.",
+      "stage": "CONSULTO_CATALOGO"
+    },
+    "payment_process": {
+      "text": "*💳 PROCESO DE MATRÍCULA*\n\n*Paso 1:* Realiza el pago\n📱 *Yape:* 989 982 183\n🏦 *BCP:* 192-16056570056\nNombre: Magally Ana Rocio Juro Huerta\n\n*Paso 2:* Envía tu voucher aquí 📸\n\n*Paso 3:* Te agregamos al grupo VIP donde Magally te da la bienvenida personalmente 🎉\n\n¿Ya realizaste el pago? Envía tu voucher o escribe *PAGADO*",
+      "stage": "PROCESO_MATRICULA"
+    },
+    "waiting_voucher": {
+      "text": "¡Excelente *{{name}}*! \n\nPara confirmar tu pago, por favor *envía una foto de tu voucher* 📸\n\nSi tienes problemas para enviar la imagen, escribe *AYUDA* para contactar con una asesora.",
+      "stage": "ESPERANDO_VOUCHER"
+    },
+    "payment_confirmed": {
+      "text": "🎉 *¡FELICITACIONES {{name}}!* 🎉\n\n*Tu pago ha sido recibido exitosamente* ✅\n\nPor favor envíanos:\n• Tu nombre completo\n• País\n• Una foto tuya\n\nAl WhatsApp de la escuela: *+51 923 845 189*\n\nYa que te obsequiaremos el E-Book 1 del Taller de Joyería Tejida\n\n¡Bienvenid@ a Escuela de Joyería Tejida!\n\n¡Estamos encantadas de acompañarte en esta nueva aventura, te deseamos muchos éxitos!",
+      "stage": "PAGO_CONFIRMADO"
+    },
+    "human_help": {
+      "text": "*👩‍💼 CONTACTO CON ASESORA PERSONAL*\n\n{{name}}, te voy a conectar con una de nuestras asesoras especializadas.\n\n*Horario de atención:*\n• Lun-Vie: 9am - 7pm\n• Sábados: 10am - 2pm\n\n*Contacto directo:*\n📱 WhatsApp Escuela: *+51 923 845 189*\n📱 WhatsApp Principal: *+51 989 982 183*\n📧 Email: info@joyeriatejida.com\n\n_Tu consulta ha sido registrada. Una asesora te contactará pronto._\n\n¿Es urgente? Escribe *URGENTE*",
+      "stage": "REQUIERE_ASESORA"
+    },
+    "urgent_help": {
+      "text": "*🚨 ATENCIÓN PRIORITARIA*\n\nTu caso ha sido marcado como URGENTE.\n\n*Contacto inmediato:*\n📱 *Llama ahora:* +51 989 982 183\n📱 *WhatsApp Escuela:* +51 923 845 189\n\nUna asesora te contactará en los próximos 30 minutos.",
+      "stage": "URGENTE_REQUIERE_ASESORA"
+    },
+    "reset_conversation": {
+      "text": "🔄 *Conversación reiniciada*\n\nTu historial ha sido limpiado.\nEscribe *HOLA* para empezar de nuevo.",
+      "stage": "NUEVO"
+    },
+    "conversation_closed": {
+      "text": "¡Ha sido un placer ayudarte! 😊\n\nRecuerda que estamos aquí cuando lo necesites.\nSolo escribe *HOLA* para volver a empezar.\n\n¡Que tengas un excelente día! ✨",
+      "stage": "CONVERSACION_CERRADA"
+    },
+    "fallback": {
+      "text": "No entendí tu mensaje 😊\n\n*{{name}}, opciones disponibles:*\n*1* → Curso desde cero\n*2* → Cursos avanzados\n*ONLINE* → Modalidad Online\n*PRESENCIAL* → Modalidad Presencial  \n*PRECIO* → Ver precios\n*HORARIOS* → Ver calendario\n*MATRICULA* → Inscribirte\n*AYUDA* → Hablar con asesora\n\n¿En qué te puedo ayudar?",
+      "stage": "MENU_PRINCIPAL"
+    },
+    "error": {
+      "text": "Disculpa, hubo un error. Por favor intenta de nuevo o escribe *AYUDA* para hablar con una asesora."
+    }
+  },
+  "quick_responses": {
+    "gracias": "¡De nada! 💕 Estoy aquí para ayudarte con tu camino en la joyería tejida",
+    "ok": "¡Perfecto! ¿Hay algo más que quieras saber?",
+    "bien": "¡Excelente! ¿En qué más puedo ayudarte?",
+    "perfecto": "¡Genial! Si necesitas algo más, aquí estoy",
+    "si": "¡Genial! ¿En qué más puedo ayudarte?",
+    "no": "Entiendo. Si necesitas algo más, aquí estaré 😊",
+    "adios": "¡Hasta pronto! Que tengas un día maravilloso ✨",
+    "bye": "¡Nos vemos! Esperamos verte pronto en la escuela 💕",
+    "chau": "¡Hasta luego! Recuerda que estamos aquí cuando nos necesites 😊",
+    "vale": "¡Perfecto! ¿Hay algo más en lo que pueda ayudarte?",
+    "listo": "¡Excelente! Si tienes más preguntas, no dudes en escribir",
+    "entendido": "¡Perfecto! Estoy aquí si necesitas más información",
+    "claro": "¡Genial! ¿Hay algo más que quieras saber sobre los cursos?"
+  }
+}
