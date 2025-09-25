@@ -60,14 +60,15 @@ func main() {
 }
 
 func run() error {
-	logFactory, err := logger.NewFactory(logger.Config{
+	logFactory, logFile, err := logger.NewFactory(logger.Config{
 		Level: logger.ParseLevel(os.Getenv("BOT_LOG_LEVEL")),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create logger factory: %w", err)
 	}
+	defer logFile.Close()
 
-	appLogger := logFactory.GetLogger("WhatsbotApp")
+	appLogger := logFactory.GetLogger("app")
 	appLogger.Info("Starting WhatsApp bot", nil)
 
 	cfg, err := config.Load()
@@ -198,7 +199,7 @@ func initWhatsAppClient(sqlDB *sql.DB, logFactory *logger.Factory) (*whatsmeow.C
 	container := sqlstore.NewWithDB(
 		sqlDB,
 		"sqlite3",
-		logger.NewWhatsmeowLogger(logFactory.GetLogger("SQLStore"), "sqlstore"),
+		logger.NewWhatsmeowLogger(logFactory.GetLogger("sqlstore"), "sqlstore"),
 	)
 
 	err := container.Upgrade(context.Background())
@@ -211,25 +212,25 @@ func initWhatsAppClient(sqlDB *sql.DB, logFactory *logger.Factory) (*whatsmeow.C
 		return nil, fmt.Errorf("failed to get device from store: %w", err)
 	}
 
-	whatsmeowLogger := logger.NewWhatsmeowLogger(logFactory.GetLogger("WhatsmeowClient"), "whatsmeow")
+	whatsmeowLogger := logger.NewWhatsmeowLogger(logFactory.GetLogger("whatsmeow"), "whatsmeow")
 	client := whatsmeow.NewClient(device, whatsmeowLogger)
 
 	return client, nil
 }
 
 func initApp(sqlDB *sql.DB, flow *fsm.Flow, client *whatsmeow.Client, logFactory *logger.Factory) (*App, error) {
-	userManager, err := state.NewSQLiteManager(sqlDB, logFactory.GetLogger("StateManager"))
+	userManager, err := state.NewSQLiteManager(sqlDB, logFactory.GetLogger("state"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize state manager: %w", err)
 	}
 
-	actionHandler := actions.NewHandler(userManager, logFactory.GetLogger("ActionHandler"))
+	actionHandler := actions.NewHandler(userManager, logFactory.GetLogger("actions"))
 	renderer := templates.NewTextRenderer()
 	messageSender := message.NewSender(client)
-	botEngine := fsm.NewEngine(flow, userManager, actionHandler, renderer, logFactory.GetLogger("FSMEngine"))
+	botEngine := fsm.NewEngine(flow, userManager, actionHandler, renderer, logFactory.GetLogger("fsm"))
 
 	return &App{
-		logger:        logFactory.GetLogger("WhatsbotApp"),
+		logger:        logFactory.GetLogger("app"),
 		botEngine:     botEngine,
 		messageSender: messageSender,
 		client:        client,

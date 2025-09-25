@@ -3,7 +3,6 @@ package logger
 import (
 	"encoding/json"
 	"log"
-	"os"
 	"strings"
 	"time"
 )
@@ -65,16 +64,18 @@ type Entry struct {
 }
 
 type Logger struct {
-	name   string
-	level  Level
-	output *log.Logger
+	name          string
+	level         Level
+	fileOutput    *log.Logger
+	consoleOutput *log.Logger
 }
 
-func NewLogger(name string, level Level) *Logger {
+func NewLogger(name string, level Level, fileOutput, consoleOutput *log.Logger) *Logger {
 	return &Logger{
-		name:   name,
-		level:  level,
-		output: log.New(os.Stdout, "", 0),
+		name:          name,
+		level:         level,
+		fileOutput:    fileOutput,
+		consoleOutput: consoleOutput,
 	}
 }
 
@@ -113,10 +114,16 @@ func (l *Logger) log(level Level, msg string, data map[string]interface{}) {
 
 	jsonData, err := json.Marshal(entry)
 	if err != nil {
-		l.output.Printf("Logger marshal error: %v", err)
+		log.Printf("Logger marshal error: %v", err)
 
 		return
 	}
 
-	l.output.Println(string(jsonData))
+	if l.fileOutput != nil {
+		l.fileOutput.Println(string(jsonData))
+	}
+
+	if l.consoleOutput != nil {
+		l.consoleOutput.Println(string(jsonData))
+	}
 }
