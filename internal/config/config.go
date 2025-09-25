@@ -24,7 +24,8 @@ type Config struct {
 
 func Load() (*Config, error) {
 	// .env is optional; only serves to override defaults
-	if err := godotenv.Load(); err != nil {
+	err := godotenv.Load()
+	if err != nil {
 		if !os.IsNotExist(err) {
 			fmt.Printf("Warning: Failed to load .env file: %v\n", err)
 		}
@@ -36,7 +37,8 @@ func Load() (*Config, error) {
 		SQLiteDBPath: utils.GetEnv("BOT_SQLITE_DB_PATH", "store.db"),
 	}
 
-	if err := cfg.validate(); err != nil {
+	err = cfg.validate()
+	if err != nil {
 		return nil, fmt.Errorf("config validation failed: %w", err)
 	}
 
@@ -47,6 +49,7 @@ func (c *Config) validate() error {
 	if c.FlowFilePath == "" {
 		return ErrMissingFlowFile
 	}
+
 	if c.SQLiteDBPath == "" {
 		return ErrMissingDBPath
 	}

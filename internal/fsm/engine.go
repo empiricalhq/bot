@@ -79,7 +79,8 @@ func (e *Engine) ProcessMessage(ctx context.Context, msg *message.Message) (stri
 	userState.LastUpdated = time.Now()
 
 	if actionToExecute != "" {
-		if err := e.actionHandler.Execute(ctx, actionToExecute, userID, msg); err != nil {
+		err := e.actionHandler.Execute(ctx, actionToExecute, userID, msg)
+		if err != nil {
 			e.logger.Error("Action execution failed", map[string]interface{}{
 				"action": actionToExecute,
 				"error":  err.Error(),
@@ -123,7 +124,8 @@ func (e *Engine) getOrCreateUserState(ctx context.Context, userID string) (*stat
 		userState.CurrentNode = e.flow.StartNode
 		userState.LastUpdated = time.Now()
 
-		if err := e.stateManager.SaveUserState(ctx, userState); err != nil {
+		err := e.stateManager.SaveUserState(ctx, userState)
+		if err != nil {
 			e.logger.Error("Failed to save new user state", map[string]interface{}{"error": err.Error()})
 
 			return nil, fmt.Errorf("could not save new user state: %w", err)
@@ -214,7 +216,7 @@ func (e *Engine) matchCondition(inputText string, condition Condition) bool {
 
 func (e *Engine) matchExact(input string, values []string) bool {
 	for _, val := range values {
-		if input == strings.ToLower(val) {
+		if strings.EqualFold(input, val) {
 			return true
 		}
 	}
@@ -240,6 +242,7 @@ func (e *Engine) matchRegex(input, pattern string) bool {
 	regex, exists := e.regexCache[pattern]
 	if !exists {
 		var err error
+
 		regex, err = regexp.Compile(pattern)
 		if err != nil {
 			e.logger.Error("Invalid regex pattern", map[string]interface{}{
@@ -249,6 +252,7 @@ func (e *Engine) matchRegex(input, pattern string) bool {
 
 			return false
 		}
+
 		e.regexCache[pattern] = regex
 	}
 

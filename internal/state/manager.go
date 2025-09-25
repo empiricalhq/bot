@@ -10,7 +10,7 @@ import (
 	"whatsbot/internal/logger"
 )
 
-// defines: interface for managing user state and conversation history.
+// Manager defines an interface for managing user state and conversation history.
 type Manager interface {
 	GetUserState(ctx context.Context, userID string) (*UserState, error)
 	SaveUserState(ctx context.Context, state *UserState) error
@@ -28,7 +28,8 @@ func NewSQLiteManager(db *sql.DB, log *logger.Logger) (*SQLiteManager, error) {
 		logger: log,
 	}
 
-	if err := m.initSchema(context.Background()); err != nil {
+	err := m.initSchema(context.Background())
+	if err != nil {
 		return nil, fmt.Errorf("failed to initialize database schema: %w", err)
 	}
 
@@ -40,6 +41,7 @@ func (m *SQLiteManager) GetUserState(ctx context.Context, userID string) (*UserS
 			  FROM user_state WHERE user_id = ?`
 
 	var s UserState
+
 	s.UserID = userID
 
 	err := m.db.QueryRowContext(ctx, query, userID).Scan(

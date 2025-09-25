@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -42,7 +43,8 @@ type App struct {
 }
 
 func main() {
-	if err := run(); err != nil {
+	err := run()
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "FATAL: %v\n", err)
 		os.Exit(1)
 	}
@@ -90,8 +92,10 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
+
 	defer func() {
-		if closeErr := db.Close(); closeErr != nil {
+		closeErr := db.Close()
+		if closeErr != nil {
 			appLogger.Error("Database close error", map[string]interface{}{"error": closeErr.Error()})
 		}
 	}()
@@ -129,7 +133,7 @@ func loadConversationFlow(path string) (*fsm.Flow, error) {
 
 func validateFlow(flow *fsm.Flow) error {
 	if flow.StartNode == "" {
-		return fmt.Errorf("start_node cannot be empty")
+		return errors.New("start_node cannot be empty")
 	}
 
 	if _, exists := flow.Nodes[flow.StartNode]; !exists {
@@ -150,6 +154,7 @@ func validateFlow(flow *fsm.Flow) error {
 
 func initDatabase(ctx context.Context, dbPath string, logger *logger.Logger) (*sql.DB, error) {
 	dsn := dbPath + "?_pragma=journal_mode=WAL&_pragma=busy_timeout=30000&_pragma=foreign_keys=ON"
+
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open SQLite database: %w", err)
@@ -216,7 +221,8 @@ func (a *App) start(_ context.Context) error {
 	// register event handler before connecting
 	a.client.AddEventHandler(a.eventHandler)
 
-	if err := a.client.Connect(); err != nil {
+	err := a.client.Connect()
+	if err != nil {
 		return fmt.Errorf("failed to connect WhatsApp client: %w", err)
 	}
 
@@ -242,8 +248,10 @@ func (a *App) shutdown() error {
 	defer cancel()
 
 	done := make(chan struct{})
+
 	go func() {
 		defer close(done)
+
 		a.client.Disconnect()
 	}()
 
@@ -265,6 +273,7 @@ func (a *App) eventHandler(evt interface{}) {
 		if event.Info.IsGroup {
 			return
 		}
+
 		a.handleMessage(event)
 
 	case *events.QR:
@@ -302,8 +311,9 @@ func (a *App) handleMessage(evt *events.Message) {
 			"sender": senderID,
 		})
 
-		if sendErr := a.messageSender.SendText(ctx, msg.Recipient,
-			"Disculpa, hubo un error procesando tu mensaje. Por favor intenta de nuevo en unos momentos."); sendErr != nil {
+		sendErr := a.messageSender.SendText(ctx, msg.Recipient,
+			"Disculpa, hubo un error procesando tu mensaje. Por favor intenta de nuevo en unos moments.")
+		if sendErr != nil {
 			a.logger.Error("Failed to send error message", map[string]interface{}{"error": sendErr.Error()})
 		}
 
@@ -320,10 +330,12 @@ func (a *App) handleMessage(evt *events.Message) {
 
 func (a *App) handleQRCode(event *events.QR) {
 	a.logger.Info("QR code received - scan with WhatsApp", nil)
+
 	go func() {
 		for code := range event.Codes {
 			a.logger.Info("QR code updated", map[string]interface{}{"qr_code": code})
 		}
+
 		a.logger.Info("QR channel closed", nil)
 	}()
 }

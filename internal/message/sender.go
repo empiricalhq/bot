@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -23,7 +24,7 @@ func NewSender(client *whatsmeow.Client) *Sender {
 
 func (s *Sender) SendText(ctx context.Context, recipient types.JID, text string) error {
 	if text == "" {
-		return fmt.Errorf("cannot send empty message")
+		return errors.New("cannot send empty message")
 	}
 
 	sendCtx, cancel := context.WithTimeout(ctx, sendTimeout)

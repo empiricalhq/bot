@@ -65,7 +65,7 @@ func (h *DefaultHandler) Execute(ctx context.Context, actionName, userID string,
 func (h *DefaultHandler) saveUserName(ctx context.Context, userID, name string) error {
 	name = strings.TrimSpace(name)
 	if name == "" {
-		return fmt.Errorf("user name cannot be empty")
+		return errors.New("user name cannot be empty")
 	}
 
 	userState, err := h.stateManager.GetUserState(ctx, userID)
