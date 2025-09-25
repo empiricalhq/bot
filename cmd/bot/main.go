@@ -158,7 +158,7 @@ func validateFlow(flow *fsm.Flow) error {
 }
 
 func initDatabase(ctx context.Context, dbPath string, logger *logger.Logger) (*sql.DB, error) {
-	dsn := dbPath + "?_pragma=journal_mode=WAL&_pragma=busy_timeout=30000"
+	dsn := dbPath + "?_pragma=journal_mode=WAL&_pragma=busy_timeout=30000&_pragma=foreign_keys=ON"
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open SQLite database: %w", err)
@@ -184,7 +184,7 @@ func initDatabase(ctx context.Context, dbPath string, logger *logger.Logger) (*s
 func initWhatsAppClient(db *sql.DB, logFactory *logger.Factory) (*whatsmeow.Client, error) {
 	container := sqlstore.NewWithDB(
 		db,
-		"sqlite3", 
+		"sqlite3",
 		logger.NewWhatsmeowLogger(logFactory.GetLogger("SQLStore"), "sqlstore"),
 	)
 
