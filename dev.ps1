@@ -11,7 +11,8 @@ function LogCmd {
 }
 
 # tabla 1: user state
-Write-Output "Creating DynamoDB table (UserState)..."
+Write-Output "Setting up DynamoDB tables..."
+Write-Output "Table: UserState"
 LogCmd "aws" @(
     "dynamodb", "create-table",
     "--table-name", "UserState",
@@ -22,7 +23,7 @@ LogCmd "aws" @(
 )
 
 # tabla 2: historial de conversaciones
-Write-Output "Creating DynamoDB table (ConversationHistory)..."
+Write-Output "Table: ConversationHistory"
 LogCmd "aws" @(
     "dynamodb", "create-table",
     "--table-name", "ConversationHistory",
@@ -33,7 +34,7 @@ LogCmd "aws" @(
 )
 
 # tabla 3: sesiones
-Write-Output "Creating DynamoDB table (Session)..."
+Write-Output "Table: Session"
 LogCmd "aws" @(
     "dynamodb", "create-table",
     "--table-name", "Session",
