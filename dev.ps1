@@ -10,22 +10,26 @@ $sessionTableName = "Session"
 $s3FlowKey = "conversation.json"
 
 # Helpers
-
 function Log {
-    param([string]$message, [string]$color = "Gray")
-    Write-Output $message -ForegroundColor $color
+    param([string]$message)
+    Write-Output $message
 }
 
 function Run {
     param([string]$command, [string[]]$arguments)
-    Log "→ $command $($arguments -join ' ')" "DarkGray"
-    Start-Process -FilePath $command -ArgumentList $arguments -NoNewWindow `
-        -RedirectStandardOutput "dev.log" -RedirectStandardError "dev.log" -Wait
+    Log "→ $command $($arguments -join ' ')"
+    & $command @arguments *> "dev.log"
+
+    # Check if command was successful
+    if ($LASTEXITCODE -ne 0) {
+        Log "Command failed with exit code: $LASTEXITCODE"
+        Get-Content "dev.log" | Write-Output
+        exit $LASTEXITCODE
+    }
 }
 
 # DynamoDB
-
-Log "Creating DynamoDB tables..." "White"
+Log "Creating DynamoDB tables..."
 
 Run "aws" @(
     "dynamodb", "create-table",
@@ -54,36 +58,47 @@ Run "aws" @(
     "--region", $region
 )
 
-Log "DynamoDB tables created" "Green"
+Log "DynamoDB tables created"
 
 # S3
+Log "Creating S3 bucket: $s3BucketName"
 
-Log "Creating S3 bucket: $s3BucketName" "White"
+# For regions except us-east-1, we need to specify the location constraint
 Run "aws" @(
     "s3api", "create-bucket",
     "--bucket", $s3BucketName,
-    "--region", $region
+    "--region", $region,
+    "--create-bucket-configuration", "LocationConstraint=$region"
 )
 
-Log "S3 bucket created" "Green"
+Log "S3 bucket created"
 
-Log "Uploading $s3FlowKey to bucket..." "White"
+# Wait a moment for bucket creation to propagate
+Log "Waiting for bucket to be ready..."
+Start-Sleep -Seconds 5
+
+# Verify bucket exists before uploading
+Log "Verifying bucket exists..."
+Run "aws" @(
+    "s3api", "head-bucket",
+    "--bucket", $s3BucketName
+)
+
+Log "Uploading $s3FlowKey to bucket..."
 Run "aws" @(
     "s3", "cp", ".\$s3FlowKey", "s3://$s3BucketName/$s3FlowKey"
 )
 
-Log "Upload complete" "Green"
+Log "Upload complete"
 
 # Quick summary
-
-Log "----------------------------------" "DarkGray"
-Log "Resources created:" "Yellow"
-Log "* S3 Bucket:       $s3BucketName" "Yellow"
-Log "* DynamoDB Tables: $userTableName, $historyTableName, $sessionTableName" "Yellow"
-Log "----------------------------------" "DarkGray"
+Log "----------------------------------"
+Log "Resources created:"
+Log "* S3 Bucket:       $s3BucketName"
+Log "* DynamoDB Tables: $userTableName, $historyTableName, $sessionTableName"
+Log "----------------------------------"
 
 # .env file creation
-
 $envFileContent = @"
 # Environment for Whatsbot
 BOT_LOG_LEVEL=DEBUG
@@ -97,5 +112,4 @@ BOT_SESSION_ID=primary-bot-session
 
 $envPath = ".env"
 Set-Content -Path $envPath -Value $envFileContent -Encoding UTF8
-
 Log ".env file created at $envPath" "Green"
