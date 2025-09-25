@@ -190,7 +190,6 @@ func (e *Engine) determineNextNode(inputText string, userState *state.UserState)
 }
 
 func (e *Engine) matchCondition(inputText string, condition Condition) bool {
-	// TODO: is this condition check correct?
 	if inputText == "" {
 		return condition.Type == "any_text" && inputText != ""
 	}

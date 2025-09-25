@@ -95,8 +95,10 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
+
 	defer func() {
-		if closeErr := db.Close(); closeErr != nil {
+		closeErr := db.Close()
+		if closeErr != nil {
 			appLogger.Error("Database close error", map[string]interface{}{"error": closeErr.Error()})
 		}
 	}()
@@ -306,6 +308,7 @@ func (a *App) eventHandler(evt interface{}) {
 		if event.Info.IsGroup {
 			return
 		}
+
 		a.handleMessage(event)
 
 	case *events.Connected:
