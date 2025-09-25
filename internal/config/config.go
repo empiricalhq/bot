@@ -27,7 +27,7 @@ func Load() (*Config, error) {
 	// .env is optional; only serves to override defaults
 	err := godotenv.Load()
 	if err != nil && !os.IsNotExist(err) {
-		// warn if .env file is not found
+		fmt.Fprintf(os.Stderr, "WARN: failed to load .env file: %v\n", err)
 	}
 
 	cfg := &Config{
