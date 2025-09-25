@@ -35,8 +35,6 @@ version = "2"
     [linters.settings.depguard.rules.main]
       list-mode = "lax"
       allow = [
-        "botex/pkg/logger",
-        "botex/pkg/message",
         "go.mau.fi/whatsmeow/types"
       ]
 
@@ -56,6 +54,7 @@ version = "2"
   tests = true
   modules-download-mode = "vendor"
   allow-parallel-runners = true
+  go = "1.25.1"
 
 [issues]
   max-issues-per-linter = 0
