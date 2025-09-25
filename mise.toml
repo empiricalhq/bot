@@ -1,6 +1,14 @@
 [tools]
-"aqua:golangci/golangci-lint" = "2.5.0"
 go = "1.25.1"
+"aqua:golangci/golangci-lint" = "2.5.0"
+
+[tasks.setup]
+description = "Setup the project"
+run = [
+  "go mod tidy",
+  "go mod vendor",
+  # "Install-Module -Name PSScriptAnalyzer -Force", # only use for .ps1 linting
+]
 
 [tasks.install]
 description = "Install dependencies"
@@ -13,3 +21,10 @@ run = "go build -o build/main.exe cmd/lambda/main.go"
 [tasks.lint]
 description = "Format & lint"
 run = ["golangci-lint fmt", "golangci-lint run --fix --fast-only"]
+
+# [tasks.lint-ps]
+# description = "Lint PowerShell scripts"
+# run = [
+#   "Invoke-ScriptAnalyzer -Path dev.ps1",
+#   "(Get-Content dev.ps1 -Raw | Invoke-Formatter) | Set-Content dev.ps1",
+# ]
