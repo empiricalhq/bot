@@ -49,7 +49,6 @@ func main() {
 }
 
 func run() error {
-	// Initialize logger early for better error reporting
 	logFactory, err := logger.NewFactory(logger.Config{
 		Level: logger.ParseLevel(os.Getenv("BOT_LOG_LEVEL")),
 	})
@@ -60,7 +59,6 @@ func run() error {
 	appLogger := logFactory.GetLogger("WhatsbotApp")
 	appLogger.Info("Starting WhatsApp bot", nil)
 
-	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
 		appLogger.Error("Configuration load failed", map[string]interface{}{"error": err.Error()})
@@ -70,7 +68,6 @@ func run() error {
 
 	appLogger.Info("Configuration loaded", map[string]interface{}{"flow_file": cfg.FlowFilePath})
 
-	// Load conversation flow
 	flow, err := loadConversationFlow(cfg.FlowFilePath)
 	if err != nil {
 		appLogger.Error("Flow load failed", map[string]interface{}{"error": err.Error()})
@@ -78,7 +75,6 @@ func run() error {
 		return fmt.Errorf("failed to load conversation flow: %w", err)
 	}
 
-	// Validate flow early
 	if err := validateFlow(flow); err != nil {
 		appLogger.Error("Flow validation failed", map[string]interface{}{"error": err.Error()})
 
@@ -87,7 +83,6 @@ func run() error {
 
 	appLogger.Info("Conversation flow loaded and validated", nil)
 
-	// Initialize database with timeout context
 	ctx, cancel := context.WithTimeout(context.Background(), dbPingTimeout)
 	defer cancel()
 
@@ -101,24 +96,20 @@ func run() error {
 		}
 	}()
 
-	// Initialize WhatsApp client
 	client, err := initWhatsAppClient(db, logFactory)
 	if err != nil {
 		return fmt.Errorf("failed to initialize WhatsApp client: %w", err)
 	}
 
-	// Initialize application components
 	app, err := initApp(db, flow, client, logFactory)
 	if err != nil {
 		return fmt.Errorf("failed to initialize application: %w", err)
 	}
 
-	// Start the application
 	if err := app.start(ctx); err != nil {
 		return fmt.Errorf("failed to start application: %w", err)
 	}
 
-	// Wait for shutdown signal
 	return app.waitForShutdown()
 }
 
@@ -145,7 +136,7 @@ func validateFlow(flow *fsm.Flow) error {
 		return fmt.Errorf("start_node '%s' not found in nodes", flow.StartNode)
 	}
 
-	// Validate all transition targets exist
+	// validate all transition targets exist
 	for nodeID, node := range flow.Nodes {
 		for _, transition := range node.Transitions {
 			if _, exists := flow.Nodes[transition.Target]; !exists {
@@ -164,12 +155,10 @@ func initDatabase(ctx context.Context, dbPath string, logger *logger.Logger) (*s
 		return nil, fmt.Errorf("failed to open SQLite database: %w", err)
 	}
 
-	// Configure connection pool
 	db.SetMaxOpenConns(dbMaxOpenConns)
 	db.SetMaxIdleConns(dbMaxIdleConns)
 	db.SetConnMaxLifetime(time.Hour)
 
-	// Test connection
 	if err := db.PingContext(ctx); err != nil {
 		db.Close()
 
@@ -224,15 +213,14 @@ func initApp(db *sql.DB, flow *fsm.Flow, client *whatsmeow.Client, logFactory *l
 }
 
 func (a *App) start(_ context.Context) error {
-	// Register event handler before connecting
+	// register event handler before connecting
 	a.client.AddEventHandler(a.eventHandler)
 
-	// Connect to WhatsApp
 	if err := a.client.Connect(); err != nil {
 		return fmt.Errorf("failed to connect WhatsApp client: %w", err)
 	}
 
-	a.logger.Info("WhatsApp bot started successfully", nil)
+	a.logger.Info("Bot started successfully", nil)
 
 	return nil
 }
@@ -250,7 +238,6 @@ func (a *App) waitForShutdown() error {
 func (a *App) shutdown() error {
 	a.logger.Info("Shutting down gracefully", nil)
 
-	// Create shutdown context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
@@ -315,7 +302,6 @@ func (a *App) handleMessage(evt *events.Message) {
 			"sender": senderID,
 		})
 
-		// Send user-friendly error message
 		if sendErr := a.messageSender.SendText(ctx, msg.Recipient,
 			"Disculpa, hubo un error procesando tu mensaje. Por favor intenta de nuevo en unos moments."); sendErr != nil {
 			a.logger.Error("Failed to send error message", map[string]interface{}{"error": sendErr.Error()})

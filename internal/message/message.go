@@ -16,7 +16,7 @@ type Message struct {
 }
 
 func New(evt *events.Message) *Message {
-	// Early return for group messages
+	// early return for group messages
 	if evt.Info.IsGroup {
 		return nil
 	}
@@ -27,10 +27,7 @@ func New(evt *events.Message) *Message {
 		MessageID: evt.Info.ID,
 	}
 
-	// Extract text content from various message types
 	msg.Text = extractTextContent(evt)
-
-	// Normalize whitespace
 	msg.Text = strings.TrimSpace(msg.Text)
 
 	return msg

@@ -31,7 +31,7 @@ func NewHandler(sm state.Manager, log *logger.Logger) *DefaultHandler {
 
 func (h *DefaultHandler) Execute(ctx context.Context, actionName, userID string, inputMessage *message.Message) error {
 	if actionName == "" {
-		return nil // No action to execute
+		return nil // no action to execute
 	}
 
 	h.logger.Debug("Executing action", map[string]interface{}{

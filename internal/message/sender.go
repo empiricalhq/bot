@@ -26,7 +26,6 @@ func (s *Sender) SendText(ctx context.Context, recipient types.JID, text string)
 		return fmt.Errorf("cannot send empty message")
 	}
 
-	// Create timeout context for sending
 	sendCtx, cancel := context.WithTimeout(ctx, sendTimeout)
 	defer cancel()
 

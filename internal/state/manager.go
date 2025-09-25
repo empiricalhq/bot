@@ -10,20 +10,18 @@ import (
 	"whatsbot/internal/logger"
 )
 
-// Manager defines the interface for managing user state and conversation history.
+// defines: interface for managing user state and conversation history.
 type Manager interface {
 	GetUserState(ctx context.Context, userID string) (*UserState, error)
 	SaveUserState(ctx context.Context, state *UserState) error
 	SaveMessage(ctx context.Context, msg *ConversationMessage) error
 }
 
-// SQLiteManager implements the Manager interface using an SQLite database.
 type SQLiteManager struct {
 	db     *sql.DB
 	logger *logger.Logger
 }
 
-// NewSQLiteManager creates a new manager and initializes the database schema.
 func NewSQLiteManager(db *sql.DB, log *logger.Logger) (*SQLiteManager, error) {
 	m := &SQLiteManager{
 		db:     db,
@@ -50,7 +48,7 @@ func (m *SQLiteManager) GetUserState(ctx context.Context, userID string) (*UserS
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			// New user - return empty state
+			// for a new user: return empty state
 			return &UserState{UserID: userID}, nil
 		}
 
@@ -105,7 +103,7 @@ func (m *SQLiteManager) SaveMessage(ctx context.Context, msg *ConversationMessag
 	return nil
 }
 
-// initSchema creates the necessary tables if they do not already exist.
+// creates the necessary tables if they do not already exist.
 func (m *SQLiteManager) initSchema(ctx context.Context) error {
 	queries := []string{
 		`CREATE TABLE IF NOT EXISTS user_state (

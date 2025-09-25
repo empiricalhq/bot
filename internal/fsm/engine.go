@@ -50,7 +50,7 @@ func (e *Engine) ProcessMessage(ctx context.Context, msg *message.Message) (stri
 	userID := msg.GetSenderID()
 	inputText := strings.TrimSpace(msg.GetText())
 
-	// Ignore empty messages
+	// ignore empty messages (stickers, images without caption, etc.)
 	if inputText == "" {
 		return "", nil
 	}
@@ -65,38 +65,33 @@ func (e *Engine) ProcessMessage(ctx context.Context, msg *message.Message) (stri
 		return "", fmt.Errorf("failed to get user state: %w", err)
 	}
 
-	// Save incoming message
 	if err := e.saveInboundMessage(ctx, userState, msg); err != nil {
 		e.logger.Error("Failed to save inbound message", map[string]interface{}{"error": err.Error()})
 	}
 
-	// Determine next node
 	nextNode, actionToExecute, err := e.determineNextNode(inputText, userState)
 	if err != nil {
 		return "", fmt.Errorf("failed to determine next node: %w", err)
 	}
 
-	// Update user state
+	// update user state
 	userState.CurrentNode = nextNode
 	userState.LastUpdated = time.Now()
 
-	// Execute action if specified
 	if actionToExecute != "" {
 		if err := e.actionHandler.Execute(ctx, actionToExecute, userID, msg); err != nil {
 			e.logger.Error("Action execution failed", map[string]interface{}{
 				"action": actionToExecute,
 				"error":  err.Error(),
 			})
-			// Don't fail the entire flow for action errors
+			// don't fail the entire flow for action errors
 		}
 	}
 
-	// Save updated state
 	if err := e.stateManager.SaveUserState(ctx, userState); err != nil {
 		e.logger.Error("Failed to save user state", map[string]interface{}{"error": err.Error()})
 	}
 
-	// Render response
 	node, exists := e.flow.Nodes[nextNode]
 	if !exists {
 		return "", fmt.Errorf("target node not found: %s", nextNode)
@@ -104,7 +99,6 @@ func (e *Engine) ProcessMessage(ctx context.Context, msg *message.Message) (stri
 
 	response := e.renderer.RenderText(node.Message.Content, userState.UserName)
 
-	// Save outbound message
 	if err := e.saveOutboundMessage(ctx, userState, response); err != nil {
 		e.logger.Error("Failed to save outbound message", map[string]interface{}{"error": err.Error()})
 	}
@@ -124,7 +118,7 @@ func (e *Engine) getOrCreateUserState(ctx context.Context, userID string) (*stat
 		return nil, fmt.Errorf("could not get user state: %w", err)
 	}
 
-	// New user - initialize with start node
+	// new user: start with the flow's start node
 	if userState.CurrentNode == "" {
 		userState.CurrentNode = e.flow.StartNode
 		userState.LastUpdated = time.Now()
@@ -141,7 +135,7 @@ func (e *Engine) getOrCreateUserState(ctx context.Context, userID string) (*stat
 		})
 	}
 
-	// Validate current node exists
+	// validate current node exists
 	if _, exists := e.flow.Nodes[userState.CurrentNode]; !exists {
 		e.logger.Warn("Invalid current node, resetting to start", map[string]interface{}{
 			"userID":      userID,
@@ -159,27 +153,27 @@ func (e *Engine) determineNextNode(inputText string, userState *state.UserState)
 		return "", "", fmt.Errorf("%w: %s", ErrCurrentNodeNotFound, userState.CurrentNode)
 	}
 
-	// Check global transitions first (higher priority)
+	// check global transitions first (higher priority)
 	for _, transition := range e.flow.GlobalTransitions {
 		if e.matchCondition(inputText, transition.Condition) {
 			return transition.Target, transition.Action, nil
 		}
 	}
 
-	// Check node-specific transitions
+	// check node-specific transitions
 	for _, transition := range currentNode.Transitions {
 		if e.matchCondition(inputText, transition.Condition) {
 			return transition.Target, transition.Action, nil
 		}
 	}
 
-	// Use fallback or default to FALLBACK_MENU
+	// use fallback or default to FALLBACK_MENU
 	fallbackNode := e.flow.FallbackNode
 	if fallbackNode == "" {
 		fallbackNode = "FALLBACK_MENU"
 	}
 
-	// Ensure fallback node exists
+	// ensure fallback node exists
 	if _, exists := e.flow.Nodes[fallbackNode]; !exists {
 		fallbackNode = e.flow.StartNode
 	}
@@ -243,7 +237,6 @@ func (e *Engine) matchRegex(input, pattern string) bool {
 		return false
 	}
 
-	// Use cached regex if available
 	regex, exists := e.regexCache[pattern]
 	if !exists {
 		var err error

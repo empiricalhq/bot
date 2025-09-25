@@ -23,6 +23,7 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
+	// .env is optional; only serves to override defaults
 	if err := godotenv.Load(); err != nil {
 		if !os.IsNotExist(err) {
 			fmt.Printf("Warning: Failed to load .env file: %v\n", err)

@@ -16,7 +16,7 @@ func NewTextRenderer() *TextRenderer {
 
 func (r *TextRenderer) RenderText(template, userName string) string {
 	if userName == "" {
-		userName = "Amig@"
+		userName = "amigx"
 	}
 
 	result := strings.ReplaceAll(template, "{{name}}", userName)
