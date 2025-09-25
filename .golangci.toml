@@ -54,7 +54,7 @@ version = "2"
   timeout = "5m"
   concurrency = 4
   tests = true
-  modules-download-mode = "readonly"
+  modules-download-mode = "vendor"
   allow-parallel-runners = true
 
 [issues]
