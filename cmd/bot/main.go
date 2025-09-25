@@ -2,19 +2,16 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	awsConfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
+	_ "github.com/mattn/go-sqlite3"
 	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types/events"
 
 	"whatsbot/internal/actions"
@@ -22,195 +19,137 @@ import (
 	"whatsbot/internal/fsm"
 	"whatsbot/internal/logger"
 	"whatsbot/internal/message"
-	"whatsbot/internal/session"
 	"whatsbot/internal/state"
 	"whatsbot/internal/templates"
 )
 
 type App struct {
-	config        *config.Config
 	logger        *logger.Logger
 	botEngine     *fsm.Engine
 	messageSender *message.Sender
 	client        *whatsmeow.Client
-	sessionStore  *session.DynamoDBStore
 }
 
-//nolint:gochecknoglobals // why: lambda requires a global handler
-var app *App
-
-func init() {
-	var err error
-
-	app, err = initializeApp(context.Background())
+func main() {
+	// Initialize context and logger
+	ctx := context.Background()
+	logFactory, err := logger.NewFactory(logger.Config{Level: logger.ParseLevel(os.Getenv("BOT_LOG_LEVEL"))})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "FATAL: Failed to initialize app: %v\n", err)
+		fmt.Fprintf(os.Stderr, "FATAL: Failed to create logger factory: %v\n", err)
 		os.Exit(1)
 	}
-}
-
-func initializeApp(ctx context.Context) (*App, error) {
-	cfg, err := config.Load()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load config: %w", err)
-	}
-
-	logFactory, err := logger.NewFactory(logger.Config{Level: cfg.LogLevel})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create logger factory: %w", err)
-	}
-
 	appLogger := logFactory.GetLogger("WhatsbotApp")
 
-	// configure AWS SDK
-	awsCfg, err := awsConfig.LoadDefaultConfig(ctx)
+	// Load configuration from .env file
+	cfg, err := config.Load()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load AWS SDK config: %w", err)
+		appLogger.Error("Failed to load configuration", map[string]interface{}{"error": err.Error()})
+		os.Exit(1)
 	}
+	appLogger.Info("Configuration loaded successfully", nil)
 
-	// initialize AWS services
-	s3Client := s3.NewFromConfig(awsCfg)
-	dynamoClient := dynamodb.NewFromConfig(awsCfg)
-
-	err = initializeDatabases(ctx, dynamoClient, cfg)
+	// Load conversation flow from local file
+	flow, err := loadConversationFlow(cfg.FlowFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize databases: %w", err)
+		appLogger.Error("Failed to load conversation flow", map[string]interface{}{"error": err.Error()})
+		os.Exit(1)
 	}
+	appLogger.Info("Conversation flow loaded", map[string]interface{}{"path": cfg.FlowFilePath})
 
-	flow, err := loadConversationFlow(ctx, s3Client, cfg.S3FlowBucket, cfg.S3FlowKey)
+	// Initialize SQLite database and session store
+	db, err := sql.Open("sqlite3", cfg.SQLiteDBPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load conversation flow: %w", err)
+		appLogger.Error("Failed to open SQLite database", map[string]interface{}{"error": err.Error()})
+		os.Exit(1)
 	}
-
-	client, sessionStore, err := initializeWhatsAppClient(ctx, dynamoClient, cfg, logFactory)
+	container, err := sqlstore.NewWithDB(db, "sqlite3", logFactory.GetLogger("SQLStore"))
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize WhatsApp client: %w", err)
+		appLogger.Error("Failed to create SQL session store", map[string]interface{}{"error": err.Error()})
+		os.Exit(1)
 	}
+	device, err := container.GetFirstDevice()
+	if err != nil {
+		appLogger.Error("Failed to get device from store", map[string]interface{}{"error": err.Error()})
+		os.Exit(1)
+	}
+	appLogger.Info("Database and session store initialized", map[string]interface{}{"path": cfg.SQLiteDBPath})
 
-	userManager := state.NewDynamoDBManager(dynamoClient, cfg.UserTableName, cfg.HistoryTableName, logFactory.GetLogger("StateManager"))
+	// Initialize application components
+	userManager, err := state.NewSQLiteManager(db, logFactory.GetLogger("StateManager"))
+	if err != nil {
+		appLogger.Error("Failed to initialize state manager", map[string]interface{}{"error": err.Error()})
+		os.Exit(1)
+	}
 	actionHandler := actions.NewHandler(userManager, logFactory.GetLogger("ActionHandler"))
 	renderer := templates.NewTextRenderer()
+	whatsmeowLogger := logger.NewWhatsmeowLogger(logFactory.GetLogger("WhatsmeowClient"), "whatsmeow")
+	client := whatsmeow.NewClient(device, whatsmeowLogger)
 	messageSender := message.NewSender(client)
 	botEngine := fsm.NewEngine(flow, userManager, actionHandler, renderer, logFactory.GetLogger("FSMEngine"))
 
 	app := &App{
-		config:        cfg,
 		logger:        appLogger,
 		botEngine:     botEngine,
 		messageSender: messageSender,
 		client:        client,
-		sessionStore:  sessionStore,
 	}
 
-	client.AddEventHandler(app.handleEvent)
+	// Register event handler
+	client.AddEventHandler(app.eventHandler)
 
+	// Connect to WhatsApp
 	err = client.Connect()
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect WhatsApp client: %w", err)
+		appLogger.Error("Failed to connect WhatsApp client", map[string]interface{}{"error": err.Error()})
+		os.Exit(1)
 	}
 
-	if !client.IsLoggedIn() {
-		appLogger.Warn("Client not logged in. QR code scan required.", nil)
-	}
-
-	appLogger.Info("WhatsApp bot initialized successfully", nil)
-
-	return app, nil
-}
-
-func initializeDatabases(ctx context.Context, client *dynamodb.Client, cfg *config.Config) error {
-	err := state.InitTables(ctx, client, cfg.UserTableName, cfg.HistoryTableName)
-	if err != nil {
-		return fmt.Errorf("failed to init state tables: %w", err)
-	}
-
-	err = session.InitTable(ctx, client, cfg.SessionTableName)
-	if err != nil {
-		return fmt.Errorf("failed to init session table: %w", err)
-	}
-
-	return nil
-}
-
-func loadConversationFlow(ctx context.Context, s3Client *s3.Client, bucket, key string) (*fsm.Flow, error) {
-	result, err := s3Client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get flow from S3: %w", err)
-	}
-
-	defer func() {
-		err := result.Body.Close()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: failed to close S3 object body: %v\n", err)
-		}
+	// Handle graceful shutdown
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		appLogger.Info("Shutting down...", nil)
+		client.Disconnect()
+		_ = db.Close()
+		os.Exit(0)
 	}()
 
-	data, err := io.ReadAll(result.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read flow data: %w", err)
-	}
-
-	var flow fsm.Flow
-
-	err = json.Unmarshal(data, &flow)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal flow: %w", err)
-	}
-
-	return &flow, nil
+	appLogger.Info("WhatsApp bot is running. Press CTRL+C to exit.", nil)
+	// Block forever
+	select {}
 }
 
-func initializeWhatsAppClient(ctx context.Context, dynamoClient *dynamodb.Client, cfg *config.Config, logFactory *logger.Factory) (*whatsmeow.Client, *session.DynamoDBStore, error) {
-	deviceStore := session.NewDynamoDBStore(dynamoClient, cfg.SessionTableName, cfg.SessionID, logFactory.GetLogger("SessionStore"))
-
-	device, err := deviceStore.GetDevice(ctx)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get device from store: %w", err)
-	}
-
-	whatsmeowLogger := logger.NewWhatsmeowLogger(logFactory.GetLogger("WhatsmeowClient"), "whatsmeow")
-	client := whatsmeow.NewClient(device, whatsmeowLogger)
-
-	return client, deviceStore, nil
-}
-
-func (a *App) handleEvent(evt interface{}) {
+func (a *App) eventHandler(evt interface{}) {
 	ctx := context.Background()
-
 	switch event := evt.(type) {
 	case *events.Message:
+		// Ignore group messages early
+		if event.Info.IsGroup {
+			return
+		}
 		a.handleMessage(ctx, event)
 	case *events.QR:
-		a.logger.Info("QR code received for login. Scan with WhatsApp.", nil)
-
+		a.logger.Info("QR code received. Scan with WhatsApp.", nil)
 		go func() {
 			for code := range event.Codes {
-				a.logger.Warn("QR code update", map[string]interface{}{"code": code})
+				a.logger.Warn("QR code update. Please scan.", map[string]interface{}{"code": code})
 			}
-
 			a.logger.Info("QR channel closed.", nil)
 		}()
 	case *events.Connected:
 		a.logger.Info("WhatsApp client connected", nil)
-
-		if a.client.Store != nil {
-			err := a.sessionStore.PutDevice(ctx, a.client.Store)
-			if err != nil {
-				a.logger.Error("Failed to save device after connection", map[string]interface{}{"error": err.Error()})
-			}
-		}
 	case *events.Disconnected:
-		a.logger.Warn("WhatsApp client disconnected", nil)
+		a.logger.Warn("WhatsApp client disconnected.", nil)
 	}
 }
 
 func (a *App) handleMessage(ctx context.Context, evt *events.Message) {
 	msg := message.New(evt)
+	// This check is slightly redundant because of the IsGroup check in eventHandler,
+	// but it's good practice to ensure the message object is valid.
 	if msg == nil {
-		return // Ignore group messages
+		return
 	}
 
 	a.logger.Info("Processing message", map[string]interface{}{"from": msg.GetSenderID()})
@@ -222,9 +161,9 @@ func (a *App) handleMessage(ctx context.Context, evt *events.Message) {
 			"sender": msg.GetSenderID(),
 		})
 
-		err := a.messageSender.SendText(ctx, msg.Recipient, "Disculpa, hubo un error. Por favor intenta de nuevo.")
-		if err != nil {
-			a.logger.Error("Failed to send error message to user", map[string]interface{}{"error": err.Error()})
+		errSend := a.messageSender.SendText(ctx, msg.Recipient, "Disculpa, hubo un error. Por favor intenta de nuevo.")
+		if errSend != nil {
+			a.logger.Error("Failed to send error message to user", map[string]interface{}{"error": errSend.Error()})
 		}
 
 		return
@@ -239,43 +178,17 @@ func (a *App) handleMessage(ctx context.Context, evt *events.Message) {
 	}
 }
 
-func Handler(ctx context.Context) error {
-	if !app.client.IsConnected() {
-		app.logger.Warn("Client disconnected, attempting reconnect", nil)
-
-		err := app.client.Connect()
-		if err != nil {
-			app.logger.Error("Failed to reconnect", map[string]interface{}{"error": err.Error()})
-
-			return fmt.Errorf("failed to reconnect client: %w", err)
-		}
+func loadConversationFlow(path string) (*fsm.Flow, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read flow file: %w", err)
 	}
 
-	app.logger.Debug("Lambda keep-warm ping successful", nil)
-
-	return nil
-}
-
-func main() {
-	if os.Getenv("AWS_LAMBDA_RUNTIME_API") == "" {
-		// local development mode
-		app.logger.Info("Running in LOCAL mode. Press CTRL+C to exit.", nil)
-
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-		<-c
-
-		app.logger.Info("Shutting down...", nil)
-
-		if app.client.Store != nil {
-			err := app.sessionStore.PutDevice(context.Background(), app.client.Store)
-			if err != nil {
-				app.logger.Error("Failed to save device on shutdown", map[string]interface{}{"error": err.Error()})
-			}
-		}
-
-		app.client.Disconnect()
-	} else {
-		lambda.Start(Handler)
+	var flow fsm.Flow
+	err = json.Unmarshal(data, &flow)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal flow: %w", err)
 	}
+
+	return &flow, nil
 }

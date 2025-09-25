@@ -2,85 +2,115 @@ package state
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-
 	"whatsbot/internal/logger"
 )
 
+// Manager defines the interface for managing user state and conversation history.
 type Manager interface {
 	GetUserState(ctx context.Context, userID string) (*UserState, error)
 	SaveUserState(ctx context.Context, state *UserState) error
 	SaveMessage(ctx context.Context, msg *ConversationMessage) error
 }
 
-type DynamoDBManager struct {
-	client           *dynamodb.Client
-	userTableName    string
-	historyTableName string
-	logger           *logger.Logger
+// SQLiteManager implements the Manager interface using an SQLite database.
+type SQLiteManager struct {
+	db     *sql.DB
+	logger *logger.Logger
 }
 
-func NewDynamoDBManager(
-	client *dynamodb.Client,
-	userTableName string,
-	historyTableName string,
-	log *logger.Logger,
-) *DynamoDBManager {
-	return &DynamoDBManager{
-		client:           client,
-		userTableName:    userTableName,
-		historyTableName: historyTableName,
-		logger:           log,
+// NewSQLiteManager creates a new manager and initializes the database schema.
+func NewSQLiteManager(db *sql.DB, log *logger.Logger) (*SQLiteManager, error) {
+	m := &SQLiteManager{
+		db:     db,
+		logger: log,
 	}
+	if err := m.initSchema(context.Background()); err != nil {
+		return nil, fmt.Errorf("failed to initialize database schema: %w", err)
+	}
+
+	return m, nil
 }
 
-func (m *DynamoDBManager) GetUserState(ctx context.Context, userID string) (*UserState, error) {
-	key, err := attributevalue.MarshalMap(map[string]string{"UserID": userID})
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal UserID: %w", err)
+// initSchema creates the necessary tables if they do not already exist.
+func (m *SQLiteManager) initSchema(ctx context.Context) error {
+	userStateTable := `
+	CREATE TABLE IF NOT EXISTS user_state (
+		user_id TEXT PRIMARY KEY,
+		current_node TEXT,
+		user_name TEXT,
+		course_interest TEXT,
+		consulted_price BOOLEAN,
+		requires_human_agent BOOLEAN,
+		last_updated DATETIME
+	);`
+
+	historyTable := `
+	CREATE TABLE IF NOT EXISTS conversation_history (
+		user_id TEXT,
+		timestamp DATETIME,
+		direction TEXT,
+		message_content TEXT,
+		node_id TEXT,
+		PRIMARY KEY (user_id, timestamp)
+	);`
+
+	for _, query := range []string{userStateTable, historyTable} {
+		if _, err := m.db.ExecContext(ctx, query); err != nil {
+			return err
+		}
 	}
 
-	result, err := m.client.GetItem(ctx, &dynamodb.GetItemInput{
-		TableName: aws.String(m.userTableName),
-		Key:       key,
-	})
+	return nil
+}
+
+func (m *SQLiteManager) GetUserState(ctx context.Context, userID string) (*UserState, error) {
+	query := `SELECT current_node, user_name, course_interest, consulted_price, requires_human_agent, last_updated
+			  FROM user_state WHERE user_id = ?`
+
+	row := m.db.QueryRowContext(ctx, query, userID)
+
+	var s UserState
+	s.UserID = userID
+
+	err := row.Scan(
+		&s.CurrentNode, &s.UserName, &s.CourseInterest, &s.ConsultedPrice,
+		&s.RequiresHumanAgent, &s.LastUpdated,
+	)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// This is not an error, it just means the user is new.
+			return &UserState{UserID: userID}, nil
+		}
+
 		return nil, fmt.Errorf("failed to get user state for %s: %w", userID, err)
 	}
 
-	if result.Item == nil {
-		return &UserState{UserID: userID}, nil
-	}
-
-	var userState UserState
-
-	err = attributevalue.UnmarshalMap(result.Item, &userState)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal user state for %s: %w", userID, err)
-	}
-
-	return &userState, nil
+	return &s, nil
 }
 
-func (m *DynamoDBManager) SaveUserState(ctx context.Context, userState *UserState) error {
+func (m *SQLiteManager) SaveUserState(ctx context.Context, userState *UserState) error {
 	userState.LastUpdated = time.Now()
 
-	item, err := attributevalue.MarshalMap(userState)
-	if err != nil {
-		return fmt.Errorf("failed to marshal user state for %s: %w", userState.UserID, err)
-	}
+	query := `
+	INSERT INTO user_state (user_id, current_node, user_name, course_interest, consulted_price, requires_human_agent, last_updated)
+	VALUES (?, ?, ?, ?, ?, ?, ?)
+	ON CONFLICT(user_id) DO UPDATE SET
+		current_node = excluded.current_node,
+		user_name = excluded.user_name,
+		course_interest = excluded.course_interest,
+		consulted_price = excluded.consulted_price,
+		requires_human_agent = excluded.requires_human_agent,
+		last_updated = excluded.last_updated;`
 
-	_, err = m.client.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: aws.String(m.userTableName),
-		Item:      item,
-	})
+	_, err := m.db.ExecContext(ctx, query,
+		userState.UserID, userState.CurrentNode, userState.UserName, userState.CourseInterest,
+		userState.ConsultedPrice, userState.RequiresHumanAgent, userState.LastUpdated,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to save user state for %s: %w", userState.UserID, err)
 	}
@@ -93,19 +123,14 @@ func (m *DynamoDBManager) SaveUserState(ctx context.Context, userState *UserStat
 	return nil
 }
 
-func (m *DynamoDBManager) SaveMessage(ctx context.Context, msg *ConversationMessage) error {
-	// Set TTL for 90 days
-	msg.TTL = time.Now().Add(90 * 24 * time.Hour).Unix()
+func (m *SQLiteManager) SaveMessage(ctx context.Context, msg *ConversationMessage) error {
+	query := `
+	INSERT INTO conversation_history (user_id, timestamp, direction, message_content, node_id)
+	VALUES (?, ?, ?, ?, ?)`
 
-	item, err := attributevalue.MarshalMap(msg)
-	if err != nil {
-		return fmt.Errorf("failed to marshal message for %s: %w", msg.UserID, err)
-	}
-
-	_, err = m.client.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: aws.String(m.historyTableName),
-		Item:      item,
-	})
+	_, err := m.db.ExecContext(ctx, query,
+		msg.UserID, msg.Timestamp, msg.Direction, msg.MessageContent, msg.NodeID,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to save message for %s: %w", msg.UserID, err)
 	}
@@ -115,103 +140,6 @@ func (m *DynamoDBManager) SaveMessage(ctx context.Context, msg *ConversationMess
 		"direction": msg.Direction,
 		"nodeID":    msg.NodeID,
 	})
-
-	return nil
-}
-
-func InitTables(ctx context.Context, client *dynamodb.Client, userTableName, historyTableName string) error {
-	tables := map[string]struct {
-		PK           string
-		PKType       types.ScalarAttributeType
-		SK           string
-		SKType       types.ScalarAttributeType
-		TTLEnabled   bool
-		TTLAttribute string
-	}{
-		userTableName: {
-			PK:     "UserID",
-			PKType: types.ScalarAttributeTypeS,
-		},
-		historyTableName: {
-			PK:           "UserID",
-			PKType:       types.ScalarAttributeTypeS,
-			SK:           "Timestamp",
-			SKType:       types.ScalarAttributeTypeN,
-			TTLEnabled:   true,
-			TTLAttribute: "TTL",
-		},
-	}
-
-	for tableName, tableConfig := range tables {
-		err := createTable(ctx, client, tableName, tableConfig)
-		if err != nil {
-			return fmt.Errorf("failed to create table %s: %w", tableName, err)
-		}
-	}
-
-	return nil
-}
-
-func createTable(ctx context.Context, client *dynamodb.Client, tableName string, config struct {
-	PK           string
-	PKType       types.ScalarAttributeType
-	SK           string
-	SKType       types.ScalarAttributeType
-	TTLEnabled   bool
-	TTLAttribute string
-},
-) error {
-	input := &dynamodb.CreateTableInput{
-		TableName:   aws.String(tableName),
-		BillingMode: types.BillingModePayPerRequest,
-		AttributeDefinitions: []types.AttributeDefinition{
-			{
-				AttributeName: aws.String(config.PK),
-				AttributeType: config.PKType,
-			},
-		},
-		KeySchema: []types.KeySchemaElement{
-			{
-				AttributeName: aws.String(config.PK),
-				KeyType:       types.KeyTypeHash,
-			},
-		},
-	}
-
-	if config.SK != "" {
-		input.AttributeDefinitions = append(input.AttributeDefinitions, types.AttributeDefinition{
-			AttributeName: aws.String(config.SK),
-			AttributeType: config.SKType,
-		})
-		input.KeySchema = append(input.KeySchema, types.KeySchemaElement{
-			AttributeName: aws.String(config.SK),
-			KeyType:       types.KeyTypeRange,
-		})
-	}
-
-	_, err := client.CreateTable(ctx, input)
-	if err != nil {
-		var resourceInUseException *types.ResourceInUseException
-		if errors.As(err, &resourceInUseException) {
-			return nil // Table already exists
-		}
-
-		return fmt.Errorf("aws create table failed: %w", err)
-	}
-
-	// Enable TTL if configured
-	if config.TTLEnabled {
-		_, err = client.UpdateTimeToLive(ctx, &dynamodb.UpdateTimeToLiveInput{
-			TableName: aws.String(tableName),
-			TimeToLiveSpecification: &types.TimeToLiveSpecification{
-				AttributeName: aws.String(config.TTLAttribute),
-				Enabled:       aws.Bool(true),
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("failed to enable TTL: %w", err)
-		}
-	}
 
 	return nil
 }

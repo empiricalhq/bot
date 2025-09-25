@@ -17,5 +17,5 @@ func (f *Factory) GetLogger(name string) *Logger {
 }
 
 func (f *Factory) Close() error {
-	return nil // no resources to clean up in Lambda
+	return nil // no cleanup needed for standard logger
 }

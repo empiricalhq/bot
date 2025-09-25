@@ -15,6 +15,8 @@ type Message struct {
 }
 
 func New(evt *events.Message) *Message {
+	// The IsGroup check is now handled in the main event handler,
+	// but this remains as a safeguard.
 	if evt.Info.IsGroup {
 		return nil
 	}

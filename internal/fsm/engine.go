@@ -175,54 +175,38 @@ func (e *Engine) determineNextNode(inputText string, userState *state.UserState)
 	return fallbackNode, "", nil
 }
 
-func (e *Engine) matchExact(input string, values []string) bool {
-	for _, val := range values {
-		if strings.EqualFold(input, val) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (e *Engine) matchKeyword(input string, values []string) bool {
-	for _, val := range values {
-		if strings.Contains(input, strings.ToLower(val)) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (e *Engine) matchRegex(input, regexStr string) bool {
-	if regexStr == "" {
-		return false
-	}
-
-	compiledRegex, err := regexp.Compile(regexStr)
-	if err != nil {
-		e.logger.Error("Invalid regex", map[string]interface{}{
-			"regex": regexStr,
-			"error": err.Error(),
-		})
-
-		return false
-	}
-
-	return compiledRegex.MatchString(input)
-}
-
 func (e *Engine) matchCondition(inputText string, condition Condition) bool {
 	lowerInput := strings.ToLower(strings.TrimSpace(inputText))
 
 	switch condition.Type {
 	case "exact":
-		return e.matchExact(lowerInput, condition.Value)
+		for _, val := range condition.Value {
+			if strings.EqualFold(lowerInput, val) {
+				return true
+			}
+		}
+
+		return false
 	case "keyword":
-		return e.matchKeyword(lowerInput, condition.Value)
+		for _, val := range condition.Value {
+			if strings.Contains(lowerInput, strings.ToLower(val)) {
+				return true
+			}
+		}
+
+		return false
 	case "regex":
-		return e.matchRegex(lowerInput, condition.Regex)
+		if condition.Regex == "" {
+			return false
+		}
+		compiledRegex, err := regexp.Compile(condition.Regex)
+		if err != nil {
+			e.logger.Error("Invalid regex", map[string]interface{}{"regex": condition.Regex, "error": err.Error()})
+
+			return false
+		}
+
+		return compiledRegex.MatchString(lowerInput)
 	case "any_text":
 		return lowerInput != ""
 	}
