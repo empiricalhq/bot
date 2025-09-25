@@ -9,7 +9,7 @@ $historyTableName = "ConversationHistory"
 $sessionTableName = "Session"
 $s3FlowKey = "conversation.json"
 
-### Helpers ###
+# Helpers
 
 function Log {
     param([string]$message, [string]$color = "Gray")
@@ -23,7 +23,7 @@ function Run {
         -RedirectStandardOutput "dev.log" -RedirectStandardError "dev.log" -Wait
 }
 
-### DynamoDB ###
+# DynamoDB
 
 Log "Creating DynamoDB tables..." "White"
 
@@ -56,7 +56,7 @@ Run "aws" @(
 
 Log "DynamoDB tables created" "Green"
 
-### S3 ###
+# S3
 
 Log "Creating S3 bucket: $s3BucketName" "White"
 Run "aws" @(
@@ -74,7 +74,7 @@ Run "aws" @(
 
 Log "Upload complete" "Green"
 
-### Summary ###
+# Quick summary
 
 Log "----------------------------------" "DarkGray"
 Log "Resources created:" "Yellow"
@@ -82,7 +82,7 @@ Log "* S3 Bucket:       $s3BucketName" "Yellow"
 Log "* DynamoDB Tables: $userTableName, $historyTableName, $sessionTableName" "Yellow"
 Log "----------------------------------" "DarkGray"
 
-### .env ###
+# .env file creation
 
 $envFileContent = @"
 # Environment for Whatsbot
