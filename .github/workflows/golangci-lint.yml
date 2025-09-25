@@ -8,11 +8,11 @@ on:
       - "/internal/"
       - "/pkg/"
   pull_request:
-    # branches: [master]
-    # paths:
-    #   - "/cmd/"
-    #   - "/internal/"
-    #   - "/pkg/"
+    branches: [master]
+    paths:
+      - "/cmd/"
+      - "/internal/"
+      - "/pkg/"
   workflow_dispatch:
 
 jobs:
