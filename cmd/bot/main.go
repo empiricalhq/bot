@@ -10,11 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	_ "modernc.org/sqlite"
-
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types/events"
+	_ "modernc.org/sqlite"
 
 	"whatsbot/internal/actions"
 	"whatsbot/internal/config"
