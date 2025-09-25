@@ -1,6 +1,21 @@
-# whatsbot
+# whatsbot [![golangci-lint](https://github.com/empiricalhq/bot/actions/workflows/golangci-lint.yml/badge.svg)](https://github.com/empiricalhq/bot/actions/workflows/golangci-lint.yml) [![CodeQL](https://github.com/empiricalhq/bot/actions/workflows/codeql.yml/badge.svg)](https://github.com/empiricalhq/bot/actions/workflows/codeql.yml)
 
-For future reference, we may want to check this [guide](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/getting-started.html) to set up the AWS SDK for Go v2. Additionally, we can find some ideas on how to better integrate it under lambda here:
+We use golang and golangci-lint as tools. You can install them via mise with:
 
-- https://github.com/aws/aws-sdk-go-v2/
-- https://github.com/aws-samples/serverless-go-demo
+```bash
+mise install
+```
+
+To install the dependencies, run:
+
+```bash
+mise run install
+```
+
+To start the bot, run:
+
+```bash
+mise run dev
+```
+
+You might need to use Windows Terminal or VSCode terminal to see the QR correctly.
