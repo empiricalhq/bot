@@ -14,6 +14,8 @@ import (
 
 const sendTimeout = 15 * time.Second
 
+var ErrCannotSendEmptyMessage = errors.New("cannot send empty message")
+
 type Sender struct {
 	client *whatsmeow.Client
 }
@@ -24,7 +26,7 @@ func NewSender(client *whatsmeow.Client) *Sender {
 
 func (s *Sender) SendText(ctx context.Context, recipient types.JID, text string) error {
 	if text == "" {
-		return errors.New("cannot send empty message")
+		return ErrCannotSendEmptyMessage
 	}
 
 	sendCtx, cancel := context.WithTimeout(ctx, sendTimeout)

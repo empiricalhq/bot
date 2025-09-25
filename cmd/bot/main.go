@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -35,7 +36,12 @@ const (
 	dbMaxIdleConns = 5
 )
 
-var ErrQRLoginTimeout = errors.New("QR login timed out")
+var (
+	ErrQRLoginTimeout           = errors.New("QR login timed out")
+	ErrStartNodeEmpty           = errors.New("start_node cannot be empty")
+	ErrStartNodeNotFound        = errors.New("start_node not found in nodes")
+	ErrTransitionTargetNotFound = errors.New("transition to non-existent target")
+)
 
 type App struct {
 	logger        *logger.Logger
@@ -80,7 +86,8 @@ func run() error {
 		return fmt.Errorf("failed to load conversation flow: %w", err)
 	}
 
-	if err := validateFlow(flow); err != nil {
+	err = validateFlow(flow)
+	if err != nil {
 		appLogger.Error("Flow validation failed", map[string]interface{}{"error": err.Error()})
 
 		return fmt.Errorf("invalid conversation flow: %w", err)
@@ -91,29 +98,30 @@ func run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), dbPingTimeout)
 	defer cancel()
 
-	db, err := initDatabase(ctx, cfg.SQLiteDBPath, appLogger)
+	sqlDB, err := initDatabase(ctx, cfg.SQLiteDBPath, appLogger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
 
 	defer func() {
-		closeErr := db.Close()
+		closeErr := sqlDB.Close()
 		if closeErr != nil {
 			appLogger.Error("Database close error", map[string]interface{}{"error": closeErr.Error()})
 		}
 	}()
 
-	client, err := initWhatsAppClient(db, logFactory)
+	client, err := initWhatsAppClient(sqlDB, logFactory)
 	if err != nil {
 		return fmt.Errorf("failed to initialize WhatsApp client: %w", err)
 	}
 
-	app, err := initApp(db, flow, client, logFactory)
+	app, err := initApp(sqlDB, flow, client, logFactory)
 	if err != nil {
 		return fmt.Errorf("failed to initialize application: %w", err)
 	}
 
-	if err := app.start(ctx); err != nil {
+	err = app.start(ctx)
+	if err != nil {
 		return fmt.Errorf("failed to start application: %w", err)
 	}
 
@@ -121,13 +129,17 @@ func run() error {
 }
 
 func loadConversationFlow(path string) (*fsm.Flow, error) {
-	data, err := os.ReadFile(path)
+	cleanPath := filepath.Clean(path)
+
+	data, err := os.ReadFile(cleanPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read flow file %s: %w", path, err)
 	}
 
 	var flow fsm.Flow
-	if err := json.Unmarshal(data, &flow); err != nil {
+
+	err = json.Unmarshal(data, &flow)
+	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal flow: %w", err)
 	}
 
@@ -136,18 +148,18 @@ func loadConversationFlow(path string) (*fsm.Flow, error) {
 
 func validateFlow(flow *fsm.Flow) error {
 	if flow.StartNode == "" {
-		return errors.New("start_node cannot be empty")
+		return ErrStartNodeEmpty
 	}
 
 	if _, exists := flow.Nodes[flow.StartNode]; !exists {
-		return fmt.Errorf("start_node '%s' not found in nodes", flow.StartNode)
+		return fmt.Errorf("%w: '%s'", ErrStartNodeNotFound, flow.StartNode)
 	}
 
 	// validate all transition targets exist
 	for nodeID, node := range flow.Nodes {
 		for _, transition := range node.Transitions {
 			if _, exists := flow.Nodes[transition.Target]; !exists {
-				return fmt.Errorf("node '%s' has transition to non-existent target '%s'", nodeID, transition.Target)
+				return fmt.Errorf("%w: from '%s' to '%s'", ErrTransitionTargetNotFound, nodeID, transition.Target)
 			}
 		}
 	}
@@ -155,37 +167,42 @@ func validateFlow(flow *fsm.Flow) error {
 	return nil
 }
 
-func initDatabase(ctx context.Context, dbPath string, logger *logger.Logger) (*sql.DB, error) {
+func initDatabase(ctx context.Context, dbPath string, log *logger.Logger) (*sql.DB, error) {
 	dsn := dbPath + "?_pragma=journal_mode=WAL&_pragma=busy_timeout=30000&_pragma=foreign_keys=ON"
 
-	db, err := sql.Open("sqlite", dsn)
+	sqlDB, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open SQLite database: %w", err)
 	}
 
-	db.SetMaxOpenConns(dbMaxOpenConns)
-	db.SetMaxIdleConns(dbMaxIdleConns)
-	db.SetConnMaxLifetime(time.Hour)
+	sqlDB.SetMaxOpenConns(dbMaxOpenConns)
+	sqlDB.SetMaxIdleConns(dbMaxIdleConns)
+	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+	err = sqlDB.PingContext(ctx)
+	if err != nil {
+		closeErr := sqlDB.Close()
+		if closeErr != nil {
+			log.Warn("Failed to close database after ping failure", map[string]interface{}{"error": closeErr.Error()})
+		}
 
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	logger.Info("Database initialized", map[string]interface{}{"path": dbPath})
+	log.Info("Database initialized", map[string]interface{}{"path": dbPath})
 
-	return db, nil
+	return sqlDB, nil
 }
 
-func initWhatsAppClient(db *sql.DB, logFactory *logger.Factory) (*whatsmeow.Client, error) {
+func initWhatsAppClient(sqlDB *sql.DB, logFactory *logger.Factory) (*whatsmeow.Client, error) {
 	container := sqlstore.NewWithDB(
-		db,
+		sqlDB,
 		"sqlite3",
 		logger.NewWhatsmeowLogger(logFactory.GetLogger("SQLStore"), "sqlstore"),
 	)
 
-	if err := container.Upgrade(context.Background()); err != nil {
+	err := container.Upgrade(context.Background())
+	if err != nil {
 		return nil, fmt.Errorf("failed to upgrade whatsmeow database schema: %w", err)
 	}
 
@@ -200,8 +217,8 @@ func initWhatsAppClient(db *sql.DB, logFactory *logger.Factory) (*whatsmeow.Clie
 	return client, nil
 }
 
-func initApp(db *sql.DB, flow *fsm.Flow, client *whatsmeow.Client, logFactory *logger.Factory) (*App, error) {
-	userManager, err := state.NewSQLiteManager(db, logFactory.GetLogger("StateManager"))
+func initApp(sqlDB *sql.DB, flow *fsm.Flow, client *whatsmeow.Client, logFactory *logger.Factory) (*App, error) {
+	userManager, err := state.NewSQLiteManager(sqlDB, logFactory.GetLogger("StateManager"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize state manager: %w", err)
 	}
@@ -216,32 +233,38 @@ func initApp(db *sql.DB, flow *fsm.Flow, client *whatsmeow.Client, logFactory *l
 		botEngine:     botEngine,
 		messageSender: messageSender,
 		client:        client,
-		db:            db,
+		db:            sqlDB,
 	}, nil
 }
 
-func (a *App) start(_ context.Context) error {
+func (a *App) start(ctx context.Context) error {
 	// register event handler before connecting
 	a.client.AddEventHandler(a.eventHandler)
 
 	if a.client.Store.ID == nil {
 		a.logger.Info("No device stored, initiating QR login", nil)
 
-		return a.handleQRLogin()
+		return a.handleQRLogin(ctx)
 	}
 
 	a.logger.Info("Restoring existing session", nil)
 
-	return a.client.Connect()
+	err := a.client.Connect()
+	if err != nil {
+		return fmt.Errorf("failed to restore existing session: %w", err)
+	}
+
+	return nil
 }
 
-func (a *App) handleQRLogin() error {
-	qrChan, err := a.client.GetQRChannel(context.Background())
+func (a *App) handleQRLogin(ctx context.Context) error {
+	qrChan, err := a.client.GetQRChannel(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get QR channel: %w", err)
 	}
 
-	if err := a.client.Connect(); err != nil {
+	err = a.client.Connect()
+	if err != nil {
 		return fmt.Errorf("connection failed: %w", err)
 	}
 
@@ -298,7 +321,7 @@ func (a *App) shutdown() error {
 	case <-ctx.Done():
 		a.logger.Warn("Shutdown timeout reached", nil)
 
-		return ctx.Err()
+		return fmt.Errorf("shutdown timed out: %w", ctx.Err())
 	}
 }
 
@@ -352,7 +375,8 @@ func (a *App) handleMessage(evt *events.Message) {
 		return
 	}
 
-	if err := a.messageSender.SendText(ctx, msg.Recipient, response); err != nil {
+	err = a.messageSender.SendText(ctx, msg.Recipient, response)
+	if err != nil {
 		a.logger.Error("Failed to send response", map[string]interface{}{
 			"error":     err.Error(),
 			"recipient": senderID,
