@@ -181,12 +181,13 @@ func initDatabase(ctx context.Context, dbPath string, logger *logger.Logger) (*s
 }
 
 func initWhatsAppClient(db *sql.DB, logFactory *logger.Factory) (*whatsmeow.Client, error) {
-	container, err := sqlstore.NewWithDB(db, "sqlite3", logFactory.GetLogger("SQLStore"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create SQL session store: %w", err)
-	}
+	container := sqlstore.NewWithDB(
+		db,
+		"sqlite3",
+		logger.NewWhatsmeowLogger(logFactory.GetLogger("SQLStore"), "sqlstore"),
+	)
 
-	device, err := container.GetFirstDevice()
+	device, err := container.GetFirstDevice(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get device from store: %w", err)
 	}
@@ -217,7 +218,7 @@ func initApp(db *sql.DB, flow *fsm.Flow, client *whatsmeow.Client, logFactory *l
 	}, nil
 }
 
-func (a *App) start(ctx context.Context) error {
+func (a *App) start(_ context.Context) error {
 	// Register event handler before connecting
 	a.client.AddEventHandler(a.eventHandler)
 
