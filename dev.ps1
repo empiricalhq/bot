@@ -1,4 +1,4 @@
-$uniqueSuffix = (Get-Date -UFormat %s)
+﻿$uniqueSuffix = (Get-Date -UFormat %s)
 
 $region = "us-east-2"
 $s3BucketName = "whatsbot-flow-bucket-$uniqueSuffix"
