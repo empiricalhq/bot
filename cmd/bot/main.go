@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/mdp/qrterminal/v3"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types/events"
@@ -33,6 +34,8 @@ const (
 	dbMaxOpenConns = 10
 	dbMaxIdleConns = 5
 )
+
+var ErrQRLoginTimeout = errors.New("QR login timed out")
 
 type App struct {
 	logger        *logger.Logger
@@ -92,10 +95,8 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
-
 	defer func() {
-		closeErr := db.Close()
-		if closeErr != nil {
+		if closeErr := db.Close(); closeErr != nil {
 			appLogger.Error("Database close error", map[string]interface{}{"error": closeErr.Error()})
 		}
 	}()
@@ -221,12 +222,44 @@ func (a *App) start(_ context.Context) error {
 	// register event handler before connecting
 	a.client.AddEventHandler(a.eventHandler)
 
-	err := a.client.Connect()
-	if err != nil {
-		return fmt.Errorf("failed to connect WhatsApp client: %w", err)
+	if a.client.Store.ID == nil {
+		a.logger.Info("No device stored, initiating QR login", nil)
+
+		return a.handleQRLogin()
 	}
 
-	a.logger.Info("Bot started successfully", nil)
+	a.logger.Info("Restoring existing session", nil)
+
+	return a.client.Connect()
+}
+
+func (a *App) handleQRLogin() error {
+	qrChan, err := a.client.GetQRChannel(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to get QR channel: %w", err)
+	}
+
+	if err := a.client.Connect(); err != nil {
+		return fmt.Errorf("connection failed: %w", err)
+	}
+
+	for evt := range qrChan {
+		switch evt.Event {
+		case "code":
+			a.logger.Info("Rendering QR code in terminal", nil)
+			qrterminal.GenerateHalfBlock(evt.Code, qrterminal.L, os.Stdout)
+
+		case "success":
+			a.logger.Info("QR login successful", nil)
+
+			return nil
+
+		case "timeout":
+			a.logger.Warn("QR login timed out", nil)
+
+			return ErrQRLoginTimeout
+		}
+	}
 
 	return nil
 }
@@ -273,11 +306,7 @@ func (a *App) eventHandler(evt interface{}) {
 		if event.Info.IsGroup {
 			return
 		}
-
 		a.handleMessage(event)
-
-	case *events.QR:
-		a.handleQRCode(event)
 
 	case *events.Connected:
 		a.logger.Info("WhatsApp client connected", nil)
@@ -312,7 +341,7 @@ func (a *App) handleMessage(evt *events.Message) {
 		})
 
 		sendErr := a.messageSender.SendText(ctx, msg.Recipient,
-			"Disculpa, hubo un error procesando tu mensaje. Por favor intenta de nuevo en unos momentos.")
+			"Disculpa, hubo un error procesando tu mensaje. Por favor intenta de nuevo en unos moments.")
 		if sendErr != nil {
 			a.logger.Error("Failed to send error message", map[string]interface{}{"error": sendErr.Error()})
 		}
@@ -326,16 +355,4 @@ func (a *App) handleMessage(evt *events.Message) {
 			"recipient": senderID,
 		})
 	}
-}
-
-func (a *App) handleQRCode(event *events.QR) {
-	a.logger.Info("QR code received - scan with WhatsApp", nil)
-
-	go func() {
-		for code := range event.Codes {
-			a.logger.Info("QR code updated", map[string]interface{}{"qr_code": code})
-		}
-
-		a.logger.Info("QR channel closed", nil)
-	}()
 }
