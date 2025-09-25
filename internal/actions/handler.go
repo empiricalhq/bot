@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"whatsbot/internal/logger"
 	"whatsbot/internal/message"
@@ -13,7 +14,7 @@ import (
 var ErrUnknownAction = errors.New("unknown action")
 
 type Handler interface {
-	Execute(ctx context.Context, actionName string, userID string, inputMessage *message.Message) error
+	Execute(ctx context.Context, actionName, userID string, inputMessage *message.Message) error
 }
 
 type DefaultHandler struct {
@@ -29,6 +30,10 @@ func NewHandler(sm state.Manager, log *logger.Logger) *DefaultHandler {
 }
 
 func (h *DefaultHandler) Execute(ctx context.Context, actionName, userID string, inputMessage *message.Message) error {
+	if actionName == "" {
+		return nil // no action to execute
+	}
+
 	h.logger.Debug("Executing action", map[string]interface{}{
 		"action": actionName,
 		"userID": userID,
@@ -41,12 +46,12 @@ func (h *DefaultHandler) Execute(ctx context.Context, actionName, userID string,
 		return h.createNewLead(ctx, userID)
 	case ActionUpdateLeadBeginner:
 		return h.updateLeadInterest(ctx, userID, "beginner")
+	case ActionUpdateLeadAdvanced:
+		return h.updateLeadInterest(ctx, userID, "advanced")
 	case ActionUpdateLeadPrice:
 		return h.updateLeadConsultedPrice(ctx, userID)
 	case ActionEscalateToHuman:
 		return h.escalateToHumanAgent(ctx, userID)
-	case "": // No action specified
-		return nil
 	default:
 		h.logger.Warn("Unknown action", map[string]interface{}{
 			"action": actionName,
@@ -58,6 +63,11 @@ func (h *DefaultHandler) Execute(ctx context.Context, actionName, userID string,
 }
 
 func (h *DefaultHandler) saveUserName(ctx context.Context, userID, name string) error {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return errors.New("user name cannot be empty")
+	}
+
 	userState, err := h.stateManager.GetUserState(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("failed to get user state: %w", err)
@@ -65,8 +75,7 @@ func (h *DefaultHandler) saveUserName(ctx context.Context, userID, name string) 
 
 	userState.UserName = name
 
-	err = h.stateManager.SaveUserState(ctx, userState)
-	if err != nil {
+	if err := h.stateManager.SaveUserState(ctx, userState); err != nil {
 		return fmt.Errorf("failed to save user name: %w", err)
 	}
 
@@ -87,6 +96,7 @@ func (h *DefaultHandler) createNewLead(ctx context.Context, userID string) error
 	h.logger.Info("New lead created", map[string]interface{}{
 		"userID":      userID,
 		"currentNode": userState.CurrentNode,
+		"userName":    userState.UserName,
 	})
 
 	return nil
@@ -100,8 +110,7 @@ func (h *DefaultHandler) updateLeadInterest(ctx context.Context, userID, interes
 
 	userState.CourseInterest = interest
 
-	err = h.stateManager.SaveUserState(ctx, userState)
-	if err != nil {
+	if err := h.stateManager.SaveUserState(ctx, userState); err != nil {
 		return fmt.Errorf("failed to update lead interest: %w", err)
 	}
 
@@ -121,12 +130,13 @@ func (h *DefaultHandler) updateLeadConsultedPrice(ctx context.Context, userID st
 
 	userState.ConsultedPrice = true
 
-	err = h.stateManager.SaveUserState(ctx, userState)
-	if err != nil {
+	if err := h.stateManager.SaveUserState(ctx, userState); err != nil {
 		return fmt.Errorf("failed to update price consultation: %w", err)
 	}
 
-	h.logger.Info("Lead consulted price", map[string]interface{}{"userID": userID})
+	h.logger.Info("Lead consulted price", map[string]interface{}{
+		"userID": userID,
+	})
 
 	return nil
 }
@@ -139,13 +149,14 @@ func (h *DefaultHandler) escalateToHumanAgent(ctx context.Context, userID string
 
 	userState.RequiresHumanAgent = true
 
-	err = h.stateManager.SaveUserState(ctx, userState)
-	if err != nil {
+	if err := h.stateManager.SaveUserState(ctx, userState); err != nil {
 		return fmt.Errorf("failed to mark for human agent: %w", err)
 	}
 
 	h.logger.Warn("Conversation escalated to human agent", map[string]interface{}{
-		"userID": userID,
+		"userID":   userID,
+		"userName": userState.UserName,
+		"interest": userState.CourseInterest,
 	})
 
 	return nil

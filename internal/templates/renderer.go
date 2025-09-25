@@ -1,9 +1,11 @@
 package templates
 
-import "strings"
+import (
+	"strings"
+)
 
 type Renderer interface {
-	RenderText(template string, userName string) string
+	RenderText(template, userName string) string
 }
 
 type TextRenderer struct{}
@@ -14,8 +16,10 @@ func NewTextRenderer() *TextRenderer {
 
 func (r *TextRenderer) RenderText(template, userName string) string {
 	if userName == "" {
-		userName = "Amig@"
+		userName = "amigx"
 	}
 
-	return strings.ReplaceAll(template, "{{name}}", userName)
+	result := strings.ReplaceAll(template, "{{name}}", userName)
+
+	return strings.TrimSpace(result)
 }

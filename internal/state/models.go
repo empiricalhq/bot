@@ -3,20 +3,19 @@ package state
 import "time"
 
 type UserState struct {
-	UserID             string    `dynamodbav:"UserID"`
-	CurrentNode        string    `dynamodbav:"CurrentNode"`
-	UserName           string    `dynamodbav:"UserName,omitempty"`
-	CourseInterest     string    `dynamodbav:"CourseInterest,omitempty"`
-	ConsultedPrice     bool      `dynamodbav:"ConsultedPrice,omitempty"`
-	RequiresHumanAgent bool      `dynamodbav:"RequiresHumanAgent,omitempty"`
-	LastUpdated        time.Time `dynamodbav:"LastUpdated"`
+	UserID             string
+	CurrentNode        string
+	UserName           string
+	CourseInterest     string
+	ConsultedPrice     bool
+	RequiresHumanAgent bool
+	LastUpdated        time.Time
 }
 
 type ConversationMessage struct {
-	UserID         string    `dynamodbav:"UserID"`
-	Timestamp      time.Time `dynamodbav:"Timestamp"`
-	Direction      string    `dynamodbav:"Direction"`
-	MessageContent string    `dynamodbav:"MessageContent"`
-	NodeID         string    `dynamodbav:"NodeID,omitempty"`
-	TTL            int64     `dynamodbav:"TTL,omitempty"`
+	UserID         string
+	Timestamp      time.Time
+	Direction      string
+	MessageContent string
+	NodeID         string
 }

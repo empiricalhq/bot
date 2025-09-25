@@ -15,7 +15,10 @@ import (
 	"whatsbot/internal/templates"
 )
 
-var ErrCurrentNodeNotFound = errors.New("current node not found")
+var (
+	ErrCurrentNodeNotFound = errors.New("current node not found")
+	ErrInvalidCondition    = errors.New("invalid condition type")
+)
 
 type Engine struct {
 	flow          *Flow
@@ -23,6 +26,7 @@ type Engine struct {
 	actionHandler actions.Handler
 	renderer      templates.Renderer
 	logger        *logger.Logger
+	regexCache    map[string]*regexp.Regexp
 }
 
 func NewEngine(
@@ -38,14 +42,22 @@ func NewEngine(
 		actionHandler: actionHandler,
 		renderer:      renderer,
 		logger:        log,
+		regexCache:    make(map[string]*regexp.Regexp),
 	}
 }
 
 func (e *Engine) ProcessMessage(ctx context.Context, msg *message.Message) (string, error) {
 	userID := msg.GetSenderID()
+	inputText := strings.TrimSpace(msg.GetText())
+
+	// ignore empty messages (stickers, images without caption, etc.)
+	if inputText == "" {
+		return "", nil
+	}
+
 	e.logger.Debug("Processing message", map[string]interface{}{
-		"userID":  userID,
-		"message": msg.GetText(),
+		"userID": userID,
+		"text":   inputText,
 	})
 
 	userState, err := e.getOrCreateUserState(ctx, userID)
@@ -53,16 +65,11 @@ func (e *Engine) ProcessMessage(ctx context.Context, msg *message.Message) (stri
 		return "", fmt.Errorf("failed to get user state: %w", err)
 	}
 
-	// save incoming message
-	err = e.saveInboundMessage(ctx, userState, msg)
-	if err != nil {
-		e.logger.Error("Failed to save inbound message", map[string]interface{}{
-			"error": err.Error(),
-		})
+	if err := e.saveInboundMessage(ctx, userState, msg); err != nil {
+		e.logger.Error("Failed to save inbound message", map[string]interface{}{"error": err.Error()})
 	}
 
-	// determine next node
-	nextNode, actionToExecute, err := e.determineNextNode(msg.GetText(), userState)
+	nextNode, actionToExecute, err := e.determineNextNode(inputText, userState)
 	if err != nil {
 		return "", fmt.Errorf("failed to determine next node: %w", err)
 	}
@@ -71,7 +78,6 @@ func (e *Engine) ProcessMessage(ctx context.Context, msg *message.Message) (stri
 	userState.CurrentNode = nextNode
 	userState.LastUpdated = time.Now()
 
-	// execute action
 	if actionToExecute != "" {
 		err := e.actionHandler.Execute(ctx, actionToExecute, userID, msg)
 		if err != nil {
@@ -79,30 +85,26 @@ func (e *Engine) ProcessMessage(ctx context.Context, msg *message.Message) (stri
 				"action": actionToExecute,
 				"error":  err.Error(),
 			})
+			// don't fail the entire flow for action errors
 		}
 	}
 
-	// save updated state
-	err = e.stateManager.SaveUserState(ctx, userState)
-	if err != nil {
-		e.logger.Error("Failed to save user state", map[string]interface{}{
-			"error": err.Error(),
-		})
+	if err := e.stateManager.SaveUserState(ctx, userState); err != nil {
+		e.logger.Error("Failed to save user state", map[string]interface{}{"error": err.Error()})
 	}
 
-	// render response
-	node := e.flow.Nodes[nextNode]
+	node, exists := e.flow.Nodes[nextNode]
+	if !exists {
+		return "", fmt.Errorf("target node not found: %s", nextNode)
+	}
+
 	response := e.renderer.RenderText(node.Message.Content, userState.UserName)
 
-	// save outbound message
-	err = e.saveOutboundMessage(ctx, userState, response)
-	if err != nil {
-		e.logger.Error("Failed to save outbound message", map[string]interface{}{
-			"error": err.Error(),
-		})
+	if err := e.saveOutboundMessage(ctx, userState, response); err != nil {
+		e.logger.Error("Failed to save outbound message", map[string]interface{}{"error": err.Error()})
 	}
 
-	e.logger.Info("Message processed", map[string]interface{}{
+	e.logger.Debug("Message processed successfully", map[string]interface{}{
 		"userID":   userID,
 		"nextNode": nextNode,
 		"action":   actionToExecute,
@@ -117,36 +119,43 @@ func (e *Engine) getOrCreateUserState(ctx context.Context, userID string) (*stat
 		return nil, fmt.Errorf("could not get user state: %w", err)
 	}
 
-	// A new user is identified by an empty CurrentNode from GetUserState
+	// new user: start with the flow's start node
 	if userState.CurrentNode == "" {
 		userState.CurrentNode = e.flow.StartNode
 		userState.LastUpdated = time.Now()
 
-		err = e.stateManager.SaveUserState(ctx, userState)
+		err := e.stateManager.SaveUserState(ctx, userState)
 		if err != nil {
-			e.logger.Error("Failed to save new user state", map[string]interface{}{
-				"error": err.Error(),
-			})
+			e.logger.Error("Failed to save new user state", map[string]interface{}{"error": err.Error()})
 
 			return nil, fmt.Errorf("could not save new user state: %w", err)
 		}
+
+		e.logger.Info("New user initialized", map[string]interface{}{
+			"userID":    userID,
+			"startNode": e.flow.StartNode,
+		})
 	}
 
-	// Fallback validation for existing users with invalid nodes
+	// validate current node exists
 	if _, exists := e.flow.Nodes[userState.CurrentNode]; !exists {
+		e.logger.Warn("Invalid current node, resetting to start", map[string]interface{}{
+			"userID":      userID,
+			"invalidNode": userState.CurrentNode,
+		})
 		userState.CurrentNode = e.flow.StartNode
 	}
 
 	return userState, nil
 }
 
-func (e *Engine) determineNextNode(inputText string, userState *state.UserState) (nextNode, action string, err error) {
+func (e *Engine) determineNextNode(inputText string, userState *state.UserState) (string, string, error) {
 	currentNode, exists := e.flow.Nodes[userState.CurrentNode]
 	if !exists {
 		return "", "", fmt.Errorf("%w: %s", ErrCurrentNodeNotFound, userState.CurrentNode)
 	}
 
-	// check global transitions first
+	// check global transitions first (higher priority)
 	for _, transition := range e.flow.GlobalTransitions {
 		if e.matchCondition(inputText, transition.Condition) {
 			return transition.Target, transition.Action, nil
@@ -160,19 +169,50 @@ func (e *Engine) determineNextNode(inputText string, userState *state.UserState)
 		}
 	}
 
-	// fallback
+	// use fallback or default to FALLBACK_MENU
 	fallbackNode := e.flow.FallbackNode
 	if fallbackNode == "" {
+		fallbackNode = "FALLBACK_MENU"
+	}
+
+	// ensure fallback node exists
+	if _, exists := e.flow.Nodes[fallbackNode]; !exists {
 		fallbackNode = e.flow.StartNode
 	}
 
-	e.logger.Debug("No matching transition, using fallback", map[string]interface{}{
+	e.logger.Debug("Using fallback node", map[string]interface{}{
 		"currentNode":  userState.CurrentNode,
 		"fallbackNode": fallbackNode,
 		"input":        inputText,
 	})
 
 	return fallbackNode, "", nil
+}
+
+func (e *Engine) matchCondition(inputText string, condition Condition) bool {
+	// TODO: is this condition check correct?
+	if inputText == "" {
+		return condition.Type == "any_text" && inputText != ""
+	}
+
+	lowerInput := strings.ToLower(inputText)
+
+	switch condition.Type {
+	case "exact":
+		return e.matchExact(lowerInput, condition.Value)
+	case "keyword":
+		return e.matchKeyword(lowerInput, condition.Value)
+	case "regex":
+		return e.matchRegex(lowerInput, condition.Regex)
+	case "any_text":
+		return true
+	default:
+		e.logger.Warn("Unknown condition type", map[string]interface{}{
+			"type": condition.Type,
+		})
+
+		return false
+	}
 }
 
 func (e *Engine) matchExact(input string, values []string) bool {
@@ -195,67 +235,47 @@ func (e *Engine) matchKeyword(input string, values []string) bool {
 	return false
 }
 
-func (e *Engine) matchRegex(input, regexStr string) bool {
-	if regexStr == "" {
+func (e *Engine) matchRegex(input, pattern string) bool {
+	if pattern == "" {
 		return false
 	}
 
-	compiledRegex, err := regexp.Compile(regexStr)
-	if err != nil {
-		e.logger.Error("Invalid regex", map[string]interface{}{
-			"regex": regexStr,
-			"error": err.Error(),
-		})
+	regex, exists := e.regexCache[pattern]
+	if !exists {
+		var err error
 
-		return false
+		regex, err = regexp.Compile(pattern)
+		if err != nil {
+			e.logger.Error("Invalid regex pattern", map[string]interface{}{
+				"pattern": pattern,
+				"error":   err.Error(),
+			})
+
+			return false
+		}
+
+		e.regexCache[pattern] = regex
 	}
 
-	return compiledRegex.MatchString(input)
-}
-
-func (e *Engine) matchCondition(inputText string, condition Condition) bool {
-	lowerInput := strings.ToLower(strings.TrimSpace(inputText))
-
-	switch condition.Type {
-	case "exact":
-		return e.matchExact(lowerInput, condition.Value)
-	case "keyword":
-		return e.matchKeyword(lowerInput, condition.Value)
-	case "regex":
-		return e.matchRegex(lowerInput, condition.Regex)
-	case "any_text":
-		return lowerInput != ""
-	}
-
-	return false
+	return regex.MatchString(input)
 }
 
 func (e *Engine) saveInboundMessage(ctx context.Context, userState *state.UserState, msg *message.Message) error {
-	err := e.stateManager.SaveMessage(ctx, &state.ConversationMessage{
+	return e.stateManager.SaveMessage(ctx, &state.ConversationMessage{
 		UserID:         userState.UserID,
 		Timestamp:      time.Now(),
 		Direction:      "inbound",
 		MessageContent: msg.GetText(),
 		NodeID:         userState.CurrentNode,
 	})
-	if err != nil {
-		return fmt.Errorf("failed to save inbound message: %w", err)
-	}
-
-	return nil
 }
 
 func (e *Engine) saveOutboundMessage(ctx context.Context, userState *state.UserState, response string) error {
-	err := e.stateManager.SaveMessage(ctx, &state.ConversationMessage{
+	return e.stateManager.SaveMessage(ctx, &state.ConversationMessage{
 		UserID:         userState.UserID,
 		Timestamp:      time.Now(),
 		Direction:      "outbound",
 		MessageContent: response,
 		NodeID:         userState.CurrentNode,
 	})
-	if err != nil {
-		return fmt.Errorf("failed to save outbound message: %w", err)
-	}
-
-	return nil
 }

@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/joho/godotenv"
 
@@ -11,38 +12,29 @@ import (
 )
 
 var (
-	ErrMissingS3Bucket     = errors.New("BOT_FSM_S3_BUCKET is required")
-	ErrMissingUserTable    = errors.New("BOT_DYNAMODB_USER_TABLE is required")
-	ErrMissingHistoryTable = errors.New("BOT_DYNAMODB_HISTORY_TABLE is required")
-	ErrMissingSessionTable = errors.New("BOT_DYNAMODB_SESSION_TABLE is required")
-	ErrMissingSessionID    = errors.New("BOT_SESSION_ID is required")
+	ErrMissingFlowFile = errors.New("BOT_FLOW_FILE_PATH is required")
+	ErrMissingDBPath   = errors.New("BOT_SQLITE_DB_PATH is required")
 )
 
 type Config struct {
-	LogLevel         logger.Level
-	S3FlowBucket     string
-	S3FlowKey        string
-	UserTableName    string
-	HistoryTableName string
-	SessionTableName string
-	SessionID        string
+	LogLevel     logger.Level
+	FlowFilePath string
+	SQLiteDBPath string
 }
 
 func Load() (*Config, error) {
+	// .env is optional; only serves to override defaults
 	err := godotenv.Load()
 	if err != nil {
-		//nolint:forbidigo // why: linter is not initialized yet
-		fmt.Printf("No .env file found or failed to load: %v\n", err)
+		if !os.IsNotExist(err) {
+			fmt.Printf("Warning: Failed to load .env file: %v\n", err)
+		}
 	}
 
 	cfg := &Config{
-		LogLevel:         logger.ParseLevel(utils.GetEnv("BOT_LOG_LEVEL", "INFO")),
-		S3FlowBucket:     utils.GetEnv("BOT_FSM_S3_BUCKET", ""),
-		S3FlowKey:        utils.GetEnv("BOT_FSM_S3_KEY", "conversation.json"),
-		UserTableName:    utils.GetEnv("BOT_DYNAMODB_USER_TABLE", "WhatsbotUserState"),
-		HistoryTableName: utils.GetEnv("BOT_DYNAMODB_HISTORY_TABLE", "WhatsbotConversationHistory"),
-		SessionTableName: utils.GetEnv("BOT_DYNAMODB_SESSION_TABLE", "WhatsbotSession"),
-		SessionID:        utils.GetEnv("BOT_SESSION_ID", "primary-bot-session"),
+		LogLevel:     logger.ParseLevel(utils.GetEnv("BOT_LOG_LEVEL", "INFO")),
+		FlowFilePath: utils.GetEnv("BOT_FLOW_FILE_PATH", "conversation.json"),
+		SQLiteDBPath: utils.GetEnv("BOT_SQLITE_DB_PATH", "store.db"),
 	}
 
 	err = cfg.validate()
@@ -54,24 +46,16 @@ func Load() (*Config, error) {
 }
 
 func (c *Config) validate() error {
-	if c.S3FlowBucket == "" {
-		return ErrMissingS3Bucket
+	if c.FlowFilePath == "" {
+		return ErrMissingFlowFile
 	}
 
-	if c.UserTableName == "" {
-		return ErrMissingUserTable
+	if c.SQLiteDBPath == "" {
+		return ErrMissingDBPath
 	}
 
-	if c.HistoryTableName == "" {
-		return ErrMissingHistoryTable
-	}
-
-	if c.SessionTableName == "" {
-		return ErrMissingSessionTable
-	}
-
-	if c.SessionID == "" {
-		return ErrMissingSessionID
+	if _, err := os.Stat(c.FlowFilePath); os.IsNotExist(err) {
+		return fmt.Errorf("flow file not found: %s", c.FlowFilePath)
 	}
 
 	return nil
