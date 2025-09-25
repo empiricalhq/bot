@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 	"go.mau.fi/whatsmeow"
@@ -23,172 +24,310 @@ import (
 	"whatsbot/internal/templates"
 )
 
+const (
+	shutdownTimeout = 30 * time.Second
+)
+
 type App struct {
 	logger        *logger.Logger
 	botEngine     *fsm.Engine
 	messageSender *message.Sender
 	client        *whatsmeow.Client
+	db            *sql.DB
 }
 
 func main() {
-	// Initialize context and logger
-	ctx := context.Background()
-	logFactory, err := logger.NewFactory(logger.Config{Level: logger.ParseLevel(os.Getenv("BOT_LOG_LEVEL"))})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "FATAL: Failed to create logger factory: %v\n", err)
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "FATAL: %v\n", err)
 		os.Exit(1)
 	}
-	appLogger := logFactory.GetLogger("WhatsbotApp")
+}
 
-	// Load configuration from .env file
+func run() error {
+	// Initialize logger early for better error reporting
+	logFactory, err := logger.NewFactory(logger.Config{
+		Level: logger.ParseLevel(os.Getenv("BOT_LOG_LEVEL")),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create logger factory: %w", err)
+	}
+
+	appLogger := logFactory.GetLogger("WhatsbotApp")
+	appLogger.Info("Starting WhatsApp bot", nil)
+
+	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
-		appLogger.Error("Failed to load configuration", map[string]interface{}{"error": err.Error()})
-		os.Exit(1)
-	}
-	appLogger.Info("Configuration loaded successfully", nil)
+		appLogger.Error("Configuration load failed", map[string]interface{}{"error": err.Error()})
 
-	// Load conversation flow from local file
+		return fmt.Errorf("failed to load configuration: %w", err)
+	}
+
+	appLogger.Info("Configuration loaded", map[string]interface{}{"flow_file": cfg.FlowFilePath})
+
+	// Load conversation flow
 	flow, err := loadConversationFlow(cfg.FlowFilePath)
 	if err != nil {
-		appLogger.Error("Failed to load conversation flow", map[string]interface{}{"error": err.Error()})
-		os.Exit(1)
-	}
-	appLogger.Info("Conversation flow loaded", map[string]interface{}{"path": cfg.FlowFilePath})
+		appLogger.Error("Flow load failed", map[string]interface{}{"error": err.Error()})
 
-	// Initialize SQLite database and session store
-	db, err := sql.Open("sqlite3", cfg.SQLiteDBPath)
+		return fmt.Errorf("failed to load conversation flow: %w", err)
+	}
+
+	// Validate flow early
+	if err := validateFlow(flow); err != nil {
+		appLogger.Error("Flow validation failed", map[string]interface{}{"error": err.Error()})
+
+		return fmt.Errorf("invalid conversation flow: %w", err)
+	}
+
+	appLogger.Info("Conversation flow loaded and validated", nil)
+
+	// Initialize database with timeout context
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	db, err := initDatabase(ctx, cfg.SQLiteDBPath, appLogger)
 	if err != nil {
-		appLogger.Error("Failed to open SQLite database", map[string]interface{}{"error": err.Error()})
-		os.Exit(1)
+		return fmt.Errorf("failed to initialize database: %w", err)
 	}
-	container, err := sqlstore.NewWithDB(db, "sqlite3", logFactory.GetLogger("SQLStore"))
-	if err != nil {
-		appLogger.Error("Failed to create SQL session store", map[string]interface{}{"error": err.Error()})
-		os.Exit(1)
-	}
-	device, err := container.GetFirstDevice()
-	if err != nil {
-		appLogger.Error("Failed to get device from store", map[string]interface{}{"error": err.Error()})
-		os.Exit(1)
-	}
-	appLogger.Info("Database and session store initialized", map[string]interface{}{"path": cfg.SQLiteDBPath})
-
-	// Initialize application components
-	userManager, err := state.NewSQLiteManager(db, logFactory.GetLogger("StateManager"))
-	if err != nil {
-		appLogger.Error("Failed to initialize state manager", map[string]interface{}{"error": err.Error()})
-		os.Exit(1)
-	}
-	actionHandler := actions.NewHandler(userManager, logFactory.GetLogger("ActionHandler"))
-	renderer := templates.NewTextRenderer()
-	whatsmeowLogger := logger.NewWhatsmeowLogger(logFactory.GetLogger("WhatsmeowClient"), "whatsmeow")
-	client := whatsmeow.NewClient(device, whatsmeowLogger)
-	messageSender := message.NewSender(client)
-	botEngine := fsm.NewEngine(flow, userManager, actionHandler, renderer, logFactory.GetLogger("FSMEngine"))
-
-	app := &App{
-		logger:        appLogger,
-		botEngine:     botEngine,
-		messageSender: messageSender,
-		client:        client,
-	}
-
-	// Register event handler
-	client.AddEventHandler(app.eventHandler)
-
-	// Connect to WhatsApp
-	err = client.Connect()
-	if err != nil {
-		appLogger.Error("Failed to connect WhatsApp client", map[string]interface{}{"error": err.Error()})
-		os.Exit(1)
-	}
-
-	// Handle graceful shutdown
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-c
-		appLogger.Info("Shutting down...", nil)
-		client.Disconnect()
-		_ = db.Close()
-		os.Exit(0)
+	defer func() {
+		if closeErr := db.Close(); closeErr != nil {
+			appLogger.Error("Database close error", map[string]interface{}{"error": closeErr.Error()})
+		}
 	}()
 
-	appLogger.Info("WhatsApp bot is running. Press CTRL+C to exit.", nil)
-	// Block forever
-	select {}
-}
-
-func (a *App) eventHandler(evt interface{}) {
-	ctx := context.Background()
-	switch event := evt.(type) {
-	case *events.Message:
-		// Ignore group messages early
-		if event.Info.IsGroup {
-			return
-		}
-		a.handleMessage(ctx, event)
-	case *events.QR:
-		a.logger.Info("QR code received. Scan with WhatsApp.", nil)
-		go func() {
-			for code := range event.Codes {
-				a.logger.Warn("QR code update. Please scan.", map[string]interface{}{"code": code})
-			}
-			a.logger.Info("QR channel closed.", nil)
-		}()
-	case *events.Connected:
-		a.logger.Info("WhatsApp client connected", nil)
-	case *events.Disconnected:
-		a.logger.Warn("WhatsApp client disconnected.", nil)
-	}
-}
-
-func (a *App) handleMessage(ctx context.Context, evt *events.Message) {
-	msg := message.New(evt)
-	// This check is slightly redundant because of the IsGroup check in eventHandler,
-	// but it's good practice to ensure the message object is valid.
-	if msg == nil {
-		return
-	}
-
-	a.logger.Info("Processing message", map[string]interface{}{"from": msg.GetSenderID()})
-
-	response, err := a.botEngine.ProcessMessage(ctx, msg)
+	// Initialize WhatsApp client
+	client, err := initWhatsAppClient(db, logFactory)
 	if err != nil {
-		a.logger.Error("Failed to process message", map[string]interface{}{
-			"error":  err.Error(),
-			"sender": msg.GetSenderID(),
-		})
-
-		errSend := a.messageSender.SendText(ctx, msg.Recipient, "Disculpa, hubo un error. Por favor intenta de nuevo.")
-		if errSend != nil {
-			a.logger.Error("Failed to send error message to user", map[string]interface{}{"error": errSend.Error()})
-		}
-
-		return
+		return fmt.Errorf("failed to initialize WhatsApp client: %w", err)
 	}
 
-	err = a.messageSender.SendText(ctx, msg.Recipient, response)
+	// Initialize application components
+	app, err := initApp(db, flow, client, logFactory)
 	if err != nil {
-		a.logger.Error("Failed to send response", map[string]interface{}{
-			"error":     err.Error(),
-			"recipient": msg.GetSenderID(),
-		})
+		return fmt.Errorf("failed to initialize application: %w", err)
 	}
+
+	// Start the application
+	if err := app.start(ctx); err != nil {
+		return fmt.Errorf("failed to start application: %w", err)
+	}
+
+	// Wait for shutdown signal
+	return app.waitForShutdown()
 }
 
 func loadConversationFlow(path string) (*fsm.Flow, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read flow file: %w", err)
+		return nil, fmt.Errorf("failed to read flow file %s: %w", path, err)
 	}
 
 	var flow fsm.Flow
-	err = json.Unmarshal(data, &flow)
-	if err != nil {
+	if err := json.Unmarshal(data, &flow); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal flow: %w", err)
 	}
 
 	return &flow, nil
+}
+
+func validateFlow(flow *fsm.Flow) error {
+	if flow.StartNode == "" {
+		return fmt.Errorf("start_node cannot be empty")
+	}
+
+	if _, exists := flow.Nodes[flow.StartNode]; !exists {
+		return fmt.Errorf("start_node '%s' not found in nodes", flow.StartNode)
+	}
+
+	// Validate all transition targets exist
+	for nodeID, node := range flow.Nodes {
+		for _, transition := range node.Transitions {
+			if _, exists := flow.Nodes[transition.Target]; !exists {
+				return fmt.Errorf("node '%s' has transition to non-existent target '%s'", nodeID, transition.Target)
+			}
+		}
+	}
+
+	return nil
+}
+
+func initDatabase(ctx context.Context, dbPath string, logger *logger.Logger) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", dbPath+"?_timeout=30000&_journal_mode=WAL")
+	if err != nil {
+		return nil, fmt.Errorf("failed to open SQLite database: %w", err)
+	}
+
+	// Configure connection pool for better performance
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(time.Hour)
+
+	// Test connection
+	if err := db.PingContext(ctx); err != nil {
+		db.Close()
+
+		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	logger.Info("Database initialized", map[string]interface{}{"path": dbPath})
+
+	return db, nil
+}
+
+func initWhatsAppClient(db *sql.DB, logFactory *logger.Factory) (*whatsmeow.Client, error) {
+	container, err := sqlstore.NewWithDB(db, "sqlite3", logFactory.GetLogger("SQLStore"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create SQL session store: %w", err)
+	}
+
+	device, err := container.GetFirstDevice()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get device from store: %w", err)
+	}
+
+	whatsmeowLogger := logger.NewWhatsmeowLogger(logFactory.GetLogger("WhatsmeowClient"), "whatsmeow")
+	client := whatsmeow.NewClient(device, whatsmeowLogger)
+
+	return client, nil
+}
+
+func initApp(db *sql.DB, flow *fsm.Flow, client *whatsmeow.Client, logFactory *logger.Factory) (*App, error) {
+	userManager, err := state.NewSQLiteManager(db, logFactory.GetLogger("StateManager"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize state manager: %w", err)
+	}
+
+	actionHandler := actions.NewHandler(userManager, logFactory.GetLogger("ActionHandler"))
+	renderer := templates.NewTextRenderer()
+	messageSender := message.NewSender(client)
+	botEngine := fsm.NewEngine(flow, userManager, actionHandler, renderer, logFactory.GetLogger("FSMEngine"))
+
+	return &App{
+		logger:        logFactory.GetLogger("WhatsbotApp"),
+		botEngine:     botEngine,
+		messageSender: messageSender,
+		client:        client,
+		db:            db,
+	}, nil
+}
+
+func (a *App) start(ctx context.Context) error {
+	// Register event handler before connecting
+	a.client.AddEventHandler(a.eventHandler)
+
+	// Connect to WhatsApp
+	if err := a.client.Connect(); err != nil {
+		return fmt.Errorf("failed to connect WhatsApp client: %w", err)
+	}
+
+	a.logger.Info("WhatsApp bot started successfully", nil)
+
+	return nil
+}
+
+func (a *App) waitForShutdown() error {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	sig := <-sigChan
+	a.logger.Info("Shutdown signal received", map[string]interface{}{"signal": sig.String()})
+
+	return a.shutdown()
+}
+
+func (a *App) shutdown() error {
+	a.logger.Info("Shutting down gracefully", nil)
+
+	// Create shutdown context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		a.client.Disconnect()
+	}()
+
+	select {
+	case <-done:
+		a.logger.Info("Shutdown completed", nil)
+
+		return nil
+	case <-ctx.Done():
+		a.logger.Warn("Shutdown timeout reached", nil)
+
+		return ctx.Err()
+	}
+}
+
+func (a *App) eventHandler(evt interface{}) {
+	switch event := evt.(type) {
+	case *events.Message:
+		// Ignore group messages immediately for better performance
+		if event.Info.IsGroup {
+			return
+		}
+		a.handleMessage(event)
+
+	case *events.QR:
+		a.handleQRCode(event)
+
+	case *events.Connected:
+		a.logger.Info("WhatsApp client connected", nil)
+
+	case *events.Disconnected:
+		a.logger.Warn("WhatsApp client disconnected", nil)
+	}
+}
+
+func (a *App) handleMessage(evt *events.Message) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	msg := message.New(evt)
+	if msg == nil {
+		a.logger.Debug("Ignoring invalid message", nil)
+
+		return
+	}
+
+	senderID := msg.GetSenderID()
+	a.logger.Debug("Processing message", map[string]interface{}{
+		"from": senderID,
+		"text": msg.GetText(),
+	})
+
+	response, err := a.botEngine.ProcessMessage(ctx, msg)
+	if err != nil {
+		a.logger.Error("Message processing failed", map[string]interface{}{
+			"error":  err.Error(),
+			"sender": senderID,
+		})
+
+		// Send user-friendly error message
+		if sendErr := a.messageSender.SendText(ctx, msg.Recipient,
+			"Disculpa, hubo un error procesando tu mensaje. Por favor intenta de nuevo en unos moments."); sendErr != nil {
+			a.logger.Error("Failed to send error message", map[string]interface{}{"error": sendErr.Error()})
+		}
+
+		return
+	}
+
+	if err := a.messageSender.SendText(ctx, msg.Recipient, response); err != nil {
+		a.logger.Error("Failed to send response", map[string]interface{}{
+			"error":     err.Error(),
+			"recipient": senderID,
+		})
+	}
+}
+
+func (a *App) handleQRCode(event *events.QR) {
+	a.logger.Info("QR code received - scan with WhatsApp", nil)
+	go func() {
+		for code := range event.Codes {
+			a.logger.Info("QR code updated", map[string]interface{}{"qr_code": code})
+		}
+		a.logger.Info("QR channel closed", nil)
+	}()
 }

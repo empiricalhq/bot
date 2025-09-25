@@ -3,12 +3,15 @@ package message
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
 	"google.golang.org/protobuf/proto"
 )
+
+const sendTimeout = 15 * time.Second
 
 type Sender struct {
 	client *whatsmeow.Client
@@ -19,7 +22,15 @@ func NewSender(client *whatsmeow.Client) *Sender {
 }
 
 func (s *Sender) SendText(ctx context.Context, recipient types.JID, text string) error {
-	_, err := s.client.SendMessage(ctx, recipient, &waE2E.Message{
+	if text == "" {
+		return fmt.Errorf("cannot send empty message")
+	}
+
+	// Create timeout context for sending
+	sendCtx, cancel := context.WithTimeout(ctx, sendTimeout)
+	defer cancel()
+
+	_, err := s.client.SendMessage(sendCtx, recipient, &waE2E.Message{
 		Conversation: proto.String(text),
 	})
 	if err != nil {

@@ -2,6 +2,7 @@ package message
 
 import (
 	"fmt"
+	"strings"
 
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
@@ -15,8 +16,7 @@ type Message struct {
 }
 
 func New(evt *events.Message) *Message {
-	// The IsGroup check is now handled in the main event handler,
-	// but this remains as a safeguard.
+	// Early return for group messages
 	if evt.Info.IsGroup {
 		return nil
 	}
@@ -27,16 +27,37 @@ func New(evt *events.Message) *Message {
 		MessageID: evt.Info.ID,
 	}
 
-	// extract text content from various message types
-	if evt.Message.GetConversation() != "" {
-		msg.Text = evt.Message.GetConversation()
-	} else if extText := evt.Message.GetExtendedTextMessage(); extText != nil {
-		msg.Text = extText.GetText()
-	} else if img := evt.Message.GetImageMessage(); img != nil {
-		msg.Text = img.GetCaption()
-	}
+	// Extract text content from various message types
+	msg.Text = extractTextContent(evt)
+
+	// Normalize whitespace
+	msg.Text = strings.TrimSpace(msg.Text)
 
 	return msg
+}
+
+func extractTextContent(evt *events.Message) string {
+	if text := evt.Message.GetConversation(); text != "" {
+		return text
+	}
+
+	if extText := evt.Message.GetExtendedTextMessage(); extText != nil {
+		return extText.GetText()
+	}
+
+	if img := evt.Message.GetImageMessage(); img != nil {
+		return img.GetCaption()
+	}
+
+	if doc := evt.Message.GetDocumentMessage(); doc != nil {
+		return doc.GetCaption()
+	}
+
+	if video := evt.Message.GetVideoMessage(); video != nil {
+		return video.GetCaption()
+	}
+
+	return ""
 }
 
 func (m *Message) GetSenderID() string {
@@ -45,6 +66,10 @@ func (m *Message) GetSenderID() string {
 
 func (m *Message) GetText() string {
 	return m.Text
+}
+
+func (m *Message) IsEmpty() bool {
+	return strings.TrimSpace(m.Text) == ""
 }
 
 func (m *Message) String() string {

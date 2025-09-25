@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/joho/godotenv"
 
@@ -22,10 +23,10 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
-	err := godotenv.Load()
-	if err != nil {
-		// This is not a fatal error, as env vars could be set directly.
-		fmt.Printf("Info: No .env file found or failed to load: %v\n", err)
+	if err := godotenv.Load(); err != nil {
+		if !os.IsNotExist(err) {
+			fmt.Printf("Warning: Failed to load .env file: %v\n", err)
+		}
 	}
 
 	cfg := &Config{
@@ -34,7 +35,7 @@ func Load() (*Config, error) {
 		SQLiteDBPath: utils.GetEnv("BOT_SQLITE_DB_PATH", "store.db"),
 	}
 
-	if err = cfg.validate(); err != nil {
+	if err := cfg.validate(); err != nil {
 		return nil, fmt.Errorf("config validation failed: %w", err)
 	}
 
@@ -47,6 +48,10 @@ func (c *Config) validate() error {
 	}
 	if c.SQLiteDBPath == "" {
 		return ErrMissingDBPath
+	}
+
+	if _, err := os.Stat(c.FlowFilePath); os.IsNotExist(err) {
+		return fmt.Errorf("flow file not found: %s", c.FlowFilePath)
 	}
 
 	return nil

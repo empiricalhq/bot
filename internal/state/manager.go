@@ -29,6 +29,7 @@ func NewSQLiteManager(db *sql.DB, log *logger.Logger) (*SQLiteManager, error) {
 		db:     db,
 		logger: log,
 	}
+
 	if err := m.initSchema(context.Background()); err != nil {
 		return nil, fmt.Errorf("failed to initialize database schema: %w", err)
 	}
@@ -36,54 +37,20 @@ func NewSQLiteManager(db *sql.DB, log *logger.Logger) (*SQLiteManager, error) {
 	return m, nil
 }
 
-// initSchema creates the necessary tables if they do not already exist.
-func (m *SQLiteManager) initSchema(ctx context.Context) error {
-	userStateTable := `
-	CREATE TABLE IF NOT EXISTS user_state (
-		user_id TEXT PRIMARY KEY,
-		current_node TEXT,
-		user_name TEXT,
-		course_interest TEXT,
-		consulted_price BOOLEAN,
-		requires_human_agent BOOLEAN,
-		last_updated DATETIME
-	);`
-
-	historyTable := `
-	CREATE TABLE IF NOT EXISTS conversation_history (
-		user_id TEXT,
-		timestamp DATETIME,
-		direction TEXT,
-		message_content TEXT,
-		node_id TEXT,
-		PRIMARY KEY (user_id, timestamp)
-	);`
-
-	for _, query := range []string{userStateTable, historyTable} {
-		if _, err := m.db.ExecContext(ctx, query); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func (m *SQLiteManager) GetUserState(ctx context.Context, userID string) (*UserState, error) {
 	query := `SELECT current_node, user_name, course_interest, consulted_price, requires_human_agent, last_updated
 			  FROM user_state WHERE user_id = ?`
 
-	row := m.db.QueryRowContext(ctx, query, userID)
-
 	var s UserState
 	s.UserID = userID
 
-	err := row.Scan(
+	err := m.db.QueryRowContext(ctx, query, userID).Scan(
 		&s.CurrentNode, &s.UserName, &s.CourseInterest, &s.ConsultedPrice,
 		&s.RequiresHumanAgent, &s.LastUpdated,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			// This is not an error, it just means the user is new.
+			// New user - return empty state
 			return &UserState{UserID: userID}, nil
 		}
 
@@ -105,7 +72,7 @@ func (m *SQLiteManager) SaveUserState(ctx context.Context, userState *UserState)
 		course_interest = excluded.course_interest,
 		consulted_price = excluded.consulted_price,
 		requires_human_agent = excluded.requires_human_agent,
-		last_updated = excluded.last_updated;`
+		last_updated = excluded.last_updated`
 
 	_, err := m.db.ExecContext(ctx, query,
 		userState.UserID, userState.CurrentNode, userState.UserName, userState.CourseInterest,
@@ -135,11 +102,38 @@ func (m *SQLiteManager) SaveMessage(ctx context.Context, msg *ConversationMessag
 		return fmt.Errorf("failed to save message for %s: %w", msg.UserID, err)
 	}
 
-	m.logger.Debug("Message saved", map[string]interface{}{
-		"userID":    msg.UserID,
-		"direction": msg.Direction,
-		"nodeID":    msg.NodeID,
-	})
+	return nil
+}
+
+// initSchema creates the necessary tables if they do not already exist.
+func (m *SQLiteManager) initSchema(ctx context.Context) error {
+	queries := []string{
+		`CREATE TABLE IF NOT EXISTS user_state (
+			user_id TEXT PRIMARY KEY,
+			current_node TEXT,
+			user_name TEXT,
+			course_interest TEXT,
+			consulted_price BOOLEAN DEFAULT FALSE,
+			requires_human_agent BOOLEAN DEFAULT FALSE,
+			last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_user_state_updated ON user_state(last_updated)`,
+		`CREATE TABLE IF NOT EXISTS conversation_history (
+			user_id TEXT,
+			timestamp DATETIME,
+			direction TEXT CHECK(direction IN ('inbound', 'outbound')),
+			message_content TEXT,
+			node_id TEXT,
+			PRIMARY KEY (user_id, timestamp)
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_conversation_user_time ON conversation_history(user_id, timestamp DESC)`,
+	}
+
+	for _, query := range queries {
+		if _, err := m.db.ExecContext(ctx, query); err != nil {
+			return fmt.Errorf("failed to execute schema query: %w", err)
+		}
+	}
 
 	return nil
 }
