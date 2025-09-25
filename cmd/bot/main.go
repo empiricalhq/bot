@@ -26,6 +26,11 @@ import (
 
 const (
 	shutdownTimeout = 30 * time.Second
+	dbPingTimeout   = 30 * time.Second
+	msgProcTimeout  = 30 * time.Second
+
+	dbMaxOpenConns = 10
+	dbMaxIdleConns = 5
 )
 
 type App struct {
@@ -83,7 +88,7 @@ func run() error {
 	appLogger.Info("Conversation flow loaded and validated", nil)
 
 	// Initialize database with timeout context
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), dbPingTimeout)
 	defer cancel()
 
 	db, err := initDatabase(ctx, cfg.SQLiteDBPath, appLogger)
@@ -158,9 +163,9 @@ func initDatabase(ctx context.Context, dbPath string, logger *logger.Logger) (*s
 		return nil, fmt.Errorf("failed to open SQLite database: %w", err)
 	}
 
-	// Configure connection pool for better performance
-	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(5)
+	// Configure connection pool
+	db.SetMaxOpenConns(dbMaxOpenConns)
+	db.SetMaxIdleConns(dbMaxIdleConns)
 	db.SetConnMaxLifetime(time.Hour)
 
 	// Test connection
@@ -264,7 +269,6 @@ func (a *App) shutdown() error {
 func (a *App) eventHandler(evt interface{}) {
 	switch event := evt.(type) {
 	case *events.Message:
-		// Ignore group messages immediately for better performance
 		if event.Info.IsGroup {
 			return
 		}
@@ -282,7 +286,7 @@ func (a *App) eventHandler(evt interface{}) {
 }
 
 func (a *App) handleMessage(evt *events.Message) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), msgProcTimeout)
 	defer cancel()
 
 	msg := message.New(evt)
