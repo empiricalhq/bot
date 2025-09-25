@@ -303,7 +303,7 @@ func (a *App) handleMessage(evt *events.Message) {
 		})
 
 		if sendErr := a.messageSender.SendText(ctx, msg.Recipient,
-			"Disculpa, hubo un error procesando tu mensaje. Por favor intenta de nuevo en unos moments."); sendErr != nil {
+			"Disculpa, hubo un error procesando tu mensaje. Por favor intenta de nuevo en unos momentos."); sendErr != nil {
 			a.logger.Error("Failed to send error message", map[string]interface{}{"error": sendErr.Error()})
 		}
 
