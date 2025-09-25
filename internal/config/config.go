@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	ErrMissingFlowFile = errors.New("BOT_FLOW_FILE_PATH is required")
-	ErrMissingDBPath   = errors.New("BOT_SQLITE_DB_PATH is required")
+	ErrMissingFlowFile  = errors.New("BOT_FLOW_FILE_PATH is required")
+	ErrMissingDBPath    = errors.New("BOT_SQLITE_DB_PATH is required")
+	ErrFlowFileNotFound = errors.New("flow file not found")
 )
 
 type Config struct {
@@ -25,10 +26,8 @@ type Config struct {
 func Load() (*Config, error) {
 	// .env is optional; only serves to override defaults
 	err := godotenv.Load()
-	if err != nil {
-		if !os.IsNotExist(err) {
-			fmt.Printf("Warning: Failed to load .env file: %v\n", err)
-		}
+	if err != nil && !os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "WARN: failed to load .env file: %v\n", err)
 	}
 
 	cfg := &Config{
@@ -54,8 +53,9 @@ func (c *Config) validate() error {
 		return ErrMissingDBPath
 	}
 
-	if _, err := os.Stat(c.FlowFilePath); os.IsNotExist(err) {
-		return fmt.Errorf("flow file not found: %s", c.FlowFilePath)
+	_, err := os.Stat(c.FlowFilePath)
+	if os.IsNotExist(err) {
+		return fmt.Errorf("%w: %s", ErrFlowFileNotFound, c.FlowFilePath)
 	}
 
 	return nil

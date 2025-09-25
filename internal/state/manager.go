@@ -23,30 +23,30 @@ type SQLiteManager struct {
 }
 
 func NewSQLiteManager(db *sql.DB, log *logger.Logger) (*SQLiteManager, error) {
-	m := &SQLiteManager{
+	manager := &SQLiteManager{
 		db:     db,
 		logger: log,
 	}
 
-	err := m.initSchema(context.Background())
+	err := manager.initSchema(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize database schema: %w", err)
 	}
 
-	return m, nil
+	return manager, nil
 }
 
 func (m *SQLiteManager) GetUserState(ctx context.Context, userID string) (*UserState, error) {
 	query := `SELECT current_node, user_name, course_interest, consulted_price, requires_human_agent, last_updated
 			  FROM user_state WHERE user_id = ?`
 
-	var s UserState
+	var userState UserState
 
-	s.UserID = userID
+	userState.UserID = userID
 
 	err := m.db.QueryRowContext(ctx, query, userID).Scan(
-		&s.CurrentNode, &s.UserName, &s.CourseInterest, &s.ConsultedPrice,
-		&s.RequiresHumanAgent, &s.LastUpdated,
+		&userState.CurrentNode, &userState.UserName, &userState.CourseInterest, &userState.ConsultedPrice,
+		&userState.RequiresHumanAgent, &userState.LastUpdated,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -57,7 +57,7 @@ func (m *SQLiteManager) GetUserState(ctx context.Context, userID string) (*UserS
 		return nil, fmt.Errorf("failed to get user state for %s: %w", userID, err)
 	}
 
-	return &s, nil
+	return &userState, nil
 }
 
 func (m *SQLiteManager) SaveUserState(ctx context.Context, userState *UserState) error {
@@ -130,7 +130,8 @@ func (m *SQLiteManager) initSchema(ctx context.Context) error {
 	}
 
 	for _, query := range queries {
-		if _, err := m.db.ExecContext(ctx, query); err != nil {
+		_, err := m.db.ExecContext(ctx, query)
+		if err != nil {
 			return fmt.Errorf("failed to execute schema query: %w", err)
 		}
 	}

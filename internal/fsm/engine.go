@@ -18,6 +18,7 @@ import (
 var (
 	ErrCurrentNodeNotFound = errors.New("current node not found")
 	ErrInvalidCondition    = errors.New("invalid condition type")
+	ErrTargetNodeNotFound  = errors.New("target node not found")
 )
 
 type Engine struct {
@@ -65,7 +66,8 @@ func (e *Engine) ProcessMessage(ctx context.Context, msg *message.Message) (stri
 		return "", fmt.Errorf("failed to get user state: %w", err)
 	}
 
-	if err := e.saveInboundMessage(ctx, userState, msg); err != nil {
+	err = e.saveInboundMessage(ctx, userState, msg)
+	if err != nil {
 		e.logger.Error("Failed to save inbound message", map[string]interface{}{"error": err.Error()})
 	}
 
@@ -89,18 +91,20 @@ func (e *Engine) ProcessMessage(ctx context.Context, msg *message.Message) (stri
 		}
 	}
 
-	if err := e.stateManager.SaveUserState(ctx, userState); err != nil {
+	err = e.stateManager.SaveUserState(ctx, userState)
+	if err != nil {
 		e.logger.Error("Failed to save user state", map[string]interface{}{"error": err.Error()})
 	}
 
 	node, exists := e.flow.Nodes[nextNode]
 	if !exists {
-		return "", fmt.Errorf("target node not found: %s", nextNode)
+		return "", fmt.Errorf("%w: %s", ErrTargetNodeNotFound, nextNode)
 	}
 
 	response := e.renderer.RenderText(node.Message.Content, userState.UserName)
 
-	if err := e.saveOutboundMessage(ctx, userState, response); err != nil {
+	err = e.saveOutboundMessage(ctx, userState, response)
+	if err != nil {
 		e.logger.Error("Failed to save outbound message", map[string]interface{}{"error": err.Error()})
 	}
 
@@ -149,7 +153,7 @@ func (e *Engine) getOrCreateUserState(ctx context.Context, userID string) (*stat
 	return userState, nil
 }
 
-func (e *Engine) determineNextNode(inputText string, userState *state.UserState) (string, string, error) {
+func (e *Engine) determineNextNode(inputText string, userState *state.UserState) (nextNodeID, actionName string, err error) {
 	currentNode, exists := e.flow.Nodes[userState.CurrentNode]
 	if !exists {
 		return "", "", fmt.Errorf("%w: %s", ErrCurrentNodeNotFound, userState.CurrentNode)
@@ -190,11 +194,6 @@ func (e *Engine) determineNextNode(inputText string, userState *state.UserState)
 }
 
 func (e *Engine) matchCondition(inputText string, condition Condition) bool {
-	// TODO: is this condition check correct?
-	if inputText == "" {
-		return condition.Type == "any_text" && inputText != ""
-	}
-
 	lowerInput := strings.ToLower(inputText)
 
 	switch condition.Type {
@@ -261,21 +260,31 @@ func (e *Engine) matchRegex(input, pattern string) bool {
 }
 
 func (e *Engine) saveInboundMessage(ctx context.Context, userState *state.UserState, msg *message.Message) error {
-	return e.stateManager.SaveMessage(ctx, &state.ConversationMessage{
+	err := e.stateManager.SaveMessage(ctx, &state.ConversationMessage{
 		UserID:         userState.UserID,
 		Timestamp:      time.Now(),
 		Direction:      "inbound",
 		MessageContent: msg.GetText(),
 		NodeID:         userState.CurrentNode,
 	})
+	if err != nil {
+		return fmt.Errorf("failed to save inbound message: %w", err)
+	}
+
+	return nil
 }
 
 func (e *Engine) saveOutboundMessage(ctx context.Context, userState *state.UserState, response string) error {
-	return e.stateManager.SaveMessage(ctx, &state.ConversationMessage{
+	err := e.stateManager.SaveMessage(ctx, &state.ConversationMessage{
 		UserID:         userState.UserID,
 		Timestamp:      time.Now(),
 		Direction:      "outbound",
 		MessageContent: response,
 		NodeID:         userState.CurrentNode,
 	})
+	if err != nil {
+		return fmt.Errorf("failed to save outbound message: %w", err)
+	}
+
+	return nil
 }

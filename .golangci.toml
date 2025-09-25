@@ -52,7 +52,7 @@ version = "2"
   timeout = "5m"
   concurrency = 4
   tests = true
-  modules-download-mode = "vendor"
+  modules-download-mode = "readonly"
   allow-parallel-runners = true
   go = "1.25.1"
 

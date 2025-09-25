@@ -24,8 +24,8 @@ type Node struct {
 }
 
 type Flow struct {
-	StartNode         string          `json:"start_node"`
-	FallbackNode      string          `json:"fallback_node,omitempty"`
+	StartNode         string          `json:"startNode"`
+	FallbackNode      string          `json:"fallbackNode,omitempty"`
 	Nodes             map[string]Node `json:"nodes"`
-	GlobalTransitions []Transition    `json:"global_transitions,omitempty"`
+	GlobalTransitions []Transition    `json:"globalTransitions,omitempty"`
 }
