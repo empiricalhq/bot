@@ -17,9 +17,9 @@ function Log {
 }
 
 function Run {
-    param([string]$command, [string[]]$args)
-    Log "→ $command $($args -join ' ')" "DarkGray"
-    Start-Process -FilePath $command -ArgumentList $args -NoNewWindow `
+    param([string]$command, [string[]]$arguments)
+    Log "→ $command $($arguments -join ' ')" "DarkGray"
+    Start-Process -FilePath $command -ArgumentList $arguments -NoNewWindow `
         -RedirectStandardOutput "dev.log" -RedirectStandardError "dev.log" -Wait
 }
 
