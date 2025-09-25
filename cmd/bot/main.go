@@ -184,9 +184,13 @@ func initDatabase(ctx context.Context, dbPath string, logger *logger.Logger) (*s
 func initWhatsAppClient(db *sql.DB, logFactory *logger.Factory) (*whatsmeow.Client, error) {
 	container := sqlstore.NewWithDB(
 		db,
-		"sqlite",
+		"sqlite3", 
 		logger.NewWhatsmeowLogger(logFactory.GetLogger("SQLStore"), "sqlstore"),
 	)
+
+	if err := container.Upgrade(context.Background()); err != nil {
+		return nil, fmt.Errorf("failed to upgrade whatsmeow database schema: %w", err)
+	}
 
 	device, err := container.GetFirstDevice(context.Background())
 	if err != nil {
