@@ -10,7 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
+
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types/events"
@@ -158,7 +159,8 @@ func validateFlow(flow *fsm.Flow) error {
 }
 
 func initDatabase(ctx context.Context, dbPath string, logger *logger.Logger) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", dbPath+"?_timeout=30000&_journal_mode=WAL")
+	dsn := dbPath + "?_pragma=journal_mode=WAL&_pragma=busy_timeout=30000"
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open SQLite database: %w", err)
 	}
@@ -183,7 +185,7 @@ func initDatabase(ctx context.Context, dbPath string, logger *logger.Logger) (*s
 func initWhatsAppClient(db *sql.DB, logFactory *logger.Factory) (*whatsmeow.Client, error) {
 	container := sqlstore.NewWithDB(
 		db,
-		"sqlite3",
+		"sqlite",
 		logger.NewWhatsmeowLogger(logFactory.GetLogger("SQLStore"), "sqlstore"),
 	)
 
