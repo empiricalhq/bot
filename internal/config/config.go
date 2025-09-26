@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	ErrMissingFlowFile  = errors.New("BOT_FLOW_FILE_PATH is required")
-	ErrMissingDBPath    = errors.New("BOT_SQLITE_DB_PATH is required")
+	ErrMissingFlowFile  = errors.New("FLOW_FILE_PATH is required")
+	ErrMissingDBPath    = errors.New("SQLITE_DB_PATH is required")
 	ErrFlowFileNotFound = errors.New("flow file not found")
 )
 
@@ -31,9 +31,9 @@ func Load() (*Config, error) {
 	}
 
 	cfg := &Config{
-		LogLevel:     logger.ParseLevel(utils.GetEnv("BOT_LOG_LEVEL", "INFO")),
-		FlowFilePath: utils.GetEnv("BOT_FLOW_FILE_PATH", "conversation.json"),
-		SQLiteDBPath: utils.GetEnv("BOT_SQLITE_DB_PATH", "store.db"),
+		LogLevel:     logger.ParseLevel(utils.GetEnv("LOG_LEVEL", "INFO")),
+		FlowFilePath: utils.GetEnv("FLOW_FILE_PATH", "conversation.json"),
+		SQLiteDBPath: utils.GetEnv("SQLITE_DB_PATH", "store.db"),
 	}
 
 	err = cfg.validate()

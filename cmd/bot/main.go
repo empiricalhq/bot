@@ -18,7 +18,7 @@ func main() {
 
 func run() error {
 	logFactory, logFile, err := logger.NewFactory(logger.Config{
-		Level: logger.ParseLevel(os.Getenv("BOT_LOG_LEVEL")),
+		Level: logger.ParseLevel(os.Getenv("LOG_LEVEL")),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create logger factory: %w", err)
