@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -11,34 +10,29 @@ import (
 	"whatsbot/internal/logger"
 )
 
-const (
-	dbPingTimeout  = 15 * time.Second
-	dbMaxOpenConns = 10
-	dbMaxIdleConns = 5
-)
-
-func NewSQLite(ctx context.Context, dbPath string, log *logger.Logger) (*sql.DB, error) {
+func NewSQLite(ctx context.Context, dbPath string, logger logger.Logger) (*sql.DB, error) {
 	dsn := dbPath + "?_pragma=journal_mode=WAL&_pragma=busy_timeout=5000&_pragma=foreign_keys=ON"
 
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open SQLite database: %w", err)
+		return nil, err
 	}
 
-	db.SetMaxOpenConns(dbMaxOpenConns)
-	db.SetMaxIdleConns(dbMaxIdleConns)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
 	db.SetConnMaxLifetime(time.Hour)
 
-	pingCtx, cancel := context.WithTimeout(ctx, dbPingTimeout)
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
-	if err := db.PingContext(pingCtx); err != nil {
+	err = db.PingContext(ctx)
+	if err != nil {
 		db.Close()
 
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+		return nil, err
 	}
 
-	log.Info("Database connection pool initialized", map[string]interface{}{"path": dbPath})
+	logger.Info("Database connected", "path", dbPath)
 
 	return db, nil
 }

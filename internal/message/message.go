@@ -3,42 +3,36 @@ package message
 import (
 	"strings"
 
-	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 )
 
-// Message is a (simpler) abstraction over a WhatsApp message event.
 type Message struct {
-	Text      string
-	PushName  string
-	Sender    types.JID
-	Recipient types.JID
-	MessageID string
-	IsMedia   bool
+	Text     string
+	PushName string
+	SenderID string
+	HasMedia bool
 }
 
-// New creates a new Message from a whatsmeow event, returning nil for irrelevant messages.
-func New(evt *events.Message) *Message {
-	// ignore messages from groups or channels.
+func FromEvent(evt *events.Message) *Message {
+	// only listen to direct messages
 	if evt.Info.Chat.Server != "s.whatsapp.net" {
 		return nil
 	}
 
 	msg := &Message{
-		Sender:    evt.Info.Sender,
-		Recipient: evt.Info.Sender,
-		MessageID: evt.Info.ID,
-		PushName:  evt.Info.PushName,
+		SenderID: evt.Info.Sender.ToNonAD().String(),
+		PushName: evt.Info.PushName,
 	}
 
-	msg.Text, msg.IsMedia = extractContent(evt)
+	msg.Text, msg.HasMedia = extractContent(evt)
+	msg.Text = strings.TrimSpace(msg.Text)
 
 	return msg
 }
 
-// extractContent safely pulls text or caption from various message types.
-func extractContent(evt *events.Message) (text string, isMedia bool) {
+func extractContent(evt *events.Message) (string, bool) {
 	msg := evt.Message
+
 	switch {
 	case msg.GetConversation() != "":
 		return msg.GetConversation(), false
@@ -51,25 +45,9 @@ func extractContent(evt *events.Message) (text string, isMedia bool) {
 	case msg.GetVideoMessage() != nil:
 		return msg.GetVideoMessage().GetCaption(), true
 	default:
-		// any other type is considered media if it's not text-based.
+		// Other message types are considered media
 		isMedia := msg.GetStickerMessage() != nil || msg.GetAudioMessage() != nil
 
 		return "", isMedia
 	}
-}
-
-func (m *Message) GetSenderID() string {
-	return m.Sender.ToNonAD().String()
-}
-
-func (m *Message) GetText() string {
-	return strings.TrimSpace(m.Text)
-}
-
-func (m *Message) GetPushName() string {
-	return m.PushName
-}
-
-func (m *Message) HasMedia() bool {
-	return m.IsMedia
 }
