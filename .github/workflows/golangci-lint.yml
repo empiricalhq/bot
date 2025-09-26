@@ -4,15 +4,13 @@ on:
   push:
     branches: [master]
     paths:
-      - "/cmd/"
-      - "/internal/"
-      - "/pkg/"
+      - "**/*.go"
+      - ".golangci.toml"
   pull_request:
     branches: [master]
     paths:
-      - "/cmd/"
-      - "/internal/"
-      - "/pkg/"
+      - "**/*.go"
+      - ".golangci.toml"
   workflow_dispatch:
 
 jobs:
