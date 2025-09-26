@@ -1,8 +1,8 @@
 version = "2"
 
 [linters]
-  default = "all"
-  disable = [
+default = "all"
+disable = [
     "lll",
     "dupl",
     "funlen",
@@ -11,55 +11,70 @@ version = "2"
     "gochecknoinits",
     "exhaustruct",
     "nonamedreturns",
-  ]
+]
 
-  [linters.settings]
-    [linters.settings.gocritic]
-      enabled-tags = ["performance", "style", "experimental"]
-      disabled-checks = ["hugeParam"]
+[linters.settings.gocritic]
+enabled-tags = [
+    "performance",
+    "style",
+    "experimental",
+]
+disabled-checks = [
+    "hugeParam",
+    "importShadow",
+]
 
-    [linters.settings.gocyclo]
-      min-complexity = 15  # Default is 30 (we are more strict)
+[linters.settings.gocyclo]
+min-complexity = 15  # Default is 30 (we are more strict)
 
-    [linters.settings.gocognit]
-      min-complexity = 15  # Default is 30 (we are more strict)
+[linters.settings.gocognit]
+min-complexity = 15  # Default is 30 (we are more strict)
 
-    [linters.settings.prealloc]
-      simple = true
-      range-loops = true
+[linters.settings.prealloc]
+simple = true
+range-loops = true
 
-    [linters.settings.errcheck]
-      check-type-assertions = true
-      check-blank = true
+[linters.settings.errcheck]
+check-type-assertions = true
+check-blank = true
 
-    [linters.settings.depguard.rules.main]
-      list-mode = "lax"
-      allow = [
-        "go.mau.fi/whatsmeow/types"
-      ]
+[linters.settings.depguard.rules.main]
+list-mode = "lax"
+allow = ["go.mau.fi/whatsmeow/types"]
 
-    [linters.settings.revive]
-      rules = [
-        { name = "exported", disabled = true }
-      ]
+[[linters.settings.revive.rules]]
+name = "exported"
+disabled = true
+
+[linters.settings.tagliatelle.case.rules]
+json = "snake"
 
 [formatters]
-  enable = ["gofumpt", "goimports", "gci"]
-  [formatters.settings.gci]
-    sections = ["standard", "default", "prefix(whatsbot)"]
+enable = [
+    "gofumpt",
+    "goimports",
+    "gci",
+]
+
+[formatters.settings.gci]
+sections = [
+    "standard",
+    "default",
+    "prefix(whatsbot)",
+]
 
 [run]
-  timeout = "5m"
-  concurrency = 4
-  tests = true
-  modules-download-mode = "readonly"
-  allow-parallel-runners = true
-  go = "1.25.1"
+timeout = "5m"
+concurrency = 4
+tests = true
+modules-download-mode = "readonly"
+allow-parallel-runners = true
+go = "1.25.1"
 
 [issues]
-  max-issues-per-linter = 0
-  max-same-issues = 0
-  fix = true
+max-issues-per-linter = 0
+max-same-issues = 0
+fix = true
 
 [severity]
-  default = "error"
+default = "error"
