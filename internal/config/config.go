@@ -59,7 +59,8 @@ func (c *Config) validate() error {
 		return errors.New("SQLITE_DB_PATH is required")
 	}
 
-	if _, err := os.Stat(c.FlowFilePath); os.IsNotExist(err) {
+	_, err := os.Stat(c.FlowFilePath)
+	if os.IsNotExist(err) {
 		return errors.New("flow file not found: " + c.FlowFilePath)
 	}
 
