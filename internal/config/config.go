@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 
@@ -18,9 +19,11 @@ var (
 )
 
 type Config struct {
-	LogLevel     logger.Level
-	FlowFilePath string
-	SQLiteDBPath string
+	LogLevel        logger.Level
+	FlowFilePath    string
+	SQLiteDBPath    string
+	Environment     string
+	DevAllowedUsers map[string]bool
 }
 
 func Load() (*Config, error) {
@@ -34,7 +37,11 @@ func Load() (*Config, error) {
 		LogLevel:     logger.ParseLevel(utils.GetEnv("LOG_LEVEL", "INFO")),
 		FlowFilePath: utils.GetEnv("FLOW_FILE_PATH", "conversation.json"),
 		SQLiteDBPath: utils.GetEnv("SQLITE_DB_PATH", "store.db"),
+		Environment:  strings.ToLower(utils.GetEnv("ENV", "prod")),
 	}
+
+	allowedUsersStr := utils.GetEnv("DEV_ALLOWED_USERS", "")
+	cfg.DevAllowedUsers = parseAllowedUsers(allowedUsersStr)
 
 	err = cfg.validate()
 	if err != nil {
@@ -42,6 +49,22 @@ func Load() (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func parseAllowedUsers(usersStr string) map[string]bool {
+	allowed := make(map[string]bool)
+	if usersStr == "" {
+		return allowed
+	}
+
+	for _, user := range strings.Split(usersStr, ",") {
+		trimmed := strings.TrimSpace(user)
+		if trimmed != "" {
+			allowed[trimmed] = true
+		}
+	}
+
+	return allowed
 }
 
 func (c *Config) validate() error {
