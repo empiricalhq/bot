@@ -616,7 +616,7 @@
     "PAYMENT_CONFIRMED": {
       "message": {
         "type": "text",
-        "content": "🎉*¡FELICITACIONES {{name}}!*🎉\n\n*Tu pago ha sido recibido exitosamente* ✅\n\nPor favor envíanos:\n• Tu nombre completo\n• País\n• Una foto tuya\n\nAl WhatsApp de la escuela: *+51 923 845 189*\n\nYa que te obsequiaremos el E-Book 1 del Taller de Joyería Tejida\n\n¡Bienvenid@ a Escuela de Joyería Tejida!\n\n¡Estamos encantadas de acompañarte en esta nueva aventura, te deseamos muchos éxitos!"
+        "content": "🎉 **¡FELICITACIONES {{name}}!** 🎉\n\n*Tu pago ha sido recibido exitosamente* ✅\n\nPor favor envíanos:\n• Tu nombre completo\n• País\n• Una foto tuya\n\nAl WhatsApp de la escuela: *+51 923 845 189*\n\nYa que te obsequiaremos el E-Book 1 del Taller de Joyería Tejida\n\n¡Bienvenid@ a Escuela de Joyería Tejida!\n\n¡Estamos encantadas de acompañarte en esta nueva aventura, te deseamos muchos éxitos!"
       },
       "transitions": [
         { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
