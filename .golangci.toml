@@ -11,6 +11,7 @@ disable = [
     "gochecknoinits",
     "exhaustruct",
     "nonamedreturns",
+    "err113"
 ]
 
 [linters.settings.gocritic]
