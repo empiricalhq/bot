@@ -19,6 +19,8 @@ import (
 	"whatsbot/internal/logger"
 )
 
+const sendMessageTimeout = 15 * time.Second
+
 type Client struct {
 	*whatsmeow.Client
 
@@ -60,7 +62,7 @@ func (c *Client) SendText(ctx context.Context, to, text string) error {
 		return err
 	}
 
-	sendCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	sendCtx, cancel := context.WithTimeout(ctx, sendMessageTimeout)
 	defer cancel()
 
 	_, err = c.SendMessage(sendCtx, jid, &waE2E.Message{
