@@ -30,7 +30,7 @@ func (a *actionHandler) Execute(action string, state *domain.UserState, msg *mes
 
 	switch action {
 	case "save_user_name":
-		return a.saveUserName(state, msg.Text)
+		return a.saveUserName(state, msg)
 	case "create_new_lead":
 		a.logger.Info("New lead created", "user", state.UserID, "name", state.UserName)
 	case "update_lead_interest_beginner":
@@ -51,8 +51,12 @@ func (a *actionHandler) Execute(action string, state *domain.UserState, msg *mes
 	return nil
 }
 
-func (a *actionHandler) saveUserName(state *domain.UserState, name string) error {
-	name = strings.TrimSpace(name)
+func (a *actionHandler) saveUserName(state *domain.UserState, msg *message.Message) error {
+	name := strings.TrimSpace(msg.PushName)
+	if name == "" {
+		name = strings.TrimSpace(msg.Text)
+	}
+
 	if name == "" {
 		return errors.New("user name cannot be empty")
 	}

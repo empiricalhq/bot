@@ -31,6 +31,7 @@ type WhatsAppClient interface {
 }
 
 func NewBot(
+	config *config.Config,
 	repo repository.Repository,
 	fsm FSM,
 	actions ActionHandler,
@@ -39,6 +40,7 @@ func NewBot(
 	logger logger.Logger,
 ) *Bot {
 	return &Bot{
+		config:   config,
 		repo:     repo,
 		fsm:      fsm,
 		actions:  actions,

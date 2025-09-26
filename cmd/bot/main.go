@@ -63,7 +63,7 @@ func main() {
 	actions := service.NewActionHandler(logger)
 	renderer := template.NewRenderer()
 
-	bot := service.NewBot(repo, fsm, actions, renderer, waClient, logger)
+	bot := service.NewBot(cfg, repo, fsm, actions, renderer, waClient, logger)
 
 	if waClient.Store.ID == nil {
 		err = whatsapp.LoginWithQR(waClient.Client, logger)

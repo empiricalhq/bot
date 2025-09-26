@@ -52,6 +52,7 @@ func (f *fsm) DetermineNext(state *domain.UserState, input string, hasMedia bool
 			if action == "" {
 				action = currentNode.Action // fallback
 			}
+
 			return transition.Target, action
 		}
 	}
