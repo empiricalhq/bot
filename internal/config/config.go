@@ -8,18 +8,11 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"whatsbot/internal/logger"
 	"whatsbot/pkg/utils"
 )
 
-var (
-	ErrMissingFlowFile  = errors.New("FLOW_FILE_PATH is required")
-	ErrMissingDBPath    = errors.New("SQLITE_DB_PATH is required")
-	ErrFlowFileNotFound = errors.New("flow file not found")
-)
-
 type Config struct {
-	LogLevel        logger.Level
+	LogLevel        string
 	FlowFilePath    string
 	SQLiteDBPath    string
 	Environment     string
@@ -34,21 +27,16 @@ func Load() (*Config, error) {
 	}
 
 	cfg := &Config{
-		LogLevel:     logger.ParseLevel(utils.GetEnv("LOG_LEVEL", "INFO")),
+		LogLevel:     utils.GetEnv("LOG_LEVEL", "INFO"),
 		FlowFilePath: utils.GetEnv("FLOW_FILE_PATH", "conversation.json"),
 		SQLiteDBPath: utils.GetEnv("SQLITE_DB_PATH", "store.db"),
 		Environment:  strings.ToLower(utils.GetEnv("ENV", "prod")),
 	}
 
-	allowedUsersStr := utils.GetEnv("DEV_ALLOWED_USERS", "")
-	cfg.DevAllowedUsers = parseAllowedUsers(allowedUsersStr)
+	allowedUsers := utils.GetEnv("DEV_ALLOWED_USERS", "")
+	cfg.DevAllowedUsers = parseAllowedUsers(allowedUsers)
 
-	err = cfg.validate()
-	if err != nil {
-		return nil, fmt.Errorf("config validation failed: %w", err)
-	}
-
-	return cfg, nil
+	return cfg, cfg.validate()
 }
 
 func parseAllowedUsers(usersStr string) map[string]bool {
@@ -58,9 +46,9 @@ func parseAllowedUsers(usersStr string) map[string]bool {
 	}
 
 	for _, user := range strings.Split(usersStr, ",") {
-		trimmed := strings.TrimSpace(user)
-		if trimmed != "" {
-			allowed[trimmed] = true
+		user = strings.TrimSpace(user)
+		if user != "" {
+			allowed[user] = true
 		}
 	}
 
@@ -69,16 +57,16 @@ func parseAllowedUsers(usersStr string) map[string]bool {
 
 func (c *Config) validate() error {
 	if c.FlowFilePath == "" {
-		return ErrMissingFlowFile
+		return errors.New("FLOW_FILE_PATH is required")
 	}
 
 	if c.SQLiteDBPath == "" {
-		return ErrMissingDBPath
+		return errors.New("SQLITE_DB_PATH is required")
 	}
 
 	_, err := os.Stat(c.FlowFilePath)
 	if os.IsNotExist(err) {
-		return fmt.Errorf("%w: %s", ErrFlowFileNotFound, c.FlowFilePath)
+		return errors.New("flow file not found: " + c.FlowFilePath)
 	}
 
 	return nil

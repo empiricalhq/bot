@@ -1,4 +1,4 @@
-package fsm
+package domain
 
 type MessageContent struct {
 	Type    string `json:"type"`
@@ -6,9 +6,10 @@ type MessageContent struct {
 }
 
 type Condition struct {
-	Type  string   `json:"type"`
-	Value []string `json:"value,omitempty"`
-	Regex string   `json:"regex,omitempty"`
+	Type    string   `json:"type"`
+	Value   []string `json:"value,omitempty"`
+	Regex   string   `json:"regex,omitempty"`
+	IsMedia bool     `json:"is_media,omitempty"`
 }
 
 type Transition struct {
@@ -19,8 +20,8 @@ type Transition struct {
 
 type Node struct {
 	Message     MessageContent `json:"message"`
-	Action      string         `json:"action,omitempty"`
 	Transitions []Transition   `json:"transitions"`
+	Action      string         `json:"action,omitempty"`
 }
 
 type Flow struct {
