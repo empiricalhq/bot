@@ -43,12 +43,14 @@ func (a *App) Run() error {
 
 	if a.client.Store.ID == nil {
 		a.logger.Info("No device stored, initiating QR login", nil)
+
 		err := client.LoginWithQR(a.client, a.logger, ErrQRLoginTimeout)
 		if err != nil {
 			return fmt.Errorf("QR login failed: %w", err)
 		}
 	} else {
 		a.logger.Info("Restoring existing session", nil)
+
 		err := a.client.Connect()
 		if err != nil {
 			return fmt.Errorf("failed to restore existing session: %w", err)

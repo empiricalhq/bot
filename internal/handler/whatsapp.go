@@ -86,6 +86,7 @@ func (h *WhatsApp) shouldIgnoreMessage(senderID string) bool {
 
 	if len(h.config.DevAllowedUsers) == 0 {
 		h.logger.Warn("No DEV_ALLOWED_USERS specified; ignoring all messages in dev mode", nil)
+
 		return true // in dev mode, if no users are specified, ignore all.
 	}
 

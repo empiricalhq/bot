@@ -25,7 +25,7 @@ func NewWhatsApp(ctx context.Context, db *sql.DB, logFactory *logger.Factory) (*
 	if err != nil {
 		// This is expected on first run. We log other errors as warnings.
 		var sqliteErr *sqlite.Error
-		if !errors.As(err, &sqliteErr) || sqliteErr.Code() != 1 { // 1 = SQLITE_ERROR
+		if !errors.As(err, &sqliteErr) || sqliteErr.Code() != 1 {
 			logFactory.GetLogger("app").Warn("Could not get first device, may need QR login",
 				map[string]interface{}{"error": err.Error()})
 		}
