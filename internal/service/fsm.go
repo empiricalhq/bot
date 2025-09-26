@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -33,7 +34,7 @@ func NewFSM(flow *domain.Flow, logger logger.Logger) FSM {
 	}
 }
 
-func (f *fsm) DetermineNext(state *domain.UserState, input string, hasMedia bool) (string, string) {
+func (f *fsm) DetermineNext(state *domain.UserState, input string, hasMedia bool) (nodeID, action string) {
 	input = strings.ToLower(strings.TrimSpace(input))
 
 	// Check global transitions first
@@ -58,6 +59,19 @@ func (f *fsm) DetermineNext(state *domain.UserState, input string, hasMedia bool
 	}
 
 	return fallback, ""
+}
+
+func (f *fsm) GetStartNode() string {
+	return f.flow.StartNode
+}
+
+func (f *fsm) GetNode(nodeID string) *domain.Node {
+	node, exists := f.flow.Nodes[nodeID]
+	if !exists {
+		return nil
+	}
+
+	return &node
 }
 
 func (f *fsm) matchesCondition(input string, hasMedia bool, condition domain.Condition) bool {
@@ -117,30 +131,17 @@ func (f *fsm) matchesRegex(input, pattern string) bool {
 	return regex.MatchString(input)
 }
 
-func (f *fsm) GetNode(nodeID string) *domain.Node {
-	node, exists := f.flow.Nodes[nodeID]
-	if !exists {
-		return nil
-	}
-
-	return &node
-}
-
-func (f *fsm) GetStartNode() string {
-	return f.flow.StartNode
-}
-
 func LoadFlow(path string) (*domain.Flow, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read flow file: %w", err)
 	}
 
 	var flow domain.Flow
 
 	err = json.Unmarshal(data, &flow)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse flow file: %w", err)
 	}
 
 	return &flow, validateFlow(&flow)
