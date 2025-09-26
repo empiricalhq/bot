@@ -10,14 +10,15 @@ import (
 
 type Message struct {
 	Text      string
+	PushName  string
 	Sender    types.JID
 	Recipient types.JID
 	MessageID string
 }
 
 func New(evt *events.Message) *Message {
-	// early return for group messages
-	if evt.Info.IsGroup {
+	// early return for non-direct messages
+	if evt.Info.Chat.Server != "s.whatsapp.net" {
 		return nil
 	}
 
@@ -25,6 +26,7 @@ func New(evt *events.Message) *Message {
 		Sender:    evt.Info.Sender,
 		Recipient: evt.Info.Sender,
 		MessageID: evt.Info.ID,
+		PushName:  evt.Info.PushName,
 	}
 
 	msg.Text = extractTextContent(evt)
@@ -65,10 +67,14 @@ func (m *Message) GetText() string {
 	return m.Text
 }
 
+func (m *Message) GetPushName() string {
+	return m.PushName
+}
+
 func (m *Message) IsEmpty() bool {
 	return strings.TrimSpace(m.Text) == ""
 }
 
 func (m *Message) String() string {
-	return fmt.Sprintf("ID: %s, From: %s, Text: %q", m.MessageID, m.GetSenderID(), m.Text)
+	return fmt.Sprintf("ID: %s, From: %s, Name: %q, Text: %q", m.MessageID, m.GetSenderID(), m.PushName, m.Text)
 }

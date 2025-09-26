@@ -61,7 +61,7 @@ func (e *Engine) ProcessMessage(ctx context.Context, msg *message.Message) (stri
 		"text":   inputText,
 	})
 
-	userState, err := e.getOrCreateUserState(ctx, userID)
+	userState, err := e.getOrCreateUserState(ctx, msg)
 	if err != nil {
 		return "", fmt.Errorf("failed to get user state: %w", err)
 	}
@@ -117,15 +117,18 @@ func (e *Engine) ProcessMessage(ctx context.Context, msg *message.Message) (stri
 	return response, nil
 }
 
-func (e *Engine) getOrCreateUserState(ctx context.Context, userID string) (*state.UserState, error) {
+func (e *Engine) getOrCreateUserState(ctx context.Context, msg *message.Message) (*state.UserState, error) {
+	userID := msg.GetSenderID()
+
 	userState, err := e.stateManager.GetUserState(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("could not get user state: %w", err)
 	}
 
-	// new user: start with the flow's start node
+	// new user: start with the flow's start node and pre-populate their name
 	if userState.CurrentNode == "" {
 		userState.CurrentNode = e.flow.StartNode
+		userState.UserName = msg.GetPushName()
 		userState.LastUpdated = time.Now()
 
 		err := e.stateManager.SaveUserState(ctx, userState)
@@ -137,6 +140,7 @@ func (e *Engine) getOrCreateUserState(ctx context.Context, userID string) (*stat
 
 		e.logger.Info("New user initialized", map[string]interface{}{
 			"userID":    userID,
+			"pushName":  userState.UserName,
 			"startNode": e.flow.StartNode,
 		})
 	}

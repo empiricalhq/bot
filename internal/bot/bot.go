@@ -268,8 +268,8 @@ func (b *Bot) handleMessage(evt *events.Message) {
 	}
 }
 
-// only applies on dev environment
-// see .env.example
+// only applies on dev environment.
+// see .env.example.
 func (b *Bot) shouldIgnoreMessage(senderID string) bool {
 	if b.config.Environment != "dev" {
 		return false
