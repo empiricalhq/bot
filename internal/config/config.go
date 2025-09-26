@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 
@@ -19,7 +20,11 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
-	godotenv.Load() // Optional, ignore errors
+	// .env is optional; only serves to override defaults
+	err := godotenv.Load()
+	if err != nil && !os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "WARN: failed to load .env file: %v\n", err)
+	}
 
 	cfg := &Config{
 		LogLevel:     utils.GetEnv("LOG_LEVEL", "INFO"),
