@@ -21,6 +21,7 @@ type Transition struct {
 type Node struct {
 	Message     MessageContent `json:"message"`
 	Transitions []Transition   `json:"transitions"`
+	Action      string         `json:"action,omitempty"`
 }
 
 type Flow struct {

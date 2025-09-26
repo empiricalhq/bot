@@ -48,6 +48,10 @@ func (f *fsm) DetermineNext(state *domain.UserState, input string, hasMedia bool
 	currentNode := f.flow.Nodes[state.CurrentNode]
 	for _, transition := range currentNode.Transitions {
 		if f.matchesCondition(input, hasMedia, transition.Condition) {
+			action = transition.Action
+			if action == "" {
+				action = currentNode.Action // fallback
+			}
 			return transition.Target, transition.Action
 		}
 	}

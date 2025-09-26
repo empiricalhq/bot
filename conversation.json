@@ -1,5 +1,6 @@
 {
   "start_node": "WAITING_FOR_NAME",
+  "fallback_node": "FALLBACK_MENU",
   "global_transitions": [
     {
       "condition": {
@@ -20,8 +21,7 @@
         "type": "keyword",
         "value": ["gracias", "ok", "bien"]
       },
-      "target": "QUICK_RESPONSES",
-      "action": "send_quick_response"
+      "target": "QUICK_RESPONSES"
     },
     {
       "condition": {
@@ -376,6 +376,15 @@
         "content": "¡Ha sido un placer ayudarte! 😊\n\nRecuerda que estamos aquí cuando lo necesites.\nSolo escribe *HOLA* para volver a empezar.\n\n¡Que tengas un excelente día! ✨"
       },
       "transitions": []
+    },
+    "QUICK_RESPONSES": {
+      "message": {
+        "type": "text",
+        "content": "¡Perfecto! Si necesitas algo más, aquí estoy para ayudarte."
+      },
+      "transitions": [
+        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+      ]
     },
     "FALLBACK_MENU": {
       "message": {
