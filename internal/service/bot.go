@@ -14,6 +14,8 @@ import (
 	"whatsbot/internal/template"
 )
 
+const messageTimeout = 30 * time.Second
+
 type Bot struct {
 	config   *config.Config
 	repo     repository.Repository
@@ -68,7 +70,7 @@ func (b *Bot) HandleEvent(evt interface{}) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), messageTimeout)
 	defer cancel()
 
 	err := b.processMessage(ctx, msg)
