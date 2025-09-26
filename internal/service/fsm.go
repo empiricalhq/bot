@@ -64,7 +64,7 @@ func (f *fsm) matchesCondition(input string, hasMedia bool, condition domain.Con
 	switch condition.Type {
 	case "exact":
 		for _, value := range condition.Value {
-			if input == strings.ToLower(value) {
+			if strings.EqualFold(input, value) {
 				return true
 			}
 		}
@@ -81,6 +81,7 @@ func (f *fsm) matchesCondition(input string, hasMedia bool, condition domain.Con
 	case "media":
 		return hasMedia
 	}
+
 	return false
 }
 
@@ -98,14 +99,18 @@ func (f *fsm) matchesRegex(input, pattern string) bool {
 		// Double-check after acquiring write lock
 		if regex, exists = f.regexCache[pattern]; !exists {
 			var err error
+
 			regex, err = regexp.Compile(pattern)
 			if err != nil {
 				f.logger.Error("Invalid regex pattern", "pattern", pattern, "error", err)
 				f.mutex.Unlock()
+
 				return false
 			}
+
 			f.regexCache[pattern] = regex
 		}
+
 		f.mutex.Unlock()
 	}
 
@@ -117,6 +122,7 @@ func (f *fsm) GetNode(nodeID string) *domain.Node {
 	if !exists {
 		return nil
 	}
+
 	return &node
 }
 
@@ -131,6 +137,7 @@ func LoadFlow(path string) (*domain.Flow, error) {
 	}
 
 	var flow domain.Flow
+
 	err = json.Unmarshal(data, &flow)
 	if err != nil {
 		return nil, err

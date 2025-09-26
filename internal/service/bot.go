@@ -64,6 +64,7 @@ func (b *Bot) HandleEvent(evt interface{}) {
 
 	if b.shouldIgnoreUser(msg.SenderID) {
 		b.logger.Debug("Ignoring user in dev mode", "user", msg.SenderID)
+
 		return
 	}
 
@@ -153,6 +154,7 @@ func (b *Bot) generateResponse(nodeID string, state *domain.UserState) string {
 	node := b.fsm.GetNode(nodeID)
 	if node == nil {
 		b.logger.Error("Node not found", "node", nodeID)
+
 		return "Sorry, something went wrong."
 	}
 
@@ -166,9 +168,11 @@ func (b *Bot) shouldIgnoreUser(userID string) bool {
 
 	if len(b.config.DevAllowedUsers) == 0 {
 		b.logger.Debug("There are no allowed users set. Add DEV_ALLOWED_USERS for testing.")
+
 		return true // In dev mode with no allowed users, ignore all
 	}
 
 	_, allowed := b.config.DevAllowedUsers[userID]
+
 	return !allowed
 }

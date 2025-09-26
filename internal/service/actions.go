@@ -44,6 +44,7 @@ func (a *actionHandler) Execute(action string, state *domain.UserState, msg *mes
 		a.logger.Warn("Escalated to human", "user", state.UserID, "name", state.UserName)
 	default:
 		a.logger.Warn("Unknown action", "action", action)
+
 		return errors.New("unknown action: " + action)
 	}
 
@@ -55,6 +56,8 @@ func (a *actionHandler) saveUserName(state *domain.UserState, name string) error
 	if name == "" {
 		return errors.New("user name cannot be empty")
 	}
+
 	state.UserName = name
+
 	return nil
 }

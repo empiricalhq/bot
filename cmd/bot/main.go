@@ -37,6 +37,7 @@ func main() {
 	defer db.Close()
 
 	repo := repository.New(db, logger)
+
 	err = repo.InitSchema(ctx)
 	if err != nil {
 		log.Fatalf("Schema init failed: %v", err)
@@ -78,10 +79,12 @@ func main() {
 	<-sigChan
 
 	logger.Info("Shutting down...")
+
 	shutdownCtx, cancel := context.WithTimeout(ctx, shutdownTimeout)
 	defer cancel()
 
 	done := make(chan struct{})
+
 	go func() {
 		waClient.Disconnect()
 		close(done)

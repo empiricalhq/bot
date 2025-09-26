@@ -21,11 +21,13 @@ import (
 
 type Client struct {
 	*whatsmeow.Client
+
 	logger logger.Logger
 }
 
 func NewClient(ctx context.Context, db *sql.DB, logger logger.Logger) (*Client, error) {
 	container := sqlstore.NewWithDB(db, "sqlite3", newWhatsmeowLogger(logger))
+
 	err := container.Upgrade(ctx)
 	if err != nil {
 		return nil, err
@@ -61,7 +63,7 @@ func (c *Client) SendText(ctx context.Context, to, text string) error {
 	sendCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
-	_, err = c.Client.SendMessage(sendCtx, jid, &waE2E.Message{
+	_, err = c.SendMessage(sendCtx, jid, &waE2E.Message{
 		Conversation: proto.String(text),
 	})
 
@@ -85,6 +87,7 @@ func LoginWithQR(client *whatsmeow.Client, logger logger.Logger) error {
 			qrterminal.GenerateHalfBlock(evt.Code, qrterminal.L, os.Stdout)
 		case "success":
 			logger.Info("QR login successful")
+
 			return nil
 		case "timeout":
 			return errors.New("QR login timed out")
@@ -94,7 +97,7 @@ func LoginWithQR(client *whatsmeow.Client, logger logger.Logger) error {
 	return errors.New("QR channel closed unexpectedly")
 }
 
-// whatsmeowLogger adapts our logger to whatsmeow's interface
+// whatsmeowLogger adapts our logger to whatsmeow's interface.
 type whatsmeowLogger struct {
 	logger logger.Logger
 }
