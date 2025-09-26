@@ -7,8 +7,10 @@ import (
 	"time"
 )
 
+// Level defines the logging level.
 type Level int8
 
+// Log levels.
 const (
 	DEBUG Level = iota
 	INFO
@@ -17,6 +19,7 @@ const (
 	DISABLED
 )
 
+// ParseLevel converts a string to a log Level.
 func ParseLevel(levelStr string) Level {
 	switch strings.ToUpper(strings.TrimSpace(levelStr)) {
 	case "DEBUG":
@@ -51,18 +54,21 @@ func (l Level) String() string {
 	}
 }
 
+// IsEnabled checks if a message at a given level should be logged.
 func (l Level) IsEnabled(level Level) bool {
 	return l != DISABLED && level >= l
 }
 
+// Entry represents a single log record.
 type Entry struct {
 	Timestamp time.Time              `json:"timestamp"`
 	Level     string                 `json:"level"`
-	Name      string                 `json:"name,omitempty"`
+	Name      string                 `json:"name"`
 	Message   string                 `json:"message"`
 	Data      map[string]interface{} `json:"data,omitempty"`
 }
 
+// Logger is a structured logger.
 type Logger struct {
 	name          string
 	level         Level
@@ -70,6 +76,7 @@ type Logger struct {
 	consoleOutput *log.Logger
 }
 
+// NewLogger creates a new Logger instance.
 func NewLogger(name string, level Level, fileOutput, consoleOutput *log.Logger) *Logger {
 	return &Logger{
 		name:          name,
@@ -114,16 +121,17 @@ func (l *Logger) log(level Level, msg string, data map[string]interface{}) {
 
 	jsonData, err := json.Marshal(entry)
 	if err != nil {
-		log.Printf("Logger marshal error: %v", err)
+		log.Printf("Logger JSON marshal error: %v", err)
 
 		return
 	}
 
+	line := string(jsonData)
 	if l.fileOutput != nil {
-		l.fileOutput.Println(string(jsonData))
+		l.fileOutput.Println(line)
 	}
 
 	if l.consoleOutput != nil {
-		l.consoleOutput.Println(string(jsonData))
+		l.consoleOutput.Println(line)
 	}
 }

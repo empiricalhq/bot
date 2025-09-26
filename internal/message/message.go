@@ -1,23 +1,25 @@
 package message
 
 import (
-	"fmt"
 	"strings"
 
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 )
 
+// Message is a simplified abstraction over a WhatsApp message event.
 type Message struct {
 	Text      string
 	PushName  string
 	Sender    types.JID
 	Recipient types.JID
 	MessageID string
+	IsMedia   bool
 }
 
+// New creates a new Message from a whatsmeow event, returning nil for irrelevant messages.
 func New(evt *events.Message) *Message {
-	// early return for non-direct messages
+	// Ignore messages from groups or channels.
 	if evt.Info.Chat.Server != "s.whatsapp.net" {
 		return nil
 	}
@@ -29,52 +31,49 @@ func New(evt *events.Message) *Message {
 		PushName:  evt.Info.PushName,
 	}
 
-	msg.Text = extractTextContent(evt)
-	msg.Text = strings.TrimSpace(msg.Text)
+	msg.Text, msg.IsMedia = extractContent(evt)
 
 	return msg
 }
 
-func extractTextContent(evt *events.Message) string {
-	if text := evt.Message.GetConversation(); text != "" {
-		return text
-	}
+// extractContent safely pulls text or caption from various message types.
+func extractContent(evt *events.Message) (text string, isMedia bool) {
+	msg := evt.Message
+	switch {
+	case msg.GetConversation() != "":
+		return msg.GetConversation(), false
+	case msg.GetExtendedTextMessage() != nil:
+		return msg.GetExtendedTextMessage().GetText(), false
+	case msg.GetImageMessage() != nil:
+		return msg.GetImageMessage().GetCaption(), true
+	case msg.GetDocumentMessage() != nil:
+		return msg.GetDocumentMessage().GetCaption(), true
+	case msg.GetVideoMessage() != nil:
+		return msg.GetVideoMessage().GetCaption(), true
+	default:
+		// Any other type is considered media if it's not text-based.
+		isMedia := msg.GetStickerMessage() != nil || msg.GetAudioMessage() != nil
 
-	if extText := evt.Message.GetExtendedTextMessage(); extText != nil {
-		return extText.GetText()
+		return "", isMedia
 	}
-
-	if img := evt.Message.GetImageMessage(); img != nil {
-		return img.GetCaption()
-	}
-
-	if doc := evt.Message.GetDocumentMessage(); doc != nil {
-		return doc.GetCaption()
-	}
-
-	if video := evt.Message.GetVideoMessage(); video != nil {
-		return video.GetCaption()
-	}
-
-	return ""
 }
 
+// GetSenderID returns a standardized string representation of the sender's JID.
 func (m *Message) GetSenderID() string {
 	return m.Sender.ToNonAD().String()
 }
 
+// GetText returns the trimmed text content of the message.
 func (m *Message) GetText() string {
-	return m.Text
+	return strings.TrimSpace(m.Text)
 }
 
+// GetPushName returns the user's WhatsApp profile name.
 func (m *Message) GetPushName() string {
 	return m.PushName
 }
 
-func (m *Message) IsEmpty() bool {
-	return strings.TrimSpace(m.Text) == ""
-}
-
-func (m *Message) String() string {
-	return fmt.Sprintf("ID: %s, From: %s, Name: %q, Text: %q", m.MessageID, m.GetSenderID(), m.PushName, m.Text)
+// HasMedia returns true if the message contains media.
+func (m *Message) HasMedia() bool {
+	return m.IsMedia
 }

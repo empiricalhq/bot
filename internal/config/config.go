@@ -18,6 +18,7 @@ var (
 	ErrFlowFileNotFound = errors.New("flow file not found")
 )
 
+// Config holds all configuration for the application.
 type Config struct {
 	LogLevel        logger.Level
 	FlowFilePath    string
@@ -26,8 +27,9 @@ type Config struct {
 	DevAllowedUsers map[string]bool
 }
 
+// Load reads configuration from environment variables and validates it.
 func Load() (*Config, error) {
-	// .env is optional; only serves to override defaults
+	// .env is optional; it serves to override defaults for local development.
 	err := godotenv.Load()
 	if err != nil && !os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "WARN: failed to load .env file: %v\n", err)
@@ -76,8 +78,7 @@ func (c *Config) validate() error {
 		return ErrMissingDBPath
 	}
 
-	_, err := os.Stat(c.FlowFilePath)
-	if os.IsNotExist(err) {
+	if _, err := os.Stat(c.FlowFilePath); os.IsNotExist(err) {
 		return fmt.Errorf("%w: %s", ErrFlowFileNotFound, c.FlowFilePath)
 	}
 

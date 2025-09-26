@@ -1,7 +1,8 @@
-package state
+package domain
 
 import "time"
 
+// UserState represents the complete state of a user's conversation.
 type UserState struct {
 	UserID             string
 	CurrentNode        string
@@ -12,6 +13,7 @@ type UserState struct {
 	LastUpdated        time.Time
 }
 
+// ConversationMessage represents a single message in the conversation history.
 type ConversationMessage struct {
 	UserID         string
 	Timestamp      time.Time

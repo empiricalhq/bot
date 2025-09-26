@@ -6,11 +6,13 @@ import (
 	waLog "go.mau.fi/whatsmeow/util/log"
 )
 
+// WhatsmeowLogger adapts our custom logger to the whatsmeow library's interface.
 type WhatsmeowLogger struct {
 	logger *Logger
 	tag    string
 }
 
+// NewWhatsmeowLogger creates a new adapter.
 func NewWhatsmeowLogger(logger *Logger, tag string) *WhatsmeowLogger {
 	return &WhatsmeowLogger{
 		logger: logger,
@@ -19,24 +21,21 @@ func NewWhatsmeowLogger(logger *Logger, tag string) *WhatsmeowLogger {
 }
 
 func (w *WhatsmeowLogger) Errorf(msg string, args ...interface{}) {
-	w.logger.Error(fmt.Sprintf("[%s] %s", w.tag, fmt.Sprintf(msg, args...)), nil)
+	w.logger.Error(fmt.Sprintf(msg, args...), nil)
 }
 
 func (w *WhatsmeowLogger) Warnf(msg string, args ...interface{}) {
-	w.logger.Warn(fmt.Sprintf("[%s] %s", w.tag, fmt.Sprintf(msg, args...)), nil)
+	w.logger.Warn(fmt.Sprintf(msg, args...), nil)
 }
 
 func (w *WhatsmeowLogger) Infof(msg string, args ...interface{}) {
-	w.logger.Info(fmt.Sprintf("[%s] %s", w.tag, fmt.Sprintf(msg, args...)), nil)
+	w.logger.Info(fmt.Sprintf(msg, args...), nil)
 }
 
 func (w *WhatsmeowLogger) Debugf(msg string, args ...interface{}) {
-	w.logger.Debug(fmt.Sprintf("[%s] %s", w.tag, fmt.Sprintf(msg, args...)), nil)
+	w.logger.Debug(fmt.Sprintf(msg, args...), nil)
 }
 
-//nolint:ireturn // why: method must return an interface to satisfy the whatsmeow logger interface
 func (w *WhatsmeowLogger) Sub(module string) waLog.Logger {
-	subTag := fmt.Sprintf("%s/%s", w.tag, module)
-
-	return NewWhatsmeowLogger(w.logger, subTag)
+	return NewWhatsmeowLogger(w.logger, fmt.Sprintf("%s/%s", w.tag, module))
 }
