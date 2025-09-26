@@ -101,7 +101,7 @@
         "type": "text",
         "content": "Perfecto, *{{name}}* 🌸\n\nSi no tienes ningún conocimiento de la técnica de joyería tejida a crochet con hilos metálicos y deseas empezar desde cero, te sugiero el *Curso Integral de Joyería Tejida* 👑\n\nEste incluye los tres niveles: *básico, intermedio y avanzado*.\n\n✔️ Puedes llevarlo *online* o *presencial*\n✔️ No requieres experiencia previa\n✔️ Se te acompaña y guía paso a paso hasta crear tus propias piezas\n✔️ Logras joyas que te permiten recuperar tu inversión desde el primer nivel\n✔️ Recibes Charlas de gestión en Joyería Tejida\n✔️ Recibes E-Books o material de apoyo por clase\n✔️ Y formarás parte de la comunidad más grande de habla hispana que conoce y ama la joyería tejida\n\n¿Qué modalidad prefieres?\n\n*ONLINE* → Ver detalles del Curso Online\n*PRESENCIAL* → Ver detalles del Curso Presencial\n*PRECIO* → Ver precios y formas de pago"
       },
-      "action": "update_lead_beginner",
+      "action": "update_lead_interest_beginner",
       "transitions": [
         {
           "condition": { "type": "keyword", "value": ["online"] },
@@ -123,7 +123,7 @@
         "type": "text",
         "content": "¡Eso es genial, *{{name}}*! 🙌\n\nEn tu caso lo mejor son los *Cursos Avanzados*, tenemos más de *8 opciones* diseñadas para:\n\n💎 Cada clase ha sido diseñada por la maestra Magally Juro y te permitirá perfeccionar tu técnica\n💎 Innovar con nuevos diseños\n💎 Te actualizarás en lo último de la Joyería Tejida o Tecnología de Manufactura en Punto Peruano\n💎 Y contarás con el acompañamiento de la maestra Magally Juro para consultas vía WhatsApp\n\n📹 *VER RESUMEN DE CURSOS AVANZADOS:*\nhttps://www.youtube.com/watch?v=dOeCIBkbfqI\n\n*¿Cómo son las clases?*\n• Son de Acceso automático\n• Las clases ya están grabadas\n• Puedes ver las veces que desees\n\n¿Qué curso te interesa?\n\n*CORAZON* → Curso Joyas Modelo Corazón\n*ANILLOS* → Festival de Anillos\n*VIBRACIONES* → Joyas Tejidas Vibraciones\n*MAMA* → Joyas para Mamá\n*HELICOIDALES* → Joyas Helicoidales\n*FLORES* → Flores para Mamá\n*TIARAS* → Tiaras y Tocados\n*CATALOGO* → Ver todos los cursos"
       },
-      "action": "update_lead_advanced",
+      "action": "update_lead_interest_advanced",
       "transitions": [
         { "condition": { "type": "keyword", "value": ["corazon", "corazón"] }, "target": "COURSE_CORAZON" },
         { "condition": { "type": "keyword", "value": ["anillos", "anillo", "festival"] }, "target": "COURSE_ANILLOS" },
@@ -204,6 +204,7 @@
         "type": "text",
         "content": "*💎PRECIOS CURSO INTEGRAL*\n\n*💰PRECIO NORMAL:*\n• Nivel Básico: 220 USD\n• Curso Completo (3 niveles): 660 USD\n\n*🎉PRECIO ESPECIAL CON DESCUENTO:*\n• Nivel Básico 10% dcto: *198 USD*\n• Curso Completo 20% dcto: *528 USD*\n\n*📱PAGO CON TARJETA:*\nNivel Básico: https://goe.run/6876946f06f08\nCurso Completo: https://goe.run/687694cd6f4ea\n\n*🏦PAGO POR TRANSFERENCIA:*\nBanco de Crédito del Perú\nCta Ahorro soles: 192-16056570056\n\n*📱YAPE o PLIN:* 989 982 183\nA nombre de: Magally Ana Rocio Juro Huerta\n\n¿Listo para matricularte?\n*MATRICULA* → Confirmar inscripción\n*HORARIOS* → Ver horarios disponibles"
       },
+      "action": "update_lead_consulted_price",
       "transitions": [
         {
           "condition": { "type": "keyword", "value": ["matricula", "inscrib", "inscripcion", "inscribir","matrícula","Matricula","Matrícula"] },
@@ -316,7 +317,7 @@
       },
       "transitions": [
         { "condition": { "type": "keyword", "value": ["pagado", "pague", "pagué", "ya pague", "listo", "realizado", "hecho"] }, "target": "WAITING_FOR_VOUCHER" },
-        { "condition": { "type": "media" }, "target": "PAYMENT_CONFIRMED" },
+        { "condition": { "type": "media" }, "target": "PAYMENT_CONFIRMED", "action": "save_payment_voucher" },
         { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
       ]
     },
@@ -326,7 +327,7 @@
         "content": "¡Excelente *{{name}}*! \n\nPara confirmar tu pago, por favor *envía una foto de tu voucher* 📸\n\nSi tienes problemas para enviar la imagen, escribe *AYUDA* para contactar con una asesora."
       },
       "transitions": [
-        { "condition": { "type": "media" }, "target": "PAYMENT_CONFIRMED" },
+        { "condition": { "type": "media" }, "target": "PAYMENT_CONFIRMED", "action": "save_payment_voucher" },
         { "condition": { "type": "keyword", "value": ["ayuda"] }, "target": "NEEDS_ASSISTANCE" },
         { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
       ]
@@ -356,7 +357,7 @@
         "type": "text",
         "content": "*🚨ATENCIÓN PRIORITARIA*\n\nTu caso ha sido marcado como URGENTE.\n\n*Contacto inmediato:*\n📱 *Llama ahora:* +51 989 982 183\n📱 *WhatsApp Escuela:* +51 923 845 189\n\nUna asesora te contactará en los próximos 30 minutos."
       },
-      "action": "escalate_to_human_agent_urgent",
+      "action": "escalate_to_human_agent",
       "transitions": [
         { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
       ]
@@ -380,10 +381,15 @@
     "QUICK_RESPONSES": {
       "message": {
         "type": "text",
-        "content": "¡Perfecto! Si necesitas algo más, aquí estoy para ayudarte."
+        "content": "¡Perfecto! 💕 Si necesitas algo más, aquí estoy para ayudarte."
       },
       "transitions": [
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        {
+          "condition": {
+            "type": "any_text"
+          },
+          "target": "MAIN_MENU"
+        }
       ]
     },
     "FALLBACK_MENU": {
