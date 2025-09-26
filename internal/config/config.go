@@ -18,7 +18,6 @@ var (
 	ErrFlowFileNotFound = errors.New("flow file not found")
 )
 
-// Config holds all configuration for the application.
 type Config struct {
 	LogLevel        logger.Level
 	FlowFilePath    string
@@ -27,7 +26,6 @@ type Config struct {
 	DevAllowedUsers map[string]bool
 }
 
-// Load reads configuration from environment variables and validates it.
 func Load() (*Config, error) {
 	// .env is optional; it serves to override defaults for local development.
 	err := godotenv.Load()

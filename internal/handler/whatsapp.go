@@ -14,14 +14,12 @@ import (
 
 const msgProcTimeout = 30 * time.Second
 
-// WhatsApp handles incoming WhatsApp events and delegates processing.
 type WhatsApp struct {
 	config  *config.Config
 	service service.Bot
 	logger  *logger.Logger
 }
 
-// NewWhatsApp creates a new WhatsApp event handler.
 func NewWhatsApp(cfg *config.Config, s service.Bot, l *logger.Logger) *WhatsApp {
 	return &WhatsApp{
 		config:  cfg,
@@ -30,10 +28,10 @@ func NewWhatsApp(cfg *config.Config, s service.Bot, l *logger.Logger) *WhatsApp 
 	}
 }
 
-// EventHandler is the entry point for all events from the WhatsApp client.
 func (h *WhatsApp) EventHandler(evt interface{}) {
 	switch event := evt.(type) {
 	case *events.Message:
+		// ignore all non-direct messages and messages sent by the bot itself
 		if event.Info.IsFromMe || event.Info.Chat.Server != "s.whatsapp.net" {
 			return
 		}
@@ -87,7 +85,8 @@ func (h *WhatsApp) shouldIgnoreMessage(senderID string) bool {
 	}
 
 	if len(h.config.DevAllowedUsers) == 0 {
-		return true // In dev mode, if no users are specified, ignore all.
+		h.logger.Warn("No DEV_ALLOWED_USERS specified; ignoring all messages in dev mode", nil)
+		return true // in dev mode, if no users are specified, ignore all.
 	}
 
 	_, allowed := h.config.DevAllowedUsers[senderID]

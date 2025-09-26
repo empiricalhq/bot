@@ -17,9 +17,7 @@ const (
 	dbMaxIdleConns = 5
 )
 
-// NewSQLite initializes and returns a new SQLite database connection pool.
 func NewSQLite(ctx context.Context, dbPath string, log *logger.Logger) (*sql.DB, error) {
-	// WAL mode is highly recommended for SQLite to improve concurrency.
 	dsn := dbPath + "?_pragma=journal_mode=WAL&_pragma=busy_timeout=5000&_pragma=foreign_keys=ON"
 
 	db, err := sql.Open("sqlite", dsn)
@@ -35,7 +33,7 @@ func NewSQLite(ctx context.Context, dbPath string, log *logger.Logger) (*sql.DB,
 	defer cancel()
 
 	if err := db.PingContext(pingCtx); err != nil {
-		db.Close() // Best effort to clean up.
+		db.Close()
 
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}

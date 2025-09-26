@@ -15,7 +15,6 @@ var (
 	ErrUserNameEmpty = errors.New("user name cannot be empty")
 )
 
-// Action names used in the conversation flow definition.
 const (
 	ActionSaveUserName       = "save_user_name"
 	ActionCreateNewLead      = "create_new_lead"
@@ -25,7 +24,6 @@ const (
 	ActionEscalateToHuman    = "escalate_to_human_agent"
 )
 
-// ActionHandler defines the interface for executing business actions.
 type ActionHandler interface {
 	Execute(actionName string, userState *domain.UserState, inputMsg *message.Message) error
 }
@@ -34,7 +32,6 @@ type actionHandler struct {
 	logger *logger.Logger
 }
 
-// NewActionHandler creates a new handler for executing FSM actions.
 func NewActionHandler(log *logger.Logger) ActionHandler {
 	return &actionHandler{logger: log}
 }
@@ -42,7 +39,7 @@ func NewActionHandler(log *logger.Logger) ActionHandler {
 // Execute runs the specified action, modifying the provided UserState in-memory.
 func (h *actionHandler) Execute(actionName string, userState *domain.UserState, inputMsg *message.Message) error {
 	if actionName == "" {
-		return nil // No action to execute.
+		return nil
 	}
 
 	h.logger.Debug("Executing action", map[string]interface{}{

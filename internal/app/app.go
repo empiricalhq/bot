@@ -20,14 +20,12 @@ const shutdownTimeout = 30 * time.Second
 
 var ErrQRLoginTimeout = errors.New("QR login timed out")
 
-// App encapsulates the application's state and dependencies.
 type App struct {
 	logger  *logger.Logger
 	client  *whatsmeow.Client
 	handler *handler.WhatsApp
 }
 
-// New creates a new application instance.
 func New(
 	log *logger.Logger,
 	client *whatsmeow.Client,
@@ -40,7 +38,6 @@ func New(
 	}
 }
 
-// Run starts the application, connects the client, and waits for a shutdown signal.
 func (a *App) Run() error {
 	a.client.AddEventHandler(a.handler.EventHandler)
 

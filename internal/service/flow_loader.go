@@ -16,7 +16,6 @@ var (
 	ErrTransitionTargetNotFound = errors.New("transition to non-existent target")
 )
 
-// LoadFlow reads, unmarshals, and validates the conversation flow from a JSON file.
 func LoadFlow(path string) (*domain.Flow, error) {
 	cleanPath := filepath.Clean(path)
 

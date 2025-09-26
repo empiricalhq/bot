@@ -27,7 +27,6 @@ func main() {
 }
 
 func run() error {
-	// 1. Config & Logger
 	cfg, err := config.Load()
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
@@ -48,7 +47,6 @@ func run() error {
 	appLogger := logFactory.GetLogger("app")
 	appLogger.Info("WhatsApp bot starting up", map[string]interface{}{"env": cfg.Environment})
 
-	// 2. Platform (DB, WA Client)
 	db, err := database.NewSQLite(context.Background(), cfg.SQLiteDBPath, appLogger)
 	if err != nil {
 		return fmt.Errorf("database initialization failed: %w", err)
@@ -60,7 +58,6 @@ func run() error {
 		return fmt.Errorf("whatsapp client initialization failed: %w", err)
 	}
 
-	// 3. Core Dependencies (Repository, Services, etc.)
 	botRepo, err := repository.NewBotRepository(context.Background(), db, logFactory.GetLogger("repo"))
 	if err != nil {
 		return fmt.Errorf("repository initialization failed: %w", err)
@@ -85,11 +82,9 @@ func run() error {
 	sender := message.NewSender(waClient)
 	botSvc := service.NewBotService(botRepo, fsmEngine, actionHandler, renderer, sender, logFactory.GetLogger("service"))
 
-	// 4. Application
 	whatsAppHandler := handler.NewWhatsApp(cfg, botSvc, logFactory.GetLogger("handler"))
 	botApp := app.New(appLogger, waClient, whatsAppHandler)
 
-	// 5. Run
 	if err := botApp.Run(); err != nil {
 		return fmt.Errorf("application runtime error: %w", err)
 	}

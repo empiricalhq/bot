@@ -7,7 +7,7 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 )
 
-// Message is a simplified abstraction over a WhatsApp message event.
+// Message is a (simpler) abstraction over a WhatsApp message event.
 type Message struct {
 	Text      string
 	PushName  string
@@ -19,7 +19,7 @@ type Message struct {
 
 // New creates a new Message from a whatsmeow event, returning nil for irrelevant messages.
 func New(evt *events.Message) *Message {
-	// Ignore messages from groups or channels.
+	// ignore messages from groups or channels.
 	if evt.Info.Chat.Server != "s.whatsapp.net" {
 		return nil
 	}
@@ -51,29 +51,25 @@ func extractContent(evt *events.Message) (text string, isMedia bool) {
 	case msg.GetVideoMessage() != nil:
 		return msg.GetVideoMessage().GetCaption(), true
 	default:
-		// Any other type is considered media if it's not text-based.
+		// any other type is considered media if it's not text-based.
 		isMedia := msg.GetStickerMessage() != nil || msg.GetAudioMessage() != nil
 
 		return "", isMedia
 	}
 }
 
-// GetSenderID returns a standardized string representation of the sender's JID.
 func (m *Message) GetSenderID() string {
 	return m.Sender.ToNonAD().String()
 }
 
-// GetText returns the trimmed text content of the message.
 func (m *Message) GetText() string {
 	return strings.TrimSpace(m.Text)
 }
 
-// GetPushName returns the user's WhatsApp profile name.
 func (m *Message) GetPushName() string {
 	return m.PushName
 }
 
-// HasMedia returns true if the message contains media.
 func (m *Message) HasMedia() bool {
 	return m.IsMedia
 }

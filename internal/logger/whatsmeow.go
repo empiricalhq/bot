@@ -12,7 +12,6 @@ type WhatsmeowLogger struct {
 	tag    string
 }
 
-// NewWhatsmeowLogger creates a new adapter.
 func NewWhatsmeowLogger(logger *Logger, tag string) *WhatsmeowLogger {
 	return &WhatsmeowLogger{
 		logger: logger,
@@ -36,6 +35,7 @@ func (w *WhatsmeowLogger) Debugf(msg string, args ...interface{}) {
 	w.logger.Debug(fmt.Sprintf(msg, args...), nil)
 }
 
+//nolint:ireturn // why: method must return an interface to satisfy the whatsmeow logger interface
 func (w *WhatsmeowLogger) Sub(module string) waLog.Logger {
 	return NewWhatsmeowLogger(w.logger, fmt.Sprintf("%s/%s", w.tag, module))
 }

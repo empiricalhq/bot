@@ -15,9 +15,7 @@ import (
 	"whatsbot/internal/logger"
 )
 
-// NewWhatsApp initializes the whatsmeow client and its underlying store.
 func NewWhatsApp(ctx context.Context, db *sql.DB, logFactory *logger.Factory) (*whatsmeow.Client, error) {
-	// The library requires the driver name to be "sqlite3" even when using "sqlite".
 	container := sqlstore.NewWithDB(db, "sqlite3", logger.NewWhatsmeowLogger(logFactory.GetLogger("sqlstore"), "sqlstore"))
 	if err := container.Upgrade(ctx); err != nil {
 		return nil, fmt.Errorf("failed to upgrade whatsmeow database schema: %w", err)
@@ -39,7 +37,6 @@ func NewWhatsApp(ctx context.Context, db *sql.DB, logFactory *logger.Factory) (*
 	return client, nil
 }
 
-// LoginWithQR handles the QR code login flow for a new device.
 func LoginWithQR(client *whatsmeow.Client, log *logger.Logger, timeoutErr error) error {
 	qrChan, err := client.GetQRChannel(context.Background())
 	if err != nil {

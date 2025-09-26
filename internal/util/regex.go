@@ -7,7 +7,6 @@ import (
 	"sync"
 )
 
-// RegexCache provides a thread-safe, bounded LRU cache for compiled regular expressions.
 type RegexCache struct {
 	mu    sync.Mutex
 	cache map[string]*list.Element
@@ -23,7 +22,7 @@ type cacheEntry struct {
 // NewRegexCache creates a new cache with a fixed size.
 func NewRegexCache(size int) *RegexCache {
 	if size <= 0 {
-		size = 64 // Default size.
+		size = 64
 	}
 
 	return &RegexCache{
@@ -33,7 +32,6 @@ func NewRegexCache(size int) *RegexCache {
 	}
 }
 
-// Get retrieves a compiled regex from the cache or compiles and caches it if not present.
 func (c *RegexCache) Get(pattern string) (*regexp.Regexp, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -50,7 +48,6 @@ func (c *RegexCache) Get(pattern string) (*regexp.Regexp, error) {
 	}
 
 	if c.ll.Len() >= c.size {
-		// Evict least recently used item.
 		lruElem := c.ll.Back()
 		if lruElem != nil {
 			delete(c.cache, lruElem.Value.(*cacheEntry).pattern)

@@ -7,12 +7,10 @@ import (
 	"time"
 )
 
-// Config holds configuration for the logger factory.
 type Config struct {
 	Level Level
 }
 
-// Factory creates named Logger instances.
 type Factory struct {
 	config     Config
 	fileLogger *log.Logger
@@ -23,7 +21,6 @@ const (
 	logFilePerm = 0o664 // rw-rw-r--
 )
 
-// NewFactory creates a new logger factory that writes to a timestamped file and optionally to the console.
 func NewFactory(config Config) (*Factory, *os.File, error) {
 	logDir := "log"
 	if err := os.MkdirAll(logDir, logDirPerm); err != nil {
@@ -46,10 +43,10 @@ func NewFactory(config Config) (*Factory, *os.File, error) {
 	return factory, logFile, nil
 }
 
-// GetLogger returns a new logger with the specified name.
 func (f *Factory) GetLogger(name string) *Logger {
 	var consoleLogger *log.Logger
-	// Suppress noisy internal library logs from the console.
+
+	// suppress noisy internal library logs from the console.
 	if name != "whatsmeow" && name != "sqlstore" {
 		consoleLogger = log.New(os.Stdout, "", 0)
 	}

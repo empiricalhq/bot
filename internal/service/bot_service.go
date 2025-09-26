@@ -12,12 +12,12 @@ import (
 	"whatsbot/internal/templates"
 )
 
-// Bot defines the interface for the core bot service.
 type Bot interface {
 	ProcessMessage(ctx context.Context, msg *message.Message) error
 }
 
-// BotService orchestrates the bot's logic, coordinating between the FSM, actions, and repository.
+// BotService orchestrates the bot's
+// logic, coordinating between the FSM, actions, and repository.
 type BotService struct {
 	repo          repository.BotRepository
 	fsm           FSM
@@ -27,7 +27,6 @@ type BotService struct {
 	logger        *logger.Logger
 }
 
-// NewBotService creates a new instance of the bot's core service.
 func NewBotService(
 	repo repository.BotRepository,
 	fsm FSM,
@@ -46,7 +45,6 @@ func NewBotService(
 	}
 }
 
-// ProcessMessage handles an incoming message, determines the response, and persists the state.
 func (s *BotService) ProcessMessage(ctx context.Context, msg *message.Message) error {
 	userID := msg.GetSenderID()
 	inputText := msg.GetText()

@@ -7,7 +7,6 @@ import (
 	"sync"
 )
 
-// StmtCache provides a thread-safe cache for prepared statements.
 type StmtCache struct {
 	mu    sync.RWMutex
 	cache map[string]*sql.Stmt
@@ -27,7 +26,6 @@ func NewStmtCache(ctx context.Context, db *sql.DB) (*StmtCache, error) {
 	for _, q := range queries {
 		stmt, err := db.PrepareContext(ctx, q)
 		if err != nil {
-			// Close any already prepared statements on failure.
 			for _, s := range c.cache {
 				s.Close()
 			}

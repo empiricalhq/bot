@@ -6,15 +6,12 @@ import (
 	"whatsbot/internal/domain"
 )
 
-// Renderer defines an interface for rendering response templates.
 type Renderer interface {
 	RenderText(template string, state *domain.UserState) string
 }
 
-// TextRenderer is a simple string-replacement renderer.
 type TextRenderer struct{}
 
-// NewTextRenderer creates a new text renderer.
 func NewTextRenderer() *TextRenderer {
 	return &TextRenderer{}
 }
@@ -23,7 +20,7 @@ func NewTextRenderer() *TextRenderer {
 func (r *TextRenderer) RenderText(template string, state *domain.UserState) string {
 	name := state.UserName
 	if name == "" {
-		name = "amigx" // A friendly default if name is not set.
+		name = "amigx"
 	}
 
 	result := strings.ReplaceAll(template, "{{name}}", name)

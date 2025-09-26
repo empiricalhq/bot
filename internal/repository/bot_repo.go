@@ -11,7 +11,6 @@ import (
 	"whatsbot/internal/logger"
 )
 
-// BotRepository defines the interface for all bot-related database operations.
 type BotRepository interface {
 	GetUserState(ctx context.Context, userID string) (*domain.UserState, error)
 	UpdateUserStateAndLog(ctx context.Context, state *domain.UserState, inMsg, outMsg *domain.ConversationMessage) error
@@ -24,7 +23,6 @@ type botRepository struct {
 	logger *logger.Logger
 }
 
-// NewBotRepository creates a repository that uses a prepared statement cache.
 func NewBotRepository(ctx context.Context, db *sql.DB, log *logger.Logger) (BotRepository, error) {
 	cache, err := NewStmtCache(ctx, db)
 	if err != nil {
@@ -54,7 +52,7 @@ func (r *botRepository) GetUserState(ctx context.Context, userID string) (*domai
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return userState, nil // New user, return empty state.
+			return userState, nil // new user: return empty state.
 		}
 
 		r.logger.Error("GetUserState query failed", map[string]interface{}{"error": err, "userID": userID})
@@ -65,7 +63,6 @@ func (r *botRepository) GetUserState(ctx context.Context, userID string) (*domai
 	return userState, nil
 }
 
-// UpdateUserStateAndLog saves the user's state and conversation messages in a single transaction.
 func (r *botRepository) UpdateUserStateAndLog(
 	ctx context.Context,
 	userState *domain.UserState,
@@ -77,9 +74,9 @@ func (r *botRepository) UpdateUserStateAndLog(
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback() // Rollback is a no-op if the transaction is committed.
+	defer tx.Rollback()
 
-	// 1. Save User State
+	// 1. save user state
 	stmtState, err := r.cache.GetTx(tx, querySaveUserState)
 	if err != nil {
 		return err
@@ -93,7 +90,7 @@ func (r *botRepository) UpdateUserStateAndLog(
 		return fmt.Errorf("failed to execute SaveUserState for %s: %w", userState.UserID, err)
 	}
 
-	// 2. Save Messages
+	// 2. save messages
 	stmtMsg, err := r.cache.GetTx(tx, querySaveMessage)
 	if err != nil {
 		return err
@@ -122,7 +119,6 @@ func (r *botRepository) UpdateUserStateAndLog(
 	return nil
 }
 
-// InitSchema creates the necessary tables if they do not already exist.
 func (r *botRepository) InitSchema(ctx context.Context) error {
 	schemaQueries := []string{
 		`CREATE TABLE IF NOT EXISTS user_state (
