@@ -66,7 +66,13 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("failed to create logger factory: %w", err)
 	}
-	defer logFile.Close()
+
+	defer func() {
+		err := logFile.Close()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: failed to close log file: %v\n", err)
+		}
+	}()
 
 	appLogger := logFactory.GetLogger("app")
 	appLogger.Info("Starting WhatsApp bot", nil)
