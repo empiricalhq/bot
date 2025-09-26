@@ -36,6 +36,7 @@ const (
 var ErrQRLoginTimeout = errors.New("QR login timed out")
 
 type Bot struct {
+	config        *config.Config
 	logger        *logger.Logger
 	botEngine     *fsm.Engine
 	messageSender *message.Sender
@@ -51,7 +52,16 @@ func New(logFactory *logger.Factory) (*Bot, error) {
 		return nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
 
-	appLogger.Info("Configuration loaded", map[string]interface{}{"flow_file": cfg.FlowFilePath})
+	appLogger.Info("Configuration loaded", map[string]interface{}{
+		"flow_file":   cfg.FlowFilePath,
+		"environment": cfg.Environment,
+	})
+
+	if cfg.Environment == "dev" {
+		appLogger.Info("Running in DEVELOPMENT mode. Message filtering active.", map[string]interface{}{
+			"allowed_users_count": len(cfg.DevAllowedUsers),
+		})
+	}
 
 	flow, err := fsm.Load(cfg.FlowFilePath)
 	if err != nil {
@@ -86,6 +96,7 @@ func New(logFactory *logger.Factory) (*Bot, error) {
 	botEngine := fsm.NewEngine(flow, userManager, actionHandler, renderer, logFactory.GetLogger("fsm"))
 
 	return &Bot{
+		config:        cfg,
 		logger:        appLogger,
 		botEngine:     botEngine,
 		messageSender: messageSender,
@@ -193,7 +204,7 @@ func (b *Bot) shutdown() error {
 func (b *Bot) eventHandler(evt interface{}) {
 	switch event := evt.(type) {
 	case *events.Message:
-		if event.Info.IsGroup {
+		if event.Info.IsGroup || event.Info.IsFromMe {
 			return
 		}
 
@@ -217,6 +228,16 @@ func (b *Bot) handleMessage(evt *events.Message) {
 	}
 
 	senderID := msg.GetSenderID()
+
+	if b.shouldIgnoreMessage(senderID) {
+		b.logger.Info("Ignoring message in dev mode from unauthorized user", map[string]interface{}{
+			"from": senderID,
+			"env":  b.config.Environment,
+		})
+
+		return
+	}
+
 	b.logger.Debug("Processing message", map[string]interface{}{
 		"from": senderID,
 		"text": msg.GetText(),
@@ -245,6 +266,20 @@ func (b *Bot) handleMessage(evt *events.Message) {
 	if err != nil {
 		b.logger.Error("Failed to send response", map[string]interface{}{"error": err.Error(), "recipient": senderID})
 	}
+}
+
+func (b *Bot) shouldIgnoreMessage(senderID string) bool {
+	if b.config.Environment != "dev" {
+		return false
+	}
+
+	if len(b.config.DevAllowedUsers) == 0 {
+		return true
+	}
+
+	_, allowed := b.config.DevAllowedUsers[senderID]
+
+	return !allowed
 }
 
 func initDatabase(ctx context.Context, dbPath string, log *logger.Logger) (*sql.DB, error) {
