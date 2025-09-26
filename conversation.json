@@ -376,6 +376,27 @@
         "content": "¡Ha sido un placer ayudarte! 😊\n\nRecuerda que estamos aquí cuando lo necesites.\nSolo escribe *HOLA* para volver a empezar.\n\n¡Que tengas un excelente día! ✨"
       },
       "transitions": []
+    },
+    "FALLBACK_MENU": {
+      "message": {
+        "type": "text",
+        "content": "No entendí tu mensaje 😊\n\n*{{name}}, opciones disponibles:*\n*1* → Curso desde cero\n*2* → Cursos avanzados\n*PRECIO* → Ver precios\n*AYUDA* → Hablar con asesora\n\n¿En qué te puedo ayudar?"
+      },
+      "transitions": [
+        {
+          "condition": { "type": "exact", "value": ["1"] },
+          "target": "INTERESTED_IN_BEGINNER"
+        },
+        {
+          "condition": { "type": "exact", "value": ["2"] },
+          "target": "INTERESTED_IN_ADVANCED"
+        },
+        {
+          "condition": { "type": "keyword", "value": ["precio", "costo"] },
+          "target": "CONSULTED_PRICE"
+        },
+        { "condition": { "type": "any_text" }, "target": "FALLBACK_MENU" }
+      ]
     }
   },
   "quick_responses": {
