@@ -30,20 +30,26 @@ func main() {
 	logger := logger.New(cfg.LogLevel)
 	logger.Info("Starting bot", "env", cfg.Environment)
 
-	db, err := database.NewSQLite(ctx, cfg.SQLiteDBPath, logger)
+	database, err := database.NewSQLite(ctx, cfg.SQLiteDBPath, logger)
 	if err != nil {
 		log.Fatalf("Database init failed: %v", err)
 	}
-	defer db.Close()
 
-	repo := repository.New(db, logger)
+	defer func() {
+		closeErr := database.Close()
+		if closeErr != nil {
+			logger.Error("Failed to close database", "error", closeErr)
+		}
+	}()
+
+	repo := repository.New(database, logger)
 
 	err = repo.InitSchema(ctx)
 	if err != nil {
 		log.Fatalf("Schema init failed: %v", err)
 	}
 
-	waClient, err := whatsapp.NewClient(ctx, db, logger)
+	waClient, err := whatsapp.NewClient(ctx, database, logger)
 	if err != nil {
 		log.Fatalf("WhatsApp client init failed: %v", err)
 	}
