@@ -59,7 +59,7 @@ func main() {
 	bot := service.NewBot(repo, fsm, actions, renderer, waClient, logger)
 
 	if waClient.Store.ID == nil {
-		err = whatsapp.LoginWithQR(waClient, logger)
+		err = whatsapp.LoginWithQR(waClient.Client, logger)
 		if err != nil {
 			log.Fatalf("QR login failed: %v", err)
 		}

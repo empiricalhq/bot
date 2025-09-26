@@ -12,6 +12,7 @@ import (
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types"
+	waLog "go.mau.fi/whatsmeow/util/log"
 	"google.golang.org/protobuf/proto"
 	"modernc.org/sqlite"
 
@@ -118,6 +119,8 @@ func (w *whatsmeowLogger) Debugf(msg string, args ...interface{}) {
 	w.logger.Debug(msg, args...)
 }
 
-func (w *whatsmeowLogger) Sub(module string) interface{} {
-	return w // Return same logger for simplicity
+func (w *whatsmeowLogger) Sub(module string) waLog.Logger {
+	return &whatsmeowLogger{
+		logger: w.logger,
+	}
 }
