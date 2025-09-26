@@ -204,7 +204,7 @@ func (b *Bot) shutdown() error {
 func (b *Bot) eventHandler(evt interface{}) {
 	switch event := evt.(type) {
 	case *events.Message:
-		if event.Info.IsGroup || event.Info.IsFromMe {
+		if event.Info.IsFromMe || event.Info.Chat.Server != "s.whatsapp.net" {
 			return
 		}
 
@@ -268,6 +268,8 @@ func (b *Bot) handleMessage(evt *events.Message) {
 	}
 }
 
+// only applies on dev environment
+// see .env.example
 func (b *Bot) shouldIgnoreMessage(senderID string) bool {
 	if b.config.Environment != "dev" {
 		return false
