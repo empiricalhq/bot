@@ -4,9 +4,15 @@ package utils
 // The distance is the number of single-character edits (insertions, deletions, or substitutions)
 // required to change one string into the other.
 func LevenshteinDistance(a, b string) int {
+	// Convert strings to rune slices to handle multi-byte characters correctly.
+	// This is necessary to handle accented characters and other multi-byte characters.
+	runesA := []rune(a)
+	runesB := []rune(b)
+
+	m := len(runesA)
+	n := len(runesB)
+
 	// Create a matrix to store the distances
-	m := len(a)
-	n := len(b)
 	d := make([][]int, m+1)
 	for i := range d {
 		d[i] = make([]int, n+1)
@@ -16,6 +22,7 @@ func LevenshteinDistance(a, b string) int {
 	for i := 0; i <= m; i++ {
 		d[i][0] = i
 	}
+
 	for j := 0; j <= n; j++ {
 		d[0][j] = j
 	}
@@ -24,9 +31,10 @@ func LevenshteinDistance(a, b string) int {
 	for j := 1; j <= n; j++ {
 		for i := 1; i <= m; i++ {
 			cost := 0
-			if a[i-1] != b[j-1] {
+			if runesA[i-1] != runesB[j-1] {
 				cost = 1
 			}
+
 			d[i][j] = min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+cost)
 		}
 	}
@@ -42,5 +50,6 @@ func min(a ...int) int {
 			res = v
 		}
 	}
+
 	return res
 }
