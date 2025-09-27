@@ -69,14 +69,30 @@ func (a *actionHandler) saveUserName(state *domain.UserState, msg *message.Messa
 		return nil
 	}
 
-	if nameparser.Parse(nameInput) == "" {
-		a.logger.Warn("Invalid name input ignored during update attempt", "user", state.UserID, "input", nameInput)
+	finalNameToSave := nameInput
+	stripKeywords := []string{"mi nombre es", "me llamo", "llámame"}
 
+	lowerInput := strings.ToLower(nameInput)
+	for _, keyword := range stripKeywords {
+		if strings.HasPrefix(lowerInput, keyword) {
+			// Strip the keyword prefix from the original string
+			finalNameToSave = strings.TrimSpace(nameInput[len(keyword):])
+			break
+		}
+	}
+
+	if finalNameToSave == "" {
+		a.logger.Warn("Name update resulted in empty string, ignoring", "user", state.UserID, "input", nameInput)
 		return nil
 	}
 
-	state.UserName = nameInput
-	a.logger.Info("User name updated by user request", "user", state.UserID, "new_name", nameInput)
+	if nameparser.Parse(finalNameToSave) == "" {
+		a.logger.Warn("Invalid name input ignored during update attempt", "user", state.UserID, "input", finalNameToSave)
+		return nil
+	}
+
+	state.UserName = finalNameToSave
+	a.logger.Info("User name updated by user request", "user", state.UserID, "new_name", finalNameToSave)
 
 	return nil
 }

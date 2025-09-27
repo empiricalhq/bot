@@ -13,7 +13,15 @@
     {
       "condition": {
         "type": "keyword",
-        "value": ["mi nombre es", "me llamo", "llámame", "cambiar nombre"]
+        "value": ["mi nombre es", "me llamo", "llámame"]
+      },
+      "target": "NAME_CHANGE_CONFIRMED",
+      "action": "save_user_name"
+    },
+    {
+      "condition": {
+        "type": "keyword",
+        "value": ["cambiar nombre"]
       },
       "target": "CHANGE_NAME_PROMPT"
     },
@@ -96,9 +104,52 @@
     "NAME_CHANGE_CONFIRMED": {
       "message": {
         "type": "text",
-        "content": "¡Perfecto, {{name}}! He actualizado tu nombre."
+        "content": "¡Perfecto, {{name}}! He actualizado tu nombre.\n\n¿En qué puedo ayudarte ahora?\n\n*1* → Información de cursos desde cero\n*2* → Cursos avanzados\n*ONLINE* → Modalidad Online\n*PRESENCIAL* → Modalidad Presencial\n*PRECIO* → Ver costos y promociones\n*HORARIOS* → Ver calendario disponible\n*AYUDA* → Hablar con una asesora"
       },
       "transitions": [
+        {
+          "condition": {
+            "type": "exact",
+            "value": ["1", "desde cero", "principiante", "basico", "básico"]
+          },
+          "target": "INTERESTED_IN_BEGINNER"
+        },
+        {
+          "condition": {
+            "type": "exact",
+            "value": ["2", "avanzado", "experiencia", "intermedio"]
+          },
+          "target": "INTERESTED_IN_ADVANCED"
+        },
+        {
+          "condition": { "type": "keyword", "value": ["online"] },
+          "target": "CONSULTED_ONLINE"
+        },
+        {
+          "condition": { "type": "keyword", "value": ["presencial"] },
+          "target": "CONSULTED_PRESENCIAL"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["precio", "costo", "cuanto", "valor", "pago"]
+          },
+          "target": "CONSULTED_PRICE"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": [
+              "horario",
+              "horarios",
+              "cuando",
+              "hora",
+              "calendario",
+              "schedule"
+            ]
+          },
+          "target": "CONSULTED_SCHEDULE"
+        },
         { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
       ]
     },
