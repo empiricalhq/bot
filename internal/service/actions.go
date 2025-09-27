@@ -77,17 +77,20 @@ func (a *actionHandler) saveUserName(state *domain.UserState, msg *message.Messa
 		if strings.HasPrefix(lowerInput, keyword) {
 			// Strip the keyword prefix from the original string
 			finalNameToSave = strings.TrimSpace(nameInput[len(keyword):])
+
 			break
 		}
 	}
 
 	if finalNameToSave == "" {
 		a.logger.Warn("Name update resulted in empty string, ignoring", "user", state.UserID, "input", nameInput)
+
 		return nil
 	}
 
 	if nameparser.Parse(finalNameToSave) == "" {
 		a.logger.Warn("Invalid name input ignored during update attempt", "user", state.UserID, "input", finalNameToSave)
+
 		return nil
 	}
 

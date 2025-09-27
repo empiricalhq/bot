@@ -33,6 +33,7 @@ func main() {
 		log.Fatalf("Failed to initialize logger: %v", err)
 	}
 	defer logFile.Close()
+
 	slog.SetDefault(logger)
 
 	logger.Info("Starting bot", "env", cfg.Environment)
@@ -57,6 +58,7 @@ func main() {
 	}
 
 	waLogger := logger.With("component", "whatsmeow")
+
 	waClient, err := whatsapp.NewClient(ctx, database, waLogger)
 	if err != nil {
 		log.Fatalf("WhatsApp client init failed: %v", err)

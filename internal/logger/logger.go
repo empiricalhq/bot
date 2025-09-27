@@ -25,6 +25,7 @@ func New(level string) (*slog.Logger, io.Closer, error) {
 	}
 
 	fileName := fmt.Sprintf("log/bot_%s.log", time.Now().Format("2006-01-02T15-04-05"))
+
 	logFile, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not open log file: %w", err)
@@ -41,6 +42,7 @@ func New(level string) (*slog.Logger, io.Closer, error) {
 					a.Value = slog.StringValue(t.Format("15:04:05"))
 				}
 			}
+
 			return a
 		},
 	})
@@ -56,6 +58,7 @@ func New(level string) (*slog.Logger, io.Closer, error) {
 	}
 
 	logger := slog.New(dispatcher)
+
 	return logger, logFile, nil
 }
 
@@ -68,7 +71,8 @@ func (d *Dispatcher) Enabled(ctx context.Context, level slog.Level) bool {
 // Handle always writes the record to the file.
 // Console output is skipped if disableConsole is true.
 func (d *Dispatcher) Handle(ctx context.Context, r slog.Record) error {
-	if err := d.fileHandler.Handle(ctx, r); err != nil {
+	err := d.fileHandler.Handle(ctx, r)
+	if err != nil {
 		return err
 	}
 
@@ -84,9 +88,11 @@ func (d *Dispatcher) Handle(ctx context.Context, r slog.Record) error {
 // for this handler and all derived ones.
 func (d *Dispatcher) WithAttrs(attrs []slog.Attr) slog.Handler {
 	isWhatsmeow := false
+
 	for _, a := range attrs {
 		if a.Key == "component" && a.Value.String() == "whatsmeow" {
 			isWhatsmeow = true
+
 			break
 		}
 	}
