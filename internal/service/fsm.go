@@ -13,6 +13,7 @@ import (
 
 	"whatsbot/internal/domain"
 	"whatsbot/internal/message"
+	"whatsbot/pkg/utils"
 )
 
 type FSM interface {
@@ -99,9 +100,13 @@ func (f *fsm) matchesCondition(input string, msg *message.Message, condition dom
 			}
 		}
 	case "keyword":
+		words := strings.Fields(input)
 		for _, keyword := range condition.Value {
-			if strings.Contains(input, strings.ToLower(keyword)) {
-				return true
+			for _, word := range words {
+				distance := utils.LevenshteinDistance(strings.ToLower(keyword), word)
+				if distance <= 2 {
+					return true
+				}
 			}
 		}
 	case "regex":
