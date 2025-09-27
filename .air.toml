@@ -2,14 +2,13 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-cmd = "echo 'reloading...'"
-full_bin = "go run ./cmd/bot/main.go"
+cmd = "go build -o ./tmp/main.exe ./cmd/bot"
+bin = "tmp/main.exe"
 
 include_ext = ["go", "json"]
 exclude_dir = ["tmp", "build", "vendor", "log"]
 
 stop_on_error = true
-
 delay = 1000 # ms
 
 [log]
