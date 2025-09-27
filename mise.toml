@@ -1,5 +1,6 @@
 [tools]
 go = "1.25.1"
+air = "1.63.0"
 "aqua:golangci/golangci-lint" = "2.5.0"
 
 [tasks.install]
@@ -7,8 +8,8 @@ description = "Install dependencies"
 run = ["go mod tidy", "go mod vendor"]
 
 [tasks.dev]
-description = "Run the app locally"
-run = "go run cmd/bot/main.go"
+description = "Run the app locally with live-reloading"
+run = "air"
 
 [tasks.build]
 description = "Build the app"
