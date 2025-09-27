@@ -10,11 +10,13 @@ import (
 	"time"
 )
 
-// Dispatcher forwards logs to both a file and the console.
-// Logs with "component=whatsmeow" are skipped from console output.
+// Dispatcher writes logs to a file and optionally to the console.
+// Console output can be disabled, and logs with "component=whatsmeow"
+// are excluded from console output.
 type Dispatcher struct {
 	consoleHandler slog.Handler
 	fileHandler    slog.Handler
+	disableConsole bool
 }
 
 func New(level string) (*slog.Logger, io.Closer, error) {
@@ -50,55 +52,65 @@ func New(level string) (*slog.Logger, io.Closer, error) {
 	dispatcher := &Dispatcher{
 		consoleHandler: consoleHandler,
 		fileHandler:    fileHandler,
+		disableConsole: false,
 	}
 
 	logger := slog.New(dispatcher)
 	return logger, logFile, nil
 }
 
-// Enabled returns true if the log level is enabled on either handler.
+// Enabled returns true if the file handler allows the given log level.
+// Console handler is ignored here since it can be disabled.
 func (d *Dispatcher) Enabled(ctx context.Context, level slog.Level) bool {
-	return d.consoleHandler.Enabled(ctx, level) || d.fileHandler.Enabled(ctx, level)
+	return d.fileHandler.Enabled(ctx, level)
 }
 
-// Handle writes every log to the file, and to the console
-// unless the log has "component=whatsmeow".
+// Handle always writes the record to the file.
+// Console output is skipped if disableConsole is true.
 func (d *Dispatcher) Handle(ctx context.Context, r slog.Record) error {
 	if err := d.fileHandler.Handle(ctx, r); err != nil {
 		return err
 	}
 
-	var isWhatsmeow bool
-	r.Attrs(func(a slog.Attr) bool {
-		if a.Key == "component" {
-			if val, ok := a.Value.Any().(string); ok && val == "whatsmeow" {
-				isWhatsmeow = true
-				return false
-			}
-		}
-		return true
-	})
-
-	if !isWhatsmeow {
+	if !d.disableConsole {
 		return d.consoleHandler.Handle(ctx, r)
 	}
 
 	return nil
 }
 
-// WithAttrs returns a new Dispatcher with extra attributes applied.
+// WithAttrs returns a new Dispatcher with added attributes.
+// If the "component" is "whatsmeow", console output is disabled
+// for this handler and all derived ones.
 func (d *Dispatcher) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return &Dispatcher{
+	isWhatsmeow := false
+	for _, a := range attrs {
+		if a.Key == "component" && a.Value.String() == "whatsmeow" {
+			isWhatsmeow = true
+			break
+		}
+	}
+
+	newDispatcher := &Dispatcher{
 		consoleHandler: d.consoleHandler.WithAttrs(attrs),
 		fileHandler:    d.fileHandler.WithAttrs(attrs),
+		disableConsole: d.disableConsole,
 	}
+
+	if isWhatsmeow {
+		newDispatcher.disableConsole = true
+	}
+
+	return newDispatcher
 }
 
-// WithGroup returns a new Dispatcher with the given group applied.
+// WithGroup returns a new Dispatcher with the group applied.
+// The disableConsole flag is carried over.
 func (d *Dispatcher) WithGroup(name string) slog.Handler {
 	return &Dispatcher{
 		consoleHandler: d.consoleHandler.WithGroup(name),
 		fileHandler:    d.fileHandler.WithGroup(name),
+		disableConsole: d.disableConsole,
 	}
 }
 
