@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -55,8 +56,14 @@ func NewBot(
 func (b *Bot) HandleEvent(evt interface{}) {
 	msgEvent, ok := evt.(*events.Message)
 	if !ok {
+		b.logger.Debug("Ignoring event: not a message", "event_type", fmt.Sprintf("%T", evt))
+
 		return
 	}
+
+	b.logger.Debug("Received message event",
+		"sender", msgEvent.Info.Sender.ToNonAD().String(),
+		"is_from_me", msgEvent.Info.IsFromMe)
 
 	// Ignore messages sent by this bot.
 	// In PROD: ignore all self-messages.
@@ -72,6 +79,12 @@ func (b *Bot) HandleEvent(evt interface{}) {
 
 	msg := message.FromEvent(msgEvent)
 	if msg == nil {
+		if msgEvent.Info.Chat.Server != "s.whatsapp.net" {
+			b.logger.Debug("Ignoring event: not a 1-on-1 chat", "chat_jid", msgEvent.Info.Chat.String())
+		} else {
+			b.logger.Debug("Ignoring event: no usable text content", "sender", msgEvent.Info.Sender.ToNonAD().String())
+		}
+
 		return
 	}
 
@@ -91,18 +104,26 @@ func (b *Bot) HandleEvent(evt interface{}) {
 }
 
 func (b *Bot) processMessage(ctx context.Context, msg *message.Message) error {
+	logger := b.logger.With("user", msg.SenderID)
+
+	logger.Debug("Processing message", "text", msg.Text, "has_media", msg.HasMedia)
+
 	userState, err := b.getOrCreateUserState(ctx, msg)
 	if err != nil {
 		return err
 	}
 
+	logger = logger.With("from_node", userState.CurrentNode)
+
 	originalNode := userState.CurrentNode
 	nextNode, action := b.fsm.DetermineNext(userState, msg.Text, msg.HasMedia)
+
+	logger.Debug("FSM determined next state", "to_node", nextNode, "action", action)
 
 	if action != "" {
 		err = b.actions.Execute(action, userState, msg)
 		if err != nil {
-			b.logger.Error("Action failed", "action", action, "error", err)
+			logger.Error("Action failed", "action", action, "error", err)
 		}
 	}
 
@@ -138,14 +159,16 @@ func (b *Bot) processMessage(ctx context.Context, msg *message.Message) error {
 	if responseText != "" {
 		err = b.whatsapp.SendText(ctx, msg.SenderID, responseText)
 		if err != nil {
-			b.logger.Error("Failed to send message", "error", err, "to", msg.SenderID)
+			logger.Error("Failed to send message", "error", err)
 		}
-	} else {
-		b.logger.Debug("No response text to send",
-			"user", msg.SenderID,
-			"from_node", originalNode,
-			"to_node", nextNode)
 	}
+
+	logger.Info("Message processed",
+		"inbound_text", msg.Text,
+		"outbound_text", responseText,
+		"to_node", nextNode,
+		"action", action,
+	)
 
 	return nil
 }

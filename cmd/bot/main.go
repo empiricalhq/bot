@@ -71,7 +71,7 @@ func main() {
 
 	fsm := service.NewFSM(flow, logger)
 	actions := service.NewActionHandler(logger)
-	renderer := template.NewRenderer()
+	renderer := template.NewRenderer(logger)
 
 	bot := service.NewBot(cfg, repo, fsm, actions, renderer, waClient, logger)
 

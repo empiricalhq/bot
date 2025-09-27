@@ -40,6 +40,9 @@ func (f *fsm) DetermineNext(state *domain.UserState, input string, hasMedia bool
 	// Check global transitions first
 	for _, transition := range f.flow.GlobalTransitions {
 		if f.matchesCondition(input, hasMedia, transition.Condition) {
+			f.logger.Debug("Matched global transition",
+				"user", state.UserID, "from_node", state.CurrentNode, "to_node", transition.Target, "action", transition.Action, "condition_type", transition.Condition.Type)
+
 			return transition.Target, transition.Action
 		}
 	}
@@ -53,6 +56,9 @@ func (f *fsm) DetermineNext(state *domain.UserState, input string, hasMedia bool
 				action = currentNode.Action // fallback
 			}
 
+			f.logger.Debug("Matched node transition",
+				"user", state.UserID, "from_node", state.CurrentNode, "to_node", transition.Target, "action", action, "condition_type", transition.Condition.Type)
+
 			return transition.Target, action
 		}
 	}
@@ -62,6 +68,9 @@ func (f *fsm) DetermineNext(state *domain.UserState, input string, hasMedia bool
 	if fallback == "" || f.flow.Nodes[fallback].Message.Content == "" {
 		fallback = f.flow.StartNode
 	}
+
+	f.logger.Debug("No transition matched, using fallback",
+		"user", state.UserID, "from_node", state.CurrentNode, "fallback_node", fallback)
 
 	return fallback, ""
 }
