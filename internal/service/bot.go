@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 
 	"whatsbot/internal/config"
@@ -28,6 +29,7 @@ type Bot struct {
 
 type WhatsAppClient interface {
 	SendText(ctx context.Context, to, text string) error
+	GetJID() types.JID
 }
 
 func NewBot(
@@ -56,9 +58,16 @@ func (b *Bot) HandleEvent(evt interface{}) {
 		return
 	}
 
-	// Ignore bot's own messages and group chats
-	if msgEvent.Info.IsFromMe || msgEvent.Info.Chat.Server != "s.whatsapp.net" {
-		return
+	// Ignore messages sent by this bot.
+	// In PROD: ignore all self-messages.
+	// In DEV: only allow self-messages from another linked device.
+	if msgEvent.Info.IsFromMe {
+		isDevMode := b.config.Environment == "dev"
+		isFromAnotherDevice := msgEvent.Info.DeviceSentMeta != nil
+
+		if !isDevMode || !isFromAnotherDevice {
+			return
+		}
 	}
 
 	msg := message.FromEvent(msgEvent)
@@ -128,13 +137,12 @@ func (b *Bot) processMessage(ctx context.Context, msg *message.Message) error {
 		if err != nil {
 			b.logger.Error("Failed to send message", "error", err, "to", msg.SenderID)
 		}
+	} else {
+		b.logger.Debug("No response text to send",
+			"user", msg.SenderID,
+			"from_node", originalNode,
+			"to_node", nextNode)
 	}
-
-	b.logger.Debug("Message processed",
-		"user", msg.SenderID,
-		"from", originalNode,
-		"to", nextNode,
-		"action", action)
 
 	return nil
 }

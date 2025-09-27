@@ -72,6 +72,14 @@ func (c *Client) SendText(ctx context.Context, to, text string) error {
 	return err
 }
 
+func (c *Client) GetJID() types.JID {
+	if c.Store.ID == nil {
+		return types.JID{}
+	}
+
+	return *c.Store.ID
+}
+
 func LoginWithQR(client *whatsmeow.Client, logger logger.Logger) error {
 	qrChan, err := client.GetQRChannel(context.Background())
 	if err != nil {
