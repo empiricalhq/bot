@@ -14,7 +14,7 @@ type Message struct {
 }
 
 func FromEvent(evt *events.Message) *Message {
-	// only listen to direct messages
+	// Rule 1: Only listen to direct 1-on-1 messages.
 	if evt.Info.Chat.Server != "s.whatsapp.net" {
 		return nil
 	}
@@ -26,6 +26,12 @@ func FromEvent(evt *events.Message) *Message {
 
 	msg.Text, msg.HasMedia = extractContent(evt)
 	msg.Text = strings.TrimSpace(msg.Text)
+
+	// Rule 2: Ignore any message that does not contain usable text.
+	// This includes stickers, audio messages, and media sent without a caption.
+	if msg.Text == "" {
+		return nil
+	}
 
 	return msg
 }
