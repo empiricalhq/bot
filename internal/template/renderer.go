@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"whatsbot/internal/domain"
+	"whatsbot/internal/nameparser"
 )
 
 type Renderer interface {
@@ -17,7 +18,7 @@ func NewRenderer() Renderer {
 }
 
 func (r *renderer) Render(template string, state *domain.UserState) string {
-	name := state.UserName
+	name := nameparser.Parse(state.UserName)
 	if name == "" {
 		name = "amigx"
 	}

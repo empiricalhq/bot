@@ -52,13 +52,13 @@ func (a *actionHandler) Execute(action string, state *domain.UserState, msg *mes
 }
 
 func (a *actionHandler) saveUserName(state *domain.UserState, msg *message.Message) error {
-	name := strings.TrimSpace(msg.PushName)
+	name := strings.TrimSpace(msg.Text)
 	if name == "" {
-		name = strings.TrimSpace(msg.Text)
+		name = strings.TrimSpace(msg.PushName)
 	}
 
 	if name == "" {
-		return errors.New("user name cannot be empty")
+		return errors.New("user name cannot be found in message or push name")
 	}
 
 	state.UserName = name
