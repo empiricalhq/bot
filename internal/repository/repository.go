@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log/slog"
 
 	"whatsbot/internal/domain"
-	"whatsbot/internal/logger"
 )
 
 type Repository interface {
@@ -17,10 +17,10 @@ type Repository interface {
 
 type repository struct {
 	db     *sql.DB
-	logger logger.Logger
+	logger *slog.Logger
 }
 
-func New(db *sql.DB, logger logger.Logger) Repository {
+func New(db *sql.DB, logger *slog.Logger) Repository {
 	return &repository{db: db, logger: logger}
 }
 

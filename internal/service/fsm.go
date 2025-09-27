@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"regexp"
 	"strings"
 	"sync"
 
 	"whatsbot/internal/domain"
-	"whatsbot/internal/logger"
 )
 
 type FSM interface {
@@ -23,10 +23,10 @@ type fsm struct {
 	flow       *domain.Flow
 	regexCache map[string]*regexp.Regexp
 	mutex      sync.RWMutex
-	logger     logger.Logger
+	logger     *slog.Logger
 }
 
-func NewFSM(flow *domain.Flow, logger logger.Logger) FSM {
+func NewFSM(flow *domain.Flow, logger *slog.Logger) FSM {
 	return &fsm{
 		flow:       flow,
 		regexCache: make(map[string]*regexp.Regexp),

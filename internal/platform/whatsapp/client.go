@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -15,8 +17,6 @@ import (
 	waLog "go.mau.fi/whatsmeow/util/log"
 	"google.golang.org/protobuf/proto"
 	"modernc.org/sqlite"
-
-	"whatsbot/internal/logger"
 )
 
 const sendMessageTimeout = 15 * time.Second
@@ -24,10 +24,10 @@ const sendMessageTimeout = 15 * time.Second
 type Client struct {
 	*whatsmeow.Client
 
-	logger logger.Logger
+	logger *slog.Logger
 }
 
-func NewClient(ctx context.Context, db *sql.DB, logger logger.Logger) (*Client, error) {
+func NewClient(ctx context.Context, db *sql.DB, logger *slog.Logger) (*Client, error) {
 	container := sqlstore.NewWithDB(db, "sqlite3", newWhatsmeowLogger(logger))
 
 	err := container.Upgrade(ctx)
@@ -80,7 +80,7 @@ func (c *Client) GetJID() types.JID {
 	return *c.Store.ID
 }
 
-func LoginWithQR(client *whatsmeow.Client, logger logger.Logger) error {
+func LoginWithQR(client *whatsmeow.Client, logger *slog.Logger) error {
 	qrChan, err := client.GetQRChannel(context.Background())
 	if err != nil {
 		return err
@@ -109,31 +109,31 @@ func LoginWithQR(client *whatsmeow.Client, logger logger.Logger) error {
 
 // whatsmeowLogger adapts our logger to whatsmeow's interface.
 type whatsmeowLogger struct {
-	logger logger.Logger
+	logger *slog.Logger
 }
 
-func newWhatsmeowLogger(logger logger.Logger) *whatsmeowLogger {
+func newWhatsmeowLogger(logger *slog.Logger) *whatsmeowLogger {
 	return &whatsmeowLogger{logger: logger}
 }
 
 func (w *whatsmeowLogger) Errorf(msg string, args ...interface{}) {
-	w.logger.Error(msg, args...)
+	w.logger.Error(fmt.Sprintf(msg, args...))
 }
 
 func (w *whatsmeowLogger) Warnf(msg string, args ...interface{}) {
-	w.logger.Warn(msg, args...)
+	w.logger.Warn(fmt.Sprintf(msg, args...))
 }
 
 func (w *whatsmeowLogger) Infof(msg string, args ...interface{}) {
-	w.logger.Info(msg, args...)
+	w.logger.Info(fmt.Sprintf(msg, args...))
 }
 
 func (w *whatsmeowLogger) Debugf(msg string, args ...interface{}) {
-	w.logger.Debug(msg, args...)
+	w.logger.Debug(fmt.Sprintf(msg, args...))
 }
 
 func (w *whatsmeowLogger) Sub(module string) waLog.Logger {
 	return &whatsmeowLogger{
-		logger: w.logger,
+		logger: w.logger.With("module", module),
 	}
 }

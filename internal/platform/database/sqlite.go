@@ -3,11 +3,10 @@ package database
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 	"time"
 
 	_ "modernc.org/sqlite"
-
-	"whatsbot/internal/logger"
 )
 
 const (
@@ -17,7 +16,7 @@ const (
 	pingTimeout     = 15 * time.Second
 )
 
-func NewSQLite(ctx context.Context, dbPath string, logger logger.Logger) (*sql.DB, error) {
+func NewSQLite(ctx context.Context, dbPath string, logger *slog.Logger) (*sql.DB, error) {
 	dsn := dbPath + "?_pragma=journal_mode=WAL&_pragma=busy_timeout=5000&_pragma=foreign_keys=ON"
 
 	db, err := sql.Open("sqlite", dsn)
