@@ -2,8 +2,8 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-cmd = "go build -o ./tmp/main ./cmd/bot/main.go"
-bin = "./tmp/main"
+cmd = "echo 'reloading...'"
+full_bin = "go run ./cmd/bot/main.go"
 
 include_ext = ["go", "json"]
 exclude_dir = ["tmp", "build", "vendor", "log"]
