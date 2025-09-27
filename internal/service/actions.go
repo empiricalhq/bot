@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -142,7 +143,7 @@ func (a *actionHandler) savePaymentVoucher(state *domain.UserState, msg *message
 	}
 
 	// save the image
-	filename := fmt.Sprintf("%s_%d.jpeg", state.UserID, time.Now().Unix())
+	filename := generateVoucherFilename(state.UserID, msg.PushName)
 	filePath := filepath.Join(a.voucherPath, filename)
 
 	err = os.WriteFile(filePath, data, 0o644)
@@ -157,4 +158,24 @@ func (a *actionHandler) savePaymentVoucher(state *domain.UserState, msg *message
 	a.logger.Info("Payment voucher saved successfully", "user", state.UserID, "path", filePath)
 
 	return nil
+}
+
+// Format: {phone_number}_{sanitized_push_name}_{timestamp}.jpeg.
+func generateVoucherFilename(userID, pushName string) string {
+	phone := userID
+	if i := strings.Index(userID, "@"); i != -1 {
+		phone = userID[:i]
+	}
+
+	sanitizedName := strings.ReplaceAll(pushName, " ", "_")
+	reg := regexp.MustCompile(`[^a-zA-Z0-9_-]+`)
+	sanitizedName = reg.ReplaceAllString(sanitizedName, "")
+
+	if sanitizedName == "" {
+		sanitizedName = "user"
+	}
+
+	timestamp := time.Now().Unix()
+
+	return fmt.Sprintf("%s_%s_%d.jpeg", phone, sanitizedName, timestamp)
 }
