@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -101,7 +102,9 @@ func (b *Bot) HandleEvent(evt interface{}) {
 
 	err := b.processMessage(ctx, msg, msgEvent)
 	if err != nil {
-		b.logger.Error("Message processing failed", "error", err, "user", msg.SenderID)
+		if err.Error() != "new user initialized and greeted; skipping further processing of first message" {
+			b.logger.Error("Message processing failed", "error", err, "user", msg.SenderID)
+		}
 	}
 }
 
@@ -184,7 +187,24 @@ func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message) (*
 	if state.CurrentNode == "" {
 		state.CurrentNode = b.fsm.GetStartNode()
 		state.UserName = msg.PushName
+		state.LastUpdated = time.Now()
+
 		b.logger.Info("New user initialized", "user", msg.SenderID, "node", state.CurrentNode, "push_name", msg.PushName)
+
+		responseText := b.generateResponse(state.CurrentNode, state)
+		if responseText != "" {
+			outMsg := &domain.ConversationMessage{
+				UserID:         msg.SenderID,
+				Timestamp:      time.Now(),
+				Direction:      "outbound",
+				MessageContent: responseText,
+				NodeID:         state.CurrentNode,
+			}
+			b.repo.SaveStateAndMessages(ctx, state, nil, outMsg)
+			b.whatsapp.SendText(ctx, msg.SenderID, responseText)
+		}
+
+		return nil, errors.New("new user initialized and greeted; skipping further processing of first message")
 	}
 
 	return state, nil
