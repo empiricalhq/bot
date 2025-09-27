@@ -1,13 +1,13 @@
 package service
 
 import (
-	"slices"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 
@@ -112,8 +112,8 @@ func (f *fsm) matchesCondition(input string, msg *message.Message, condition dom
 		return msg.HasMedia
 	case "media_type":
 		if slices.Contains(condition.Value, msg.MediaType) {
-				return true
-			}
+			return true
+		}
 	}
 
 	return false
