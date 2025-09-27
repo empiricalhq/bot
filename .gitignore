@@ -2,6 +2,7 @@ build
 log
 vendor
 tmp
+vouchers
 
 .env
 *.log
