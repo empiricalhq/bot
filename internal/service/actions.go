@@ -2,8 +2,15 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
+	"time"
+
+	"go.mau.fi/whatsmeow/types/events"
 
 	"whatsbot/internal/domain"
 	"whatsbot/internal/message"
@@ -11,18 +18,24 @@ import (
 )
 
 type ActionHandler interface {
-	Execute(action string, state *domain.UserState, msg *message.Message) error
+	Execute(action string, state *domain.UserState, msg *message.Message, rawEvt interface{}) error
 }
 
 type actionHandler struct {
-	logger *slog.Logger
+	logger      *slog.Logger
+	waClient    WhatsAppClient
+	voucherPath string
 }
 
-func NewActionHandler(logger *slog.Logger) ActionHandler {
-	return &actionHandler{logger: logger}
+func NewActionHandler(logger *slog.Logger, waClient WhatsAppClient, voucherPath string) ActionHandler {
+	return &actionHandler{
+		logger:      logger,
+		waClient:    waClient,
+		voucherPath: voucherPath,
+	}
 }
 
-func (a *actionHandler) Execute(action string, state *domain.UserState, msg *message.Message) error {
+func (a *actionHandler) Execute(action string, state *domain.UserState, msg *message.Message, rawEvt interface{}) error {
 	if action == "" {
 		return nil
 	}
@@ -45,6 +58,8 @@ func (a *actionHandler) Execute(action string, state *domain.UserState, msg *mes
 	case "escalate_to_human_agent":
 		state.RequiresHumanAgent = true
 		a.logger.Warn("Escalated to human", "user", state.UserID, "name", state.UserName)
+	case "save_payment_voucher":
+		return a.savePaymentVoucher(state, msg, rawEvt)
 	default:
 		a.logger.Warn("Unknown action", "action", action)
 
@@ -98,4 +113,69 @@ func (a *actionHandler) saveUserName(state *domain.UserState, msg *message.Messa
 	a.logger.Info("User name updated by user request", "user", state.UserID, "new_name", finalNameToSave)
 
 	return nil
+}
+
+func (a *actionHandler) savePaymentVoucher(state *domain.UserState, msg *message.Message, rawEvt interface{}) error {
+	msgEvent, ok := rawEvt.(*events.Message)
+	if !ok {
+		return errors.New("save_payment_voucher requires a raw message event")
+	}
+
+	imageMsg := msgEvent.Message.GetImageMessage()
+	if imageMsg == nil {
+		a.logger.Warn("save_payment_voucher triggered but message is not an image. Escalating.", "user", state.UserID, "media_type", msg.MediaType)
+		state.RequiresHumanAgent = true
+
+		return nil
+	}
+
+	data, err := a.waClient.Download(imageMsg)
+	if err != nil {
+		a.logger.Error("Failed to download voucher image", "error", err, "user", state.UserID)
+
+		return fmt.Errorf("could not download voucher: %w", err)
+	}
+
+	if err := os.MkdirAll(a.voucherPath, 0o755); err != nil {
+		a.logger.Error("Failed to create voucher directory", "error", err, "path", a.voucherPath)
+
+		return fmt.Errorf("could not create voucher directory: %w", err)
+	}
+
+	// save the image
+	filename := generateVoucherFilename(state.UserID, msg.PushName)
+	filePath := filepath.Join(a.voucherPath, filename)
+
+	err = os.WriteFile(filePath, data, 0o644)
+	if err != nil {
+		a.logger.Error("Failed to save voucher file", "error", err, "path", filePath)
+
+		return fmt.Errorf("could not save voucher file: %w", err)
+	}
+
+	// update state with the path
+	state.VoucherPath = filePath
+	a.logger.Info("Payment voucher saved successfully", "user", state.UserID, "path", filePath)
+
+	return nil
+}
+
+// Format: {phone_number}_{sanitized_push_name}_{timestamp}.jpeg.
+func generateVoucherFilename(userID, pushName string) string {
+	phone := userID
+	if i := strings.Index(userID, "@"); i != -1 {
+		phone = userID[:i]
+	}
+
+	sanitizedName := strings.ReplaceAll(pushName, " ", "_")
+	reg := regexp.MustCompile(`[^a-zA-Z0-9_-]+`)
+	sanitizedName = reg.ReplaceAllString(sanitizedName, "")
+
+	if sanitizedName == "" {
+		sanitizedName = "user"
+	}
+
+	timestamp := time.Now().Unix()
+
+	return fmt.Sprintf("%s_%s_%d.jpeg", phone, sanitizedName, timestamp)
 }

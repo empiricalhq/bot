@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
 
+	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 
@@ -31,6 +33,7 @@ type Bot struct {
 type WhatsAppClient interface {
 	SendText(ctx context.Context, to, text string) error
 	GetJID() types.JID
+	Download(msg whatsmeow.DownloadableMessage) ([]byte, error)
 }
 
 func NewBot(
@@ -82,7 +85,7 @@ func (b *Bot) HandleEvent(evt interface{}) {
 		if msgEvent.Info.Chat.Server != "s.whatsapp.net" {
 			b.logger.Debug("Ignoring event: not a 1-on-1 chat", "chat_jid", msgEvent.Info.Chat.String())
 		} else {
-			b.logger.Debug("Ignoring event: no usable text content", "sender", msgEvent.Info.Sender.ToNonAD().String())
+			b.logger.Debug("Ignoring event: no usable text or media", "sender", msgEvent.Info.Sender.ToNonAD().String())
 		}
 
 		return
@@ -97,13 +100,15 @@ func (b *Bot) HandleEvent(evt interface{}) {
 	ctx, cancel := context.WithTimeout(context.Background(), messageTimeout)
 	defer cancel()
 
-	err := b.processMessage(ctx, msg)
+	err := b.processMessage(ctx, msg, msgEvent)
 	if err != nil {
-		b.logger.Error("Message processing failed", "error", err, "user", msg.SenderID)
+		if err.Error() != "new user initialized and greeted; skipping further processing of first message" {
+			b.logger.Error("Message processing failed", "error", err, "user", msg.SenderID)
+		}
 	}
 }
 
-func (b *Bot) processMessage(ctx context.Context, msg *message.Message) error {
+func (b *Bot) processMessage(ctx context.Context, msg *message.Message, rawEvt interface{}) error {
 	logger := b.logger.With("user", msg.SenderID)
 
 	logger.Debug("Processing message", "text", msg.Text, "has_media", msg.HasMedia)
@@ -116,12 +121,12 @@ func (b *Bot) processMessage(ctx context.Context, msg *message.Message) error {
 	logger = logger.With("from_node", userState.CurrentNode)
 
 	originalNode := userState.CurrentNode
-	nextNode, action := b.fsm.DetermineNext(userState, msg.Text, msg.HasMedia)
+	nextNode, action := b.fsm.DetermineNext(userState, msg)
 
 	logger.Debug("FSM determined next state", "to_node", nextNode, "action", action)
 
 	if action != "" {
-		err = b.actions.Execute(action, userState, msg)
+		err = b.actions.Execute(action, userState, msg, rawEvt)
 		if err != nil {
 			logger.Error("Action failed", "action", action, "error", err)
 		}
@@ -182,7 +187,24 @@ func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message) (*
 	if state.CurrentNode == "" {
 		state.CurrentNode = b.fsm.GetStartNode()
 		state.UserName = msg.PushName
+		state.LastUpdated = time.Now()
+
 		b.logger.Info("New user initialized", "user", msg.SenderID, "node", state.CurrentNode, "push_name", msg.PushName)
+
+		responseText := b.generateResponse(state.CurrentNode, state)
+		if responseText != "" {
+			outMsg := &domain.ConversationMessage{
+				UserID:         msg.SenderID,
+				Timestamp:      time.Now(),
+				Direction:      "outbound",
+				MessageContent: responseText,
+				NodeID:         state.CurrentNode,
+			}
+			b.repo.SaveStateAndMessages(ctx, state, nil, outMsg)
+			b.whatsapp.SendText(ctx, msg.SenderID, responseText)
+		}
+
+		return nil, errors.New("new user initialized and greeted; skipping further processing of first message")
 	}
 
 	return state, nil

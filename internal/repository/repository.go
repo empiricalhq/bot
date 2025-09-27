@@ -25,18 +25,19 @@ func New(db *sql.DB, logger *slog.Logger) Repository {
 }
 
 const getUserStateQuery = `
-	SELECT current_node, user_name, course_interest, consulted_price, requires_human_agent, last_updated
+	SELECT current_node, user_name, course_interest, consulted_price, voucher_path, requires_human_agent, last_updated
 	FROM user_state WHERE user_id = ?
 `
 
 const saveUserStateQuery = `
-	INSERT INTO user_state (user_id, current_node, user_name, course_interest, consulted_price, requires_human_agent, last_updated)
-	VALUES (?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO user_state (user_id, current_node, user_name, course_interest, consulted_price, voucher_path, requires_human_agent, last_updated)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(user_id) DO UPDATE SET
 		current_node = excluded.current_node,
 		user_name = excluded.user_name,
 		course_interest = excluded.course_interest,
 		consulted_price = excluded.consulted_price,
+		voucher_path = excluded.voucher_path,
 		requires_human_agent = excluded.requires_human_agent,
 		last_updated = excluded.last_updated
 `
@@ -54,6 +55,7 @@ func (r *repository) GetUserState(ctx context.Context, userID string) (*domain.U
 		&state.UserName,
 		&state.CourseInterest,
 		&state.ConsultedPrice,
+		&state.VoucherPath,
 		&state.RequiresHumanAgent,
 		&state.LastUpdated,
 	)
@@ -89,6 +91,7 @@ func (r *repository) SaveStateAndMessages(
 		state.UserName,
 		state.CourseInterest,
 		state.ConsultedPrice,
+		state.VoucherPath,
 		state.RequiresHumanAgent,
 		state.LastUpdated,
 	)
@@ -135,6 +138,7 @@ func (r *repository) InitSchema(ctx context.Context) error {
 			user_name TEXT NOT NULL DEFAULT '',
 			course_interest TEXT NOT NULL DEFAULT '',
 			consulted_price BOOLEAN NOT NULL DEFAULT FALSE,
+			voucher_path TEXT NOT NULL DEFAULT '',
 			requires_human_agent BOOLEAN NOT NULL DEFAULT FALSE,
 			last_updated DATETIME NOT NULL
 		)`,

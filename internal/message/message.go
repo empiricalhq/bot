@@ -7,10 +7,11 @@ import (
 )
 
 type Message struct {
-	Text     string
-	PushName string
-	SenderID string
-	HasMedia bool
+	Text      string
+	PushName  string
+	SenderID  string
+	HasMedia  bool
+	MediaType string // "image", "video", "document", "audio", "sticker"
 }
 
 func FromEvent(evt *events.Message) *Message {
@@ -24,36 +25,38 @@ func FromEvent(evt *events.Message) *Message {
 		PushName: evt.Info.PushName,
 	}
 
-	msg.Text, msg.HasMedia = extractContent(evt)
-	msg.Text = strings.TrimSpace(msg.Text)
+	var content string
 
-	// Rule 2: Ignore any message that does not contain usable text.
-	// This includes stickers, audio messages, and media sent without a caption.
-	if msg.Text == "" {
+	content, msg.HasMedia, msg.MediaType = extractContent(evt)
+	msg.Text = strings.TrimSpace(content)
+
+	// Rule 2: Ignore any message that does not contain usable text or media.
+	if msg.Text == "" && !msg.HasMedia {
 		return nil
 	}
 
 	return msg
 }
 
-func extractContent(evt *events.Message) (string, bool) {
+func extractContent(evt *events.Message) (caption string, hasMedia bool, mediaType string) {
 	msg := evt.Message
 
 	switch {
 	case msg.GetConversation() != "":
-		return msg.GetConversation(), false
+		return msg.GetConversation(), false, ""
 	case msg.GetExtendedTextMessage() != nil:
-		return msg.GetExtendedTextMessage().GetText(), false
+		return msg.GetExtendedTextMessage().GetText(), false, ""
 	case msg.GetImageMessage() != nil:
-		return msg.GetImageMessage().GetCaption(), true
+		return msg.GetImageMessage().GetCaption(), true, "image"
 	case msg.GetDocumentMessage() != nil:
-		return msg.GetDocumentMessage().GetCaption(), true
+		return msg.GetDocumentMessage().GetCaption(), true, "document"
 	case msg.GetVideoMessage() != nil:
-		return msg.GetVideoMessage().GetCaption(), true
+		return msg.GetVideoMessage().GetCaption(), true, "video"
+	case msg.GetAudioMessage() != nil:
+		return "", true, "audio"
+	case msg.GetStickerMessage() != nil:
+		return "", true, "sticker"
 	default:
-		// Other message types are considered media
-		isMedia := msg.GetStickerMessage() != nil || msg.GetAudioMessage() != nil
-
-		return "", isMedia
+		return "", false, ""
 	}
 }

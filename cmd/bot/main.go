@@ -70,7 +70,7 @@ func main() {
 	}
 
 	fsm := service.NewFSM(flow, logger)
-	actions := service.NewActionHandler(logger)
+	actions := service.NewActionHandler(logger, waClient, cfg.VoucherPath)
 	renderer := template.NewRenderer(logger)
 
 	bot := service.NewBot(cfg, repo, fsm, actions, renderer, waClient, logger)
