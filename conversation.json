@@ -767,20 +767,5 @@
         { "condition": { "type": "any_text" }, "target": "FALLBACK_MENU" }
       ]
     }
-  },
-  "quick_responses": {
-    "gracias": "¡De nada! 💕 Estoy aquí para ayudarte con tu camino en la joyería tejida",
-    "ok": "¡Perfecto! ¿Hay algo más que quieras saber?",
-    "bien": "¡Excelente! ¿En qué más puedo ayudarte?",
-    "perfecto": "¡Genial! Si necesitas algo más, aquí estoy",
-    "si": "¡Genial! ¿En qué más puedo ayudarte?",
-    "no": "Entiendo. Si necesitas algo más, aquí estaré 😊",
-    "adios": "¡Hasta pronto! Que tengas un día maravilloso ✨",
-    "bye": "¡Nos vemos! Esperamos verte pronto en la escuela 💕",
-    "chau": "¡Hasta luego! Recuerda que estamos aquí cuando nos necesites 😊",
-    "vale": "¡Perfecto! ¿Hay algo más en lo que pueda ayudarte?",
-    "listo": "¡Excelente! Si tienes más preguntas, no dudes en escribir",
-    "entendido": "¡Perfecto! Estoy aquí si necesitas más información",
-    "claro": "¡Genial! ¿Hay algo más que quieras saber sobre los cursos?"
   }
 }
