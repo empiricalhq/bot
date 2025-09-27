@@ -8,6 +8,7 @@ type UserState struct {
 	UserName           string    `db:"user_name"`
 	CourseInterest     string    `db:"course_interest"`
 	ConsultedPrice     bool      `db:"consulted_price"`
+	VoucherPath        string    `db:"voucher_path"`
 	RequiresHumanAgent bool      `db:"requires_human_agent"`
 	LastUpdated        time.Time `db:"last_updated"`
 }

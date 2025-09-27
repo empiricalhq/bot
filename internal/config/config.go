@@ -16,6 +16,7 @@ type Config struct {
 	FlowFilePath    string
 	SQLiteDBPath    string
 	Environment     string
+	VoucherPath     string
 	DevAllowedUsers map[string]bool
 }
 
@@ -31,6 +32,7 @@ func Load() (*Config, error) {
 		FlowFilePath: utils.GetEnv("FLOW_FILE_PATH", "conversation.json"),
 		SQLiteDBPath: utils.GetEnv("SQLITE_DB_PATH", "store.db"),
 		Environment:  strings.ToLower(utils.GetEnv("ENV", "prod")),
+		VoucherPath:  utils.GetEnv("VOUCHER_SAVE_PATH", "vouchers"),
 	}
 
 	allowedUsers := utils.GetEnv("DEV_ALLOWED_USERS", "")

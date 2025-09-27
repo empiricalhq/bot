@@ -72,6 +72,10 @@ func (c *Client) SendText(ctx context.Context, to, text string) error {
 	return err
 }
 
+func (c *Client) Download(msg whatsmeow.DownloadableMessage) ([]byte, error) {
+	return c.Client.Download(context.Background(), msg)
+}
+
 func (c *Client) GetJID() types.JID {
 	if c.Store.ID == nil {
 		return types.JID{}

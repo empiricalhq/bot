@@ -1,6 +1,7 @@
 package service
 
 import (
+	"slices"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,10 +12,11 @@ import (
 	"sync"
 
 	"whatsbot/internal/domain"
+	"whatsbot/internal/message"
 )
 
 type FSM interface {
-	DetermineNext(state *domain.UserState, input string, hasMedia bool) (nodeID, action string)
+	DetermineNext(state *domain.UserState, msg *message.Message) (nodeID, action string)
 	GetNode(nodeID string) *domain.Node
 	GetStartNode() string
 }
@@ -34,12 +36,12 @@ func NewFSM(flow *domain.Flow, logger *slog.Logger) FSM {
 	}
 }
 
-func (f *fsm) DetermineNext(state *domain.UserState, input string, hasMedia bool) (nodeID, action string) {
-	input = strings.ToLower(strings.TrimSpace(input))
+func (f *fsm) DetermineNext(state *domain.UserState, msg *message.Message) (nodeID, action string) {
+	input := strings.ToLower(strings.TrimSpace(msg.Text))
 
 	// Check global transitions first
 	for _, transition := range f.flow.GlobalTransitions {
-		if f.matchesCondition(input, hasMedia, transition.Condition) {
+		if f.matchesCondition(input, msg, transition.Condition) {
 			f.logger.Debug("Matched global transition",
 				"user", state.UserID, "from_node", state.CurrentNode, "to_node", transition.Target, "action", transition.Action, "condition_type", transition.Condition.Type)
 
@@ -50,7 +52,7 @@ func (f *fsm) DetermineNext(state *domain.UserState, input string, hasMedia bool
 	// Check node-specific transitions
 	currentNode := f.flow.Nodes[state.CurrentNode]
 	for _, transition := range currentNode.Transitions {
-		if f.matchesCondition(input, hasMedia, transition.Condition) {
+		if f.matchesCondition(input, msg, transition.Condition) {
 			action = transition.Action
 			if action == "" {
 				action = currentNode.Action // fallback
@@ -88,7 +90,7 @@ func (f *fsm) GetNode(nodeID string) *domain.Node {
 	return &node
 }
 
-func (f *fsm) matchesCondition(input string, hasMedia bool, condition domain.Condition) bool {
+func (f *fsm) matchesCondition(input string, msg *message.Message, condition domain.Condition) bool {
 	switch condition.Type {
 	case "exact":
 		for _, value := range condition.Value {
@@ -105,9 +107,13 @@ func (f *fsm) matchesCondition(input string, hasMedia bool, condition domain.Con
 	case "regex":
 		return f.matchesRegex(input, condition.Regex)
 	case "any_text":
-		return input != "" && !hasMedia
+		return input != "" && !msg.HasMedia
 	case "media":
-		return hasMedia
+		return msg.HasMedia
+	case "media_type":
+		if slices.Contains(condition.Value, msg.MediaType) {
+				return true
+			}
 	}
 
 	return false
