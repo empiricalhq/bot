@@ -20,7 +20,7 @@ func FromEvent(evt *events.Message) *Message {
 	}
 
 	msg := &Message{
-		SenderID: evt.Info.Sender.ToNonAD().String(),
+		SenderID: evt.Info.Chat.ToNonAD().String(),
 		PushName: evt.Info.PushName,
 	}
 
