@@ -7,6 +7,7 @@ import (
 	"whatsbot/internal/domain"
 	"whatsbot/internal/logger"
 	"whatsbot/internal/message"
+	"whatsbot/internal/nameparser"
 )
 
 type ActionHandler interface {
@@ -31,6 +32,8 @@ func (a *actionHandler) Execute(action string, state *domain.UserState, msg *mes
 	switch action {
 	case "save_user_name":
 		return a.saveUserName(state, msg)
+	case "clear_user_name":
+		return a.clearUserName(state)
 	case "create_new_lead":
 		a.logger.Info("New lead created", "user", state.UserID, "name", state.UserName)
 	case "update_lead_interest_beginner":
@@ -51,17 +54,29 @@ func (a *actionHandler) Execute(action string, state *domain.UserState, msg *mes
 	return nil
 }
 
+// clearUserName deactivates name personalization by clearing the stored name
+// with no stored name, the renderer falls back to the default.
+func (a *actionHandler) clearUserName(state *domain.UserState) error {
+	state.UserName = ""
+	a.logger.Info("User name cleared by user request", "user", state.UserID)
+
+	return nil
+}
+
 func (a *actionHandler) saveUserName(state *domain.UserState, msg *message.Message) error {
-	name := strings.TrimSpace(msg.Text)
-	if name == "" {
-		name = strings.TrimSpace(msg.PushName)
+	nameInput := strings.TrimSpace(msg.Text)
+	if nameInput == "" {
+		return nil
 	}
 
-	if name == "" {
-		return errors.New("user name cannot be found in message or push name")
+	if nameparser.Parse(nameInput) == "" {
+		a.logger.Warn("Invalid name input ignored during update attempt", "user", state.UserID, "input", nameInput)
+
+		return nil
 	}
 
-	state.UserName = name
+	state.UserName = nameInput
+	a.logger.Info("User name updated by user request", "user", state.UserID, "new_name", nameInput)
 
 	return nil
 }

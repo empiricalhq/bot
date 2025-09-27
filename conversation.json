@@ -1,7 +1,22 @@
 {
-  "start_node": "WAITING_FOR_NAME",
+  "start_node": "GREETING",
   "fallback_node": "FALLBACK_MENU",
   "global_transitions": [
+    {
+      "condition": {
+        "type": "keyword",
+        "value": ["sin nombre", "no me llames así", "quita mi nombre"]
+      },
+      "target": "NAME_REMOVED_CONFIRMATION",
+      "action": "clear_user_name"
+    },
+    {
+      "condition": {
+        "type": "keyword",
+        "value": ["mi nombre es", "me llamo", "llámame", "cambiar nombre"]
+      },
+      "target": "CHANGE_NAME_PROMPT"
+    },
     {
       "condition": {
         "type": "keyword",
@@ -32,23 +47,10 @@
     }
   ],
   "nodes": {
-    "WAITING_FOR_NAME": {
+    "GREETING": {
       "message": {
         "type": "text",
-        "content": "¡Hola! 💕 Soy Ana de la Escuela de Joyería Tejida del Perú ✨\n\nPara conocerte mejor, ¿cuál es tu nombre?"
-      },
-      "transitions": [
-        {
-          "condition": { "type": "any_text" },
-          "action": "save_user_name",
-          "target": "NAME_CAPTURED"
-        }
-      ]
-    },
-    "NAME_CAPTURED": {
-      "message": {
-        "type": "text",
-        "content": "Hola, *{{name}}* 💕 ¿Cómo estás?\n\n¡Felicitaciones por tu deseo de aprender y emprender con esta hermosa técnica!\n\nPermíteme comentarte algo importante:\n\n👉 Nosotros somos Escuela de Joyería Tejida Perú de la maestra *Magally Juro* y tenemos más de *15 años en el mercado*, formando *alumnas y marcas de joyería tejida* en toda América Latina 🌎\n\nY esto lo hacemos a través de Cursos Modalidad Online, Modalidad Presencial, Seminarios internacionales etc.\n\nTe invito a conocer más de la maestra Magally Juro, diseñadora de joyas:\n📹 https://youtu.be/U2E4qRlGMM8\n\nAhora cuéntame:\n\n¿Tú ya sabes joyería tejida o deseas empezar desde cero?\n\n*1* → Desde Cero\n*2* → Ya tengo experiencia"
+        "content": "¡Hola, {{name}}! 💕 Soy un asistente de la Escuela de Joyería Tejida del Perú ✨\n\n¡Felicitaciones por tu deseo de aprender y emprender con esta hermosa técnica!\n\nPermíteme comentarte algo importante:\n\n👉 Nosotros somos Escuela de Joyería Tejida Perú de la maestra *Magally Juro* y tenemos más de *15 años en el mercado*, formando *alumnas y marcas de joyería tejida* en toda América Latina 🌎\n\nY esto lo hacemos a través de Cursos Modalidad Online, Modalidad Presencial, Seminarios internacionales etc.\n\nTe invito a conocer más de la maestra Magally Juro, diseñadora de joyas:\n📹 https://youtu.be/U2E4qRlGMM8\n\nAhora cuéntame:\n\n¿Tú ya sabes joyería tejida o deseas empezar desde cero?\n\n*1* → Desde Cero\n*2* → Ya tengo experiencia\n\n_(Si prefieres que no use tu nombre, escribe 'sin nombre')_"
       },
       "action": "create_new_lead",
       "transitions": [
@@ -69,10 +71,41 @@
         { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
       ]
     },
+    "NAME_REMOVED_CONFIRMATION": {
+      "message": {
+        "type": "text",
+        "content": "Entendido. De ahora en adelante no usaré un nombre para saludarte. Si cambias de opinión, puedes decir 'mi nombre es...' en cualquier momento."
+      },
+      "transitions": [
+        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+      ]
+    },
+    "CHANGE_NAME_PROMPT": {
+      "message": {
+        "type": "text",
+        "content": "¡Claro! ¿Cómo te gustaría que te llame?"
+      },
+      "transitions": [
+        {
+          "condition": { "type": "any_text" },
+          "action": "save_user_name",
+          "target": "NAME_CHANGE_CONFIRMED"
+        }
+      ]
+    },
+    "NAME_CHANGE_CONFIRMED": {
+      "message": {
+        "type": "text",
+        "content": "¡Perfecto, {{name}}! He actualizado tu nombre."
+      },
+      "transitions": [
+        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+      ]
+    },
     "MAIN_MENU": {
       "message": {
         "type": "text",
-        "content": "¡Hola, *{{name}}*! 💕 Qué gusto verte de nuevo!\n\n¿En qué puedo ayudarte hoy?\n\n*1* → Información de cursos desde cero\n*2* → Cursos avanzados\n*ONLINE* → Modalidad Online\n*PRESENCIAL* → Modalidad Presencial\n*PRECIO* → Ver costos y promociones\n*HORARIOS* → Ver calendario disponible\n*AYUDA* → Hablar con una asesora"
+        "content": "¡Hola, {{name}}! 💕 Qué gusto verte de nuevo!\n\n¿En qué puedo ayudarte hoy?\n\n*1* → Información de cursos desde cero\n*2* → Cursos avanzados\n*ONLINE* → Modalidad Online\n*PRESENCIAL* → Modalidad Presencial\n*PRECIO* → Ver costos y promociones\n*HORARIOS* → Ver calendario disponible\n*AYUDA* → Hablar con una asesora"
       },
       "transitions": [
         {
@@ -124,7 +157,7 @@
     "INTERESTED_IN_BEGINNER": {
       "message": {
         "type": "text",
-        "content": "Perfecto, *{{name}}* 🌸\n\nSi no tienes ningún conocimiento de la técnica de joyería tejida a crochet con hilos metálicos y deseas empezar desde cero, te sugiero el *Curso Integral de Joyería Tejida* 👑\n\nEste incluye los tres niveles: *básico, intermedio y avanzado*.\n\n✔️ Puedes llevarlo *online* o *presencial*\n✔️ No requieres experiencia previa\n✔️ Se te acompaña y guía paso a paso hasta crear tus propias piezas\n✔️ Logras joyas que te permiten recuperar tu inversión desde el primer nivel\n✔️ Recibes Charlas de gestión en Joyería Tejida\n✔️ Recibes E-Books o material de apoyo por clase\n✔️ Y formarás parte de la comunidad más grande de habla hispana que conoce y ama la joyería tejida\n\n¿Qué modalidad prefieres?\n\n*ONLINE* → Ver detalles del Curso Online\n*PRESENCIAL* → Ver detalles del Curso Presencial\n*PRECIO* → Ver precios y formas de pago"
+        "content": "Perfecto, {{name}} 🌸\n\nSi no tienes ningún conocimiento de la técnica de joyería tejida a crochet con hilos metálicos y deseas empezar desde cero, te sugiero el *Curso Integral de Joyería Tejida* 👑\n\nEste incluye los tres niveles: *básico, intermedio y avanzado*.\n\n✔️ Puedes llevarlo *online* o *presencial*\n✔️ No requieres experiencia previa\n✔️ Se te acompaña y guía paso a paso hasta crear tus propias piezas\n✔️ Logras joyas que te permiten recuperar tu inversión desde el primer nivel\n✔️ Recibes Charlas de gestión en Joyería Tejida\n✔️ Recibes E-Books o material de apoyo por clase\n✔️ Y formarás parte de la comunidad más grande de habla hispana que conoce y ama la joyería tejida\n\n¿Qué modalidad prefieres?\n\n*ONLINE* → Ver detalles del Curso Online\n*PRESENCIAL* → Ver detalles del Curso Presencial\n*PRECIO* → Ver precios y formas de pago"
       },
       "action": "update_lead_interest_beginner",
       "transitions": [
@@ -149,7 +182,7 @@
     "INTERESTED_IN_ADVANCED": {
       "message": {
         "type": "text",
-        "content": "¡Eso es genial, *{{name}}*! 🙌\n\nEn tu caso lo mejor son los *Cursos Avanzados*, tenemos más de *8 opciones* diseñadas para:\n\n💎 Cada clase ha sido diseñada por la maestra Magally Juro y te permitirá perfeccionar tu técnica\n💎 Innovar con nuevos diseños\n💎 Te actualizarás en lo último de la Joyería Tejida o Tecnología de Manufactura en Punto Peruano\n💎 Y contarás con el acompañamiento de la maestra Magally Juro para consultas vía WhatsApp\n\n📹 *VER RESUMEN DE CURSOS AVANZADOS:*\nhttps://www.youtube.com/watch?v=dOeCIBkbfqI\n\n*¿Cómo son las clases?*\n• Son de Acceso automático\n• Las clases ya están grabadas\n• Puedes ver las veces que desees\n\n¿Qué curso te interesa?\n\n*CORAZON* → Curso Joyas Modelo Corazón\n*ANILLOS* → Festival de Anillos\n*VIBRACIONES* → Joyas Tejidas Vibraciones\n*MAMA* → Joyas para Mamá\n*HELICOIDALES* → Joyas Helicoidales\n*FLORES* → Flores para Mamá\n*TIARAS* → Tiaras y Tocados\n*CATALOGO* → Ver todos los cursos"
+        "content": "¡Eso es genial, {{name}}! 🙌\n\nEn tu caso lo mejor son los *Cursos Avanzados*, tenemos más de *8 opciones* diseñadas para:\n\n💎 Cada clase ha sido diseñada por la maestra Magally Juro y te permitirá perfeccionar tu técnica\n💎 Innovar con nuevos diseños\n💎 Te actualizarás en lo último de la Joyería Tejida o Tecnología de Manufactura en Punto Peruano\n💎 Y contarás con el acompañamiento de la maestra Magally Juro para consultas vía WhatsApp\n\n📹 *VER RESUMEN DE CURSOS AVANZADOS:*\nhttps://www.youtube.com/watch?v=dOeCIBkbfqI\n\n*¿Cómo son las clases?*\n• Son de Acceso automático\n• Las clases ya están grabadas\n• Puedes ver las veces que desees\n\n¿Qué curso te interesa?\n\n*CORAZON* → Curso Joyas Modelo Corazón\n*ANILLOS* → Festival de Anillos\n*VIBRACIONES* → Joyas Tejidas Vibraciones\n*MAMA* → Joyas para Mamá\n*HELICOIDALES* → Joyas Helicoidales\n*FLORES* → Flores para Mamá\n*TIARAS* → Tiaras y Tocados\n*CATALOGO* → Ver todos los cursos"
       },
       "action": "update_lead_interest_advanced",
       "transitions": [
@@ -230,9 +263,7 @@
               "inscrib",
               "inscripcion",
               "inscribir",
-              "matrícula",
-              "Matricula",
-              "Matrícula"
+              "matrícula"
             ]
           },
           "target": "ENROLLMENT_PROCESS"
@@ -265,9 +296,7 @@
               "inscrib",
               "inscripcion",
               "inscribir",
-              "matrícula",
-              "Matricula",
-              "Matrícula"
+              "matrícula"
             ]
           },
           "target": "ENROLLMENT_PROCESS"
@@ -301,9 +330,7 @@
               "inscrib",
               "inscripcion",
               "inscribir",
-              "matrícula",
-              "Matricula",
-              "Matrícula"
+              "matrícula"
             ]
           },
           "target": "ENROLLMENT_PROCESS"
@@ -326,9 +353,7 @@
               "inscrib",
               "inscripcion",
               "inscribir",
-              "matrícula",
-              "Matricula",
-              "Matrícula"
+              "matrícula"
             ]
           },
           "target": "ENROLLMENT_PROCESS"
@@ -598,7 +623,7 @@
     "WAITING_FOR_VOUCHER": {
       "message": {
         "type": "text",
-        "content": "¡Excelente *{{name}}*! \n\nPara confirmar tu pago, por favor *envía una foto de tu voucher* 📸\n\nSi tienes problemas para enviar la imagen, escribe *AYUDA* para contactar con una asesora."
+        "content": "¡Excelente, {{name}}! \n\nPara confirmar tu pago, por favor *envía una foto de tu voucher* 📸\n\nSi tienes problemas para enviar la imagen, escribe *AYUDA* para contactar con una asesora."
       },
       "transitions": [
         {
@@ -616,7 +641,7 @@
     "PAYMENT_CONFIRMED": {
       "message": {
         "type": "text",
-        "content": "🎉 **¡FELICITACIONES {{name}}!** 🎉\n\n*Tu pago ha sido recibido exitosamente* ✅\n\nPor favor envíanos:\n• Tu nombre completo\n• País\n• Una foto tuya\n\nAl WhatsApp de la escuela: *+51 923 845 189*\n\nYa que te obsequiaremos el E-Book 1 del Taller de Joyería Tejida\n\n¡Bienvenid@ a Escuela de Joyería Tejida!\n\n¡Estamos encantadas de acompañarte en esta nueva aventura, te deseamos muchos éxitos!"
+        "content": "🎉 **¡FELICITACIONES, {{name}}!** 🎉\n\n*Tu pago ha sido recibido exitosamente* ✅\n\nPor favor envíanos:\n• Tu nombre completo\n• País\n• Una foto tuya\n\nAl WhatsApp de la escuela: *+51 923 845 189*\n\nYa que te obsequiaremos el E-Book 1 del Taller de Joyería Tejida\n\n¡Bienvenid@ a Escuela de Joyería Tejida!\n\n¡Estamos encantadas de acompañarte en esta nueva aventura, te deseamos muchos éxitos!"
       },
       "transitions": [
         { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
@@ -649,15 +674,6 @@
         { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
       ]
     },
-    "NEW_CONVERSATION": {
-      "message": {
-        "type": "text",
-        "content": "*🔄Conversación reiniciada*\n\nTu historial ha sido limpiado.\nEscribe *HOLA* para empezar de nuevo."
-      },
-      "transitions": [
-        { "condition": { "type": "any_text" }, "target": "WAITING_FOR_NAME" }
-      ]
-    },
     "CONVERSATION_CLOSED": {
       "message": {
         "type": "text",
@@ -682,7 +698,7 @@
     "FALLBACK_MENU": {
       "message": {
         "type": "text",
-        "content": "No entendí tu mensaje 😊\n\n*{{name}}, opciones disponibles:*\n*1* → Curso desde cero\n*2* → Cursos avanzados\n*PRECIO* → Ver precios\n*AYUDA* → Hablar con asesora\n\n¿En qué te puedo ayudar?"
+        "content": "No entendí tu mensaje 😊\n\n{{name}}, estas son las opciones disponibles:\n*1* → Curso desde cero\n*2* → Cursos avanzados\n*PRECIO* → Ver precios\n*AYUDA* → Hablar con asesora\n\n¿En qué te puedo ayudar?"
       },
       "transitions": [
         {

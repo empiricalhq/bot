@@ -119,12 +119,15 @@ func (b *Bot) processMessage(ctx context.Context, msg *message.Message) error {
 		NodeID:         originalNode,
 	}
 
-	outMsg := &domain.ConversationMessage{
-		UserID:         msg.SenderID,
-		Timestamp:      time.Now(),
-		Direction:      "outbound",
-		MessageContent: responseText,
-		NodeID:         nextNode,
+	var outMsg *domain.ConversationMessage
+	if responseText != "" {
+		outMsg = &domain.ConversationMessage{
+			UserID:         msg.SenderID,
+			Timestamp:      time.Now(),
+			Direction:      "outbound",
+			MessageContent: responseText,
+			NodeID:         nextNode,
+		}
 	}
 
 	err = b.repo.SaveStateAndMessages(ctx, userState, inMsg, outMsg)
@@ -156,7 +159,7 @@ func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message) (*
 	if state.CurrentNode == "" {
 		state.CurrentNode = b.fsm.GetStartNode()
 		state.UserName = msg.PushName
-		b.logger.Info("New user initialized", "user", msg.SenderID, "node", state.CurrentNode)
+		b.logger.Info("New user initialized", "user", msg.SenderID, "node", state.CurrentNode, "push_name", msg.PushName)
 	}
 
 	return state, nil
@@ -168,6 +171,12 @@ func (b *Bot) generateResponse(nodeID string, state *domain.UserState) string {
 		b.logger.Error("Node not found", "node", nodeID)
 
 		return "Sorry, something went wrong."
+	}
+
+	if node.Message.Content == "" {
+		b.logger.Debug("Node has no message content", "node", nodeID)
+
+		return ""
 	}
 
 	return b.renderer.Render(node.Message.Content, state)
