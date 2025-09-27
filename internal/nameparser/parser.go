@@ -13,8 +13,8 @@ const (
 )
 
 var (
-	// nonLetterRegex matches any character that is not a Unicode letter.
-	nonLetterRegex = regexp.MustCompile(`[^\p{L}]+`)
+	// nonLetterRegex matches any character that is not a Unicode letter or hyphen.
+	nonLetterRegex = regexp.MustCompile(`[^\p{L}-]+`)
 	// vowelRegex matches vowels, case-insensitive.
 	vowelRegex = regexp.MustCompile(`(?i)[` + vowels + `]`)
 )
@@ -36,6 +36,10 @@ func Parse(fullName string) string {
 
 	for _, word := range words {
 		cleanedWord := nonLetterRegex.ReplaceAllString(word, "")
+
+		if strings.Contains(cleanedWord, "-") {
+			cleanedWord = strings.Split(cleanedWord, "-")[0]
+		}
 
 		// we use rune length for Unicode characters.
 		if len([]rune(cleanedWord)) < minNameLength {

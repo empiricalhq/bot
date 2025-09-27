@@ -15,6 +15,10 @@ run = "air"
 description = "Build the app"
 run = "go build -o build/main.exe cmd/bot/main.go"
 
+[tasks.test]
+description = "Run tests"
+run = "go test ./..."
+
 [tasks.lint]
 description = "Format & lint"
 run = ["golangci-lint fmt", "golangci-lint run --fix --fast-only"]
