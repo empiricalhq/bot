@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"go.mau.fi/whatsmeow/types"
@@ -9,7 +10,6 @@ import (
 
 	"whatsbot/internal/config"
 	"whatsbot/internal/domain"
-	"whatsbot/internal/logger"
 	"whatsbot/internal/message"
 	"whatsbot/internal/repository"
 	"whatsbot/internal/template"
@@ -24,7 +24,7 @@ type Bot struct {
 	actions  ActionHandler
 	renderer template.Renderer
 	whatsapp WhatsAppClient
-	logger   logger.Logger
+	logger   *slog.Logger
 }
 
 type WhatsAppClient interface {
@@ -39,7 +39,7 @@ func NewBot(
 	actions ActionHandler,
 	renderer template.Renderer,
 	whatsapp WhatsAppClient,
-	logger logger.Logger,
+	logger *slog.Logger,
 ) *Bot {
 	return &Bot{
 		config:   config,

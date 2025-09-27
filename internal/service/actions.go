@@ -2,10 +2,10 @@ package service
 
 import (
 	"errors"
+	"log/slog"
 	"strings"
 
 	"whatsbot/internal/domain"
-	"whatsbot/internal/logger"
 	"whatsbot/internal/message"
 	"whatsbot/internal/nameparser"
 )
@@ -15,10 +15,10 @@ type ActionHandler interface {
 }
 
 type actionHandler struct {
-	logger logger.Logger
+	logger *slog.Logger
 }
 
-func NewActionHandler(logger logger.Logger) ActionHandler {
+func NewActionHandler(logger *slog.Logger) ActionHandler {
 	return &actionHandler{logger: logger}
 }
 
