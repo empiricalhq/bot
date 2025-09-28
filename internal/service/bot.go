@@ -13,6 +13,7 @@ import (
 	"whatsbot/internal/config"
 	"whatsbot/internal/domain"
 	"whatsbot/internal/message"
+	"whatsbot/internal/nameparser"
 	"whatsbot/internal/repository"
 	"whatsbot/internal/template"
 )
@@ -127,7 +128,7 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 	logger.Debug("FSM determined next state", "to_node", nextNode, "action", action)
 
 	if action != "" {
-		err := b.actions.Execute(action, userState, msg, rawEvt)
+		err := b.actions.Execute(action, userState, msg, rawEvt, originalNode)
 		if err != nil {
 			logger.Error("Action failed", "action", action, "error", err)
 		}
@@ -240,7 +241,34 @@ func (b *Bot) generateResponse(nodeID string, state *domain.UserState) string {
 		return ""
 	}
 
-	return b.renderer.Render(node.Message.Content, state)
+	data := b.prepareTemplateData(state)
+
+	return b.renderer.Render(node.Message.Content, data)
+}
+
+func (b *Bot) prepareTemplateData(state *domain.UserState) map[string]string {
+	data := make(map[string]string)
+
+	// Set user name
+	name := nameparser.Parse(state.UserName)
+	if name == "" {
+		name = "amigx"
+	}
+
+	data["name"] = name
+
+	if state.SelectedCourseID != "" {
+		courseNode := b.fsm.GetNode(state.SelectedCourseID)
+		if courseNode != nil && courseNode.Title != "" {
+			data["course_name"] = courseNode.Title
+		} else {
+			data["course_name"] = "el curso seleccionado"
+
+			b.logger.Warn("Could not find title for selected course", "user", state.UserID, "course_id", state.SelectedCourseID)
+		}
+	}
+
+	return data
 }
 
 func (b *Bot) shouldIgnoreUser(userID string) bool {

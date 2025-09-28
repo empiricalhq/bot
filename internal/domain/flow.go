@@ -18,6 +18,7 @@ type Transition struct {
 }
 
 type Node struct {
+	Title                   string         `json:"title,omitempty"`
 	Message                 MessageContent `json:"message"`
 	Transitions             []Transition   `json:"transitions,omitempty"`
 	IncludeTransitions      string         `json:"include_transitions,omitempty"`

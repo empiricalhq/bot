@@ -1,15 +1,13 @@
 package template
 
 import (
+	"fmt"
 	"log/slog"
 	"strings"
-
-	"whatsbot/internal/domain"
-	"whatsbot/internal/nameparser"
 )
 
 type Renderer interface {
-	Render(template string, state *domain.UserState) string
+	Render(template string, data map[string]string) string
 }
 
 type renderer struct {
@@ -20,20 +18,27 @@ func NewRenderer(logger *slog.Logger) Renderer {
 	return &renderer{logger: logger.With("component", "renderer")}
 }
 
-func (r *renderer) Render(template string, state *domain.UserState) string {
-	name := nameparser.Parse(state.UserName)
-	if name == "" {
-		name = "amigx"
+func (r *renderer) Render(template string, data map[string]string) string {
+	result := template
+
+	for key, value := range data {
+		placeholder := fmt.Sprintf("{{%s}}", key)
+		result = strings.ReplaceAll(result, placeholder, value)
 	}
 
-	result := strings.ReplaceAll(template, "{{name}}", name)
-
 	r.logger.Debug("Rendered template",
-		"user", state.UserID,
-		"user_name_input", state.UserName,
-		"parsed_name", name,
+		"data_keys", getKeys(data),
 		"result", result,
 	)
 
 	return strings.TrimSpace(result)
+}
+
+func getKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+
+	return keys
 }

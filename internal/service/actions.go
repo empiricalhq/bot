@@ -18,7 +18,7 @@ import (
 )
 
 type ActionHandler interface {
-	Execute(action string, state *domain.UserState, msg *message.Message, rawEvt interface{}) error
+	Execute(action string, state *domain.UserState, msg *message.Message, rawEvt interface{}, originatingNodeID string) error
 }
 
 type actionHandler struct {
@@ -35,18 +35,20 @@ func NewActionHandler(logger *slog.Logger, waClient WhatsAppClient, voucherPath 
 	}
 }
 
-func (a *actionHandler) Execute(action string, state *domain.UserState, msg *message.Message, rawEvt interface{}) error {
+func (a *actionHandler) Execute(action string, state *domain.UserState, msg *message.Message, rawEvt interface{}, originatingNodeID string) error {
 	if action == "" {
 		return nil
 	}
 
-	a.logger.Debug("Executing action", "action", action, "user", state.UserID)
+	a.logger.Debug("Executing action", "action", action, "user", state.UserID, "origin_node", originatingNodeID)
 
 	switch action {
 	case "save_user_name":
 		return a.saveUserName(state, msg)
 	case "clear_user_name":
 		return a.clearUserName(state)
+	case "set_selected_course":
+		return a.setSelectedCourse(state, originatingNodeID)
 	case "create_new_lead":
 		a.logger.Info("New lead created", "user", state.UserID, "name", state.UserName)
 	case "update_lead_interest_beginner":
@@ -74,6 +76,13 @@ func (a *actionHandler) Execute(action string, state *domain.UserState, msg *mes
 func (a *actionHandler) clearUserName(state *domain.UserState) error {
 	state.UserName = ""
 	a.logger.Info("User name cleared by user request", "user", state.UserID)
+
+	return nil
+}
+
+func (a *actionHandler) setSelectedCourse(state *domain.UserState, nodeID string) error {
+	state.SelectedCourseID = nodeID
+	a.logger.Info("User selected course for enrollment", "user", state.UserID, "course_node", nodeID)
 
 	return nil
 }
