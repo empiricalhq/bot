@@ -48,18 +48,64 @@ func (f *fsm) DetermineNext(state *domain.UserState, msg *message.Message) (node
 		return f.flow.StartNode, ""
 	}
 
-	// 1. Try node-specific transitions first to prioritize context.
-	for _, transition := range currentNode.Transitions {
-		if f.matchesCondition(input, msg, transition.Condition) {
-			action = transition.Action
-			if action == "" {
-				action = currentNode.Action // fallback to node's default action
+	// 1. Check node-specific transitions first (context takes priority).
+	// If message has media, test media rules before text rules
+	// so a caption doesn’t accidentally match a keyword: (image with caption: "listo")
+	if msg.HasMedia {
+		mediaTransitions := []domain.Transition{}
+		otherTransitions := []domain.Transition{}
+
+		for _, t := range currentNode.Transitions {
+			if t.Condition.Type == "media" || t.Condition.Type == "media_type" {
+				mediaTransitions = append(mediaTransitions, t)
+			} else {
+				otherTransitions = append(otherTransitions, t)
 			}
+		}
 
-			f.logger.Debug("Matched node transition",
-				"user", state.UserID, "from_node", state.CurrentNode, "to_node", transition.Target, "action", action, "condition_type", transition.Condition.Type)
+		// First try matching media conditions
+		for _, transition := range mediaTransitions {
+			if f.matchesCondition(input, msg, transition.Condition) {
+				action = transition.Action
+				if action == "" {
+					action = currentNode.Action // fallback to node's default action
+				}
 
-			return transition.Target, action
+				f.logger.Debug("Matched node media transition",
+					"user", state.UserID, "from_node", state.CurrentNode, "to_node", transition.Target, "action", action, "condition_type", transition.Condition.Type)
+
+				return transition.Target, action
+			}
+		}
+
+		// If no media transition matched, fall back to other transitions (e.g., for a caption).
+		for _, transition := range otherTransitions {
+			if f.matchesCondition(input, msg, transition.Condition) {
+				action = transition.Action
+				if action == "" {
+					action = currentNode.Action
+				}
+
+				f.logger.Debug("Matched node transition on media message (caption)",
+					"user", state.UserID, "from_node", state.CurrentNode, "to_node", transition.Target, "action", action, "condition_type", transition.Condition.Type)
+
+				return transition.Target, action
+			}
+		}
+	} else {
+		// Text-only: just check all transitions in order.
+		for _, transition := range currentNode.Transitions {
+			if f.matchesCondition(input, msg, transition.Condition) {
+				action = transition.Action
+				if action == "" {
+					action = currentNode.Action
+				}
+
+				f.logger.Debug("Matched node transition",
+					"user", state.UserID, "from_node", state.CurrentNode, "to_node", transition.Target, "action", action, "condition_type", transition.Condition.Type)
+
+				return transition.Target, action
+			}
 		}
 	}
 
