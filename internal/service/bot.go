@@ -137,10 +137,12 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 	if msg.HasMedia && slices.Contains(unsupportedMediaTypes, msg.MediaType) {
 		currentNode := b.fsm.GetNode(userState.CurrentNode)
 		canHandleMedia := false
+
 		if currentNode != nil {
 			for _, transition := range currentNode.Transitions {
 				if transition.Condition.Type == "media_type" && slices.Contains(transition.Condition.Value, msg.MediaType) {
 					canHandleMedia = true
+
 					break
 				}
 			}
@@ -148,7 +150,9 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 
 		if !canHandleMedia {
 			logger.Info("User sent an unsupported media type. Sending feedback.", "media_type", msg.MediaType)
+
 			responseText := "Lo siento, no puedo procesar ese tipo de mensaje. Por favor, envíame un mensaje de texto. 😊"
+
 			err := b.whatsapp.SendText(ctx, msg.SenderID, responseText)
 			if err != nil {
 				logger.Error("Failed to send unsupported media message", "error", err)
