@@ -230,7 +230,7 @@
     "MAIN_MENU": {
       "message": {
         "type": "text",
-        "content": "¡Hola, {{name}}! 💕 Qué gusto verte de nuevo!\n\n¿En qué puedo ayudarte hoy?\n\n*1* → Información de cursos desde cero\n*2* → Cursos avanzados\n*ONLINE* → Modalidad Online\n*PRESENCIAL* → Modalidad Presencial\n*PRECIO* → Ver costos y promociones\n*HORARIOS* → Ver calendario disponible\n*AYUDA* → Hablar con una asesora"
+        "content": "¡Hola, {{name}}! 💕 {{greeting}}\n\n¿En qué puedo ayudarte hoy?\n\n*1* → Información de cursos desde cero\n*2* → Cursos avanzados\n*ONLINE* → Modalidad Online\n*PRESENCIAL* → Modalidad Presencial\n*PRECIO* → Ver costos y promociones\n*HORARIOS* → Ver calendario disponible\n*AYUDA* → Hablar con una asesora"
       },
       "include_transitions": "main_menu_options"
     },
@@ -370,8 +370,7 @@
               "matrícula"
             ]
           },
-          "target": "CONFIRM_ENROLLMENT_BEGINNER",
-          "action": "set_selected_course"
+          "target": "CONFIRM_ENROLLMENT_BEGINNER"
         },
         {
           "condition": { "type": "keyword", "value": ["presencial"] },
@@ -410,8 +409,7 @@
               "matrícula"
             ]
           },
-          "target": "CONFIRM_ENROLLMENT_BEGINNER",
-          "action": "set_selected_course"
+          "target": "CONFIRM_ENROLLMENT_BEGINNER"
         },
         {
           "condition": { "type": "keyword", "value": ["online"] },
@@ -473,8 +471,7 @@
               "matrícula"
             ]
           },
-          "target": "CONFIRM_ENROLLMENT_BEGINNER",
-          "action": "set_selected_course"
+          "target": "CONFIRM_ENROLLMENT_BEGINNER"
         },
         {
           "condition": {
@@ -740,10 +737,12 @@
       ]
     },
     "CONFIRM_ENROLLMENT_BEGINNER": {
+      "title": "CURSO INTEGRAL DE JOYERÍA TEJIDA",
       "message": {
         "type": "text",
-        "content": "¡Excelente! Estás a punto de iniciar tu matrícula para el Curso *Integral de Joyería Tejida*. ¿Confirmas que quieres continuar con la inscripción?\n\n*SI* → Continuar\n*NO* / *VOLVER* → Cancelar"
+        "content": "¡Excelente! Estás a punto de iniciar tu matrícula para el curso *Curso Integral de Joyería Tejida*. ¿Confirmas que quieres continuar con la inscripción?\n\n*SI* → Continuar\n*NO* / *VOLVER* → Cancelar"
       },
+      "action": "set_selected_course",
       "transitions": [
         {
           "condition": {

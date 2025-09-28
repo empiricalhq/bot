@@ -359,6 +359,21 @@ func (b *Bot) prepareTemplateData(state *domain.UserState) map[string]string {
 
 	data["name"] = name
 
+	// Dynamic greeting:
+	// - New users (0–2 messages so far) => show a welcome.
+	//   Example: just joined and sent first message.
+	// - Returning users (>2 messages) => show a "welcome back".
+	msgCount, err := b.repo.GetUserMessageCount(context.Background(), state.UserID)
+	if err != nil {
+		b.logger.Error("Failed to get user message count for dynamic greeting", "error", err, "user", state.UserID)
+		// Fallback: assume returning user.
+		data["greeting"] = "Qué gusto verte de nuevo."
+	} else if msgCount <= 2 {
+		data["greeting"] = "¡Bienvenidx! Es un placer ayudarte a empezar."
+	} else {
+		data["greeting"] = "Qué gusto verte de nuevo."
+	}
+
 	if state.SelectedCourseID != "" {
 		courseNode := b.fsm.GetNode(state.SelectedCourseID)
 		if courseNode != nil && courseNode.Title != "" {

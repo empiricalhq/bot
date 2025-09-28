@@ -13,6 +13,7 @@ type Repository interface {
 	GetUserState(ctx context.Context, userID string) (*domain.UserState, error)
 	SaveStateAndMessages(ctx context.Context, state *domain.UserState, inMsg, outMsg *domain.ConversationMessage) error
 	InitSchema(ctx context.Context) error
+	GetUserMessageCount(ctx context.Context, userID string) (int, error)
 }
 
 type repository struct {
@@ -48,6 +49,23 @@ const saveMessageQuery = `
 	INSERT INTO conversation_history (user_id, timestamp, direction, message_content, node_id)
 	VALUES (?, ?, ?, ?, ?)
 `
+
+const getUserMessageCountQuery = `
+	SELECT COUNT(id) FROM conversation_history WHERE user_id = ?
+`
+
+func (r *repository) GetUserMessageCount(ctx context.Context, userID string) (int, error) {
+	var count int
+
+	err := r.db.QueryRowContext(ctx, getUserMessageCountQuery, userID).Scan(&count)
+	if err != nil {
+		r.logger.Error("Failed to get user message count", "error", err, "user", userID)
+
+		return 0, err
+	}
+
+	return count, nil
+}
 
 func (r *repository) GetUserState(ctx context.Context, userID string) (*domain.UserState, error) {
 	state := &domain.UserState{UserID: userID}
