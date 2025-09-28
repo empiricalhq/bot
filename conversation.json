@@ -370,7 +370,8 @@
               "matrícula"
             ]
           },
-          "target": "CLARIFY_ENROLLMENT_COURSE"
+          "target": "CONFIRM_ENROLLMENT_BEGINNER",
+          "action": "set_selected_course"
         },
         {
           "condition": { "type": "keyword", "value": ["presencial"] },
@@ -409,7 +410,8 @@
               "matrícula"
             ]
           },
-          "target": "CLARIFY_ENROLLMENT_COURSE"
+          "target": "CONFIRM_ENROLLMENT_BEGINNER",
+          "action": "set_selected_course"
         },
         {
           "condition": { "type": "keyword", "value": ["online"] },
@@ -471,7 +473,8 @@
               "matrícula"
             ]
           },
-          "target": "CLARIFY_ENROLLMENT_COURSE"
+          "target": "CONFIRM_ENROLLMENT_BEGINNER",
+          "action": "set_selected_course"
         },
         {
           "condition": {
@@ -696,21 +699,50 @@
             "type": "exact",
             "value": ["1", "integral", "cero", "basico"]
           },
-          "target": "INTERESTED_IN_BEGINNER"
+          "target": "CONFIRM_ENROLLMENT_BEGINNER"
         },
         {
           "condition": {
             "type": "exact",
             "value": ["2", "avanzado", "avanzados", "experiencia"]
           },
-          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
+          "target": "PROMPT_ADVANCED_COURSE_FOR_ENROLLMENT"
         }
       ]
+    },
+    "PROMPT_ADVANCED_COURSE_FOR_ENROLLMENT": {
+      "message": {
+        "type": "text",
+        "content": "¡Excelente! Aquí está nuestro catálogo completo de cursos avanzados.\n\nEscribe el nombre del curso que te interesa para iniciar la matrícula."
+      },
+      "include_transitions": "advanced_course_options"
     },
     "CONFIRM_ENROLLMENT": {
       "message": {
         "type": "text",
         "content": "¡Excelente! Estás a punto de iniciar tu matrícula para el curso *{{course_name}}*. ¿Confirmas que quieres continuar con la inscripción?\n\n*SI* → Continuar\n*NO* / *VOLVER* → Cancelar"
+      },
+      "transitions": [
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["si", "sí", "yes", "continuar", "confirmar", "proceder"]
+          },
+          "target": "ENROLLMENT_PROCESS"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["no", "cancelar", "volver", "atras", "atrás"]
+          },
+          "target": "ENROLLMENT_CANCELLED"
+        }
+      ]
+    },
+    "CONFIRM_ENROLLMENT_BEGINNER": {
+      "message": {
+        "type": "text",
+        "content": "¡Excelente! Estás a punto de iniciar tu matrícula para el Curso *Integral de Joyería Tejida*. ¿Confirmas que quieres continuar con la inscripción?\n\n*SI* → Continuar\n*NO* / *VOLVER* → Cancelar"
       },
       "transitions": [
         {
@@ -839,12 +871,7 @@
         "type": "text",
         "content": "¡Gracias! Ya recibí tu comprobante principal. Mis asesoras lo revisarán todo junto. 😊\n\n¿Puedo ayudarte con algo más?"
       },
-      "transitions": [
-        {
-          "condition": { "type": "any_text" },
-          "target": "MAIN_MENU"
-        }
-      ]
+      "transitions": []
     },
     "NEEDS_ASSISTANCE": {
       "message": {
