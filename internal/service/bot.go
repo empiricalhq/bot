@@ -20,6 +20,11 @@ import (
 
 const messageTimeout = 30 * time.Second
 
+// ErrNewUserInitialized is a sentinel error used to indicate that a new user
+// has been successfully created and greeted, and that further processing of their
+// first message should be skipped.
+var ErrNewUserInitialized = errors.New("new user initialized and greeted")
+
 type Bot struct {
 	config   *config.Config
 	repo     repository.Repository
@@ -101,10 +106,8 @@ func (b *Bot) HandleEvent(evt interface{}) {
 	defer cancel()
 
 	err := b.processMessage(ctx, msg, msgEvent)
-	if err != nil {
-		if err.Error() != "new user initialized and greeted; skipping further processing of first message" {
-			b.logger.Error("Message processing failed", "error", err, "user", msg.SenderID)
-		}
+	if err != nil && !errors.Is(err, ErrNewUserInitialized) {
+		b.logger.Error("Message processing failed", "error", err, "user", msg.SenderID)
 	}
 }
 
@@ -204,7 +207,7 @@ func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message) (*
 			b.whatsapp.SendText(ctx, msg.SenderID, responseText)
 		}
 
-		return nil, errors.New("new user initialized and greeted; skipping further processing of first message")
+		return nil, ErrNewUserInitialized
 	}
 
 	return state, nil

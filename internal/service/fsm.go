@@ -133,7 +133,7 @@ func (f *fsm) matchesCondition(input string, msg *message.Message, condition dom
 				}
 			}
 		}
-	
+
 	case "regex":
 		return f.matchesRegex(input, condition.Regex)
 	case "any_text":
