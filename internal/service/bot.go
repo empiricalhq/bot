@@ -21,6 +21,7 @@ import (
 const (
 	messageTimeout              = 30 * time.Second
 	fallbackEscalationThreshold = 3
+	conversationTimeout         = 24 * time.Hour
 )
 
 type Bot struct {
@@ -255,7 +256,22 @@ func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message) (s
 		return nil, false, fmt.Errorf("could not get user state from repository: %w", err)
 	}
 
-	// If CurrentNode is empty, this is a new user.
+	// If CurrentNode is not empty, check if the conversation is stale
+	if userState.CurrentNode != "" {
+		isStale := time.Since(userState.LastUpdated) > conversationTimeout
+		if isStale {
+			b.logger.Info("Stale conversation detected. Resetting to start node.",
+				"user", userState.UserID,
+				"last_active", userState.LastUpdated,
+				"previous_node", userState.CurrentNode,
+			)
+
+			userState.CurrentNode = b.fsm.GetStartNode()
+			userState.RepromptCount = 0
+		}
+	}
+
+	// If CurrentNode is empty (new user) or was reset (stale user), initialize them.
 	if userState.CurrentNode == "" {
 		b.logger.Info("New user initialized", "user", msg.SenderID, "node", b.fsm.GetStartNode(), "push_name", msg.PushName)
 
