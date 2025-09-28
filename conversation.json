@@ -34,15 +34,7 @@
     {
       "condition": {
         "type": "keyword",
-        "value": [
-          "menu",
-          "volver",
-          "inicio",
-          "principal",
-          "hola",
-          "buenos dias",
-          "buenas"
-        ]
+        "value": ["menu", "volver", "inicio", "principal"]
       },
       "target": "MAIN_MENU"
     },
