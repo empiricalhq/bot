@@ -25,13 +25,13 @@ func New(db *sql.DB, logger *slog.Logger) Repository {
 }
 
 const getUserStateQuery = `
-	SELECT current_node, user_name, course_interest, selected_course_id, consulted_price, voucher_path, requires_human_agent, last_updated
+	SELECT current_node, user_name, course_interest, selected_course_id, consulted_price, voucher_path, requires_human_agent, reprompt_count, last_updated
 	FROM user_state WHERE user_id = ?
 `
 
 const saveUserStateQuery = `
-	INSERT INTO user_state (user_id, current_node, user_name, course_interest, selected_course_id, consulted_price, voucher_path, requires_human_agent, last_updated)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO user_state (user_id, current_node, user_name, course_interest, selected_course_id, consulted_price, voucher_path, requires_human_agent, reprompt_count, last_updated)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(user_id) DO UPDATE SET
 		current_node = excluded.current_node,
 		user_name = excluded.user_name,
@@ -40,6 +40,7 @@ const saveUserStateQuery = `
 		consulted_price = excluded.consulted_price,
 		voucher_path = excluded.voucher_path,
 		requires_human_agent = excluded.requires_human_agent,
+		reprompt_count = excluded.reprompt_count,
 		last_updated = excluded.last_updated
 `
 
@@ -59,6 +60,7 @@ func (r *repository) GetUserState(ctx context.Context, userID string) (*domain.U
 		&state.ConsultedPrice,
 		&state.VoucherPath,
 		&state.RequiresHumanAgent,
+		&state.RepromptCount,
 		&state.LastUpdated,
 	)
 
@@ -96,6 +98,7 @@ func (r *repository) SaveStateAndMessages(
 		state.ConsultedPrice,
 		state.VoucherPath,
 		state.RequiresHumanAgent,
+		state.RepromptCount,
 		state.LastUpdated,
 	)
 	if err != nil {
@@ -144,6 +147,7 @@ func (r *repository) InitSchema(ctx context.Context) error {
 			consulted_price BOOLEAN NOT NULL DEFAULT FALSE,
 			voucher_path TEXT NOT NULL DEFAULT '',
 			requires_human_agent BOOLEAN NOT NULL DEFAULT FALSE,
+			reprompt_count INTEGER NOT NULL DEFAULT 0,
 			last_updated DATETIME NOT NULL
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_user_state_updated ON user_state(last_updated)`,

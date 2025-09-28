@@ -18,7 +18,10 @@ import (
 	"whatsbot/internal/template"
 )
 
-const messageTimeout = 30 * time.Second
+const (
+	messageTimeout              = 30 * time.Second
+	fallbackEscalationThreshold = 3
+)
 
 type Bot struct {
 	config   *config.Config
@@ -123,9 +126,28 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 	logger.Debug("Processing message", "text", msg.Text, "has_media", msg.HasMedia)
 
 	originalNode := userState.CurrentNode
-	nextNode, action := b.fsm.DetermineNext(userState, msg)
 
 	var responseText string
+
+	// 1: FSM decides the next node and action.
+	nextNode, action := b.fsm.DetermineNext(userState, msg)
+
+	if action != "trigger_fallback_response" {
+		// Reset fallback counter when user makes valid progress.
+		userState.RepromptCount = 0
+	} else {
+		userState.RepromptCount++
+		logger.Debug("Fallback triggered", "count", userState.RepromptCount)
+
+		if userState.RepromptCount >= fallbackEscalationThreshold {
+			// Example: user keeps typing nonsense (e.g. '???') => escalate to human.
+			logger.Warn("User stuck in fallback loop. Escalating to human agent.", "node", originalNode, "reprompt_count", userState.RepromptCount)
+
+			nextNode = "NEEDS_ASSISTANCE"
+			action = "escalate_to_human_agent"
+			userState.RepromptCount = 0
+		}
+	}
 
 	if action == "trigger_fallback_response" {
 		fallbackNode := b.fsm.GetNode(originalNode)
@@ -137,27 +159,24 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 		if isTerminalNode {
 			// On terminal nodes, a fallback means the conversation has likely ended (e.g., user says "thanks").
 			// We remain silent to allow a natural pause. The user can re-engage with a global keyword.
-			logger.Debug("Fallback triggered on a terminal node. No response will be sent.", "node", originalNode)
+			logger.Debug("Fallback on terminal node. No response sent.", "node", originalNode)
 
 			responseText = ""
 		} else if fallbackNode != nil && fallbackNode.Message.Content != "" {
 			// On menu-like nodes, re-prompt with options to guide the user back on track.
-			logger.Debug("Fallback triggered on a menu node. Re-prompting user.", "node", originalNode)
+			logger.Debug("Fallback on menu node. Re-prompting user.", "node", originalNode)
 
 			data := b.prepareTemplateData(userState)
 			fallbackPrefix := "No entendí tu respuesta 😊 Por favor, revisa las opciones:\n\n"
-			fullMessage := fallbackPrefix + fallbackNode.Message.Content
-			responseText = b.renderer.Render(fullMessage, data)
+			responseText = b.renderer.Render(fallbackPrefix+fallbackNode.Message.Content, data)
 		} else {
-			// Safeguard: If user is in a broken or message-less node, reset to start.
-			logger.Warn("Fallback triggered in a node with no message. Resetting to start.", "node", originalNode)
+			logger.Warn("Fallback in a node with no message. Resetting to start.", "node", originalNode)
 
 			nextNode = b.fsm.GetStartNode()
 			responseText = b.generateResponse(nextNode, userState)
 		}
-		// The state remains unchanged (nextNode = originalNode) unless reset by the safeguard.
 	} else {
-		// Normal flow: move to the next node and run any action.
+		// Handles both normal transitions and escalations.
 		logger.Debug("FSM determined next state", "to_node", nextNode, "action", action)
 
 		if action != "" {
@@ -170,7 +189,7 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 		responseText = b.generateResponse(nextNode, userState)
 	}
 
-	// Update user state.
+	// Update state.
 	userState.CurrentNode = nextNode
 	userState.LastUpdated = time.Now()
 

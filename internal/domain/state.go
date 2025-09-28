@@ -11,6 +11,7 @@ type UserState struct {
 	ConsultedPrice     bool      `db:"consulted_price"`
 	VoucherPath        string    `db:"voucher_path"`
 	RequiresHumanAgent bool      `db:"requires_human_agent"`
+	RepromptCount      int       `db:"reprompt_count"`
 	LastUpdated        time.Time `db:"last_updated"`
 }
 
