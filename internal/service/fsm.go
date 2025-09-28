@@ -48,19 +48,7 @@ func (f *fsm) DetermineNext(state *domain.UserState, msg *message.Message) (node
 		return f.flow.StartNode, ""
 	}
 
-	// 1. Try global transitions (unless this node explicitly ignores them).
-	if !currentNode.IgnoreGlobalTransitions {
-		for _, transition := range f.flow.GlobalTransitions {
-			if f.matchesCondition(input, msg, transition.Condition) {
-				f.logger.Debug("Matched global transition",
-					"user", state.UserID, "from_node", state.CurrentNode, "to_node", transition.Target, "action", transition.Action, "condition_type", transition.Condition.Type)
-
-				return transition.Target, transition.Action
-			}
-		}
-	}
-
-	// 2. Try node-specific transitions.
+	// 1. Try node-specific transitions first to prioritize context.
 	for _, transition := range currentNode.Transitions {
 		if f.matchesCondition(input, msg, transition.Condition) {
 			action = transition.Action
@@ -72,6 +60,18 @@ func (f *fsm) DetermineNext(state *domain.UserState, msg *message.Message) (node
 				"user", state.UserID, "from_node", state.CurrentNode, "to_node", transition.Target, "action", action, "condition_type", transition.Condition.Type)
 
 			return transition.Target, action
+		}
+	}
+
+	// 2. If no local transition matches, try global transitions (unless this node explicitly ignores them).
+	if !currentNode.IgnoreGlobalTransitions {
+		for _, transition := range f.flow.GlobalTransitions {
+			if f.matchesCondition(input, msg, transition.Condition) {
+				f.logger.Debug("Matched global transition",
+					"user", state.UserID, "from_node", state.CurrentNode, "to_node", transition.Target, "action", transition.Action, "condition_type", transition.Condition.Type)
+
+				return transition.Target, transition.Action
+			}
 		}
 	}
 
@@ -173,9 +173,8 @@ func (f *fsm) matchesRegex(input, pattern string) bool {
 		f.mutex.Lock()
 
 		// Double-check after acquiring write lock
+		var err error
 		if regex, exists = f.regexCache[pattern]; !exists {
-			var err error
-
 			regex, err = regexp.Compile(pattern)
 			if err != nil {
 				f.logger.Error("Invalid regex pattern", "pattern", pattern, "error", err)
@@ -247,7 +246,8 @@ func validateFlow(flow *domain.Flow) error {
 		return errors.New("start_node cannot be empty")
 	}
 
-	if _, exists := flow.Nodes[flow.StartNode]; !exists {
+	_, exists := flow.Nodes[flow.StartNode]
+	if !exists {
 		return errors.New("start_node not found in nodes")
 	}
 
@@ -272,7 +272,7 @@ func validateFlow(flow *domain.Flow) error {
 	for nodeID, node := range flow.Nodes {
 		source := fmt.Sprintf("node %q", nodeID)
 
-		err := checkTransitions(node.Transitions, source)
+		err = checkTransitions(node.Transitions, source)
 		if err != nil {
 			return err
 		}
