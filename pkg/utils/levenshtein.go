@@ -9,47 +9,51 @@ func LevenshteinDistance(a, b string) int {
 	runesA := []rune(a)
 	runesB := []rune(b)
 
-	m := len(runesA)
-	n := len(runesB)
+	lenA := len(runesA)
+	lenB := len(runesB)
 
 	// Create a matrix to store the distances
-	d := make([][]int, m+1)
-	for i := range d {
-		d[i] = make([]int, n+1)
+	distances := make([][]int, lenA+1)
+	for row := range distances {
+		distances[row] = make([]int, lenB+1)
 	}
 
 	// Initialize the first row and column of the matrix
-	for i := 0; i <= m; i++ {
-		d[i][0] = i
+	for row := 0; row <= lenA; row++ {
+		distances[row][0] = row
 	}
 
-	for j := 0; j <= n; j++ {
-		d[0][j] = j
+	for col := 0; col <= lenB; col++ {
+		distances[0][col] = col
 	}
 
 	// Fill the rest of the matrix
-	for j := 1; j <= n; j++ {
-		for i := 1; i <= m; i++ {
+	for col := 1; col <= lenB; col++ {
+		for row := 1; row <= lenA; row++ {
 			cost := 0
-			if runesA[i-1] != runesB[j-1] {
+			if runesA[row-1] != runesB[col-1] {
 				cost = 1
 			}
 
-			d[i][j] = min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+cost)
+			distances[row][col] = min(
+				distances[row-1][col]+1,      // deletion
+				distances[row][col-1]+1,      // insertion
+				distances[row-1][col-1]+cost, // substitution
+			)
 		}
 	}
 
-	return d[m][n]
+	return distances[lenA][lenB]
 }
 
 // min returns the minimum of a slice of integers.
-func min(a ...int) int {
-	res := a[0]
-	for _, v := range a {
-		if v < res {
-			res = v
+func min(values ...int) int {
+	result := values[0]
+	for _, v := range values {
+		if v < result {
+			result = v
 		}
 	}
 
-	return res
+	return result
 }
