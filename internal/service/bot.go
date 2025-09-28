@@ -292,6 +292,7 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 	}
 
 	if responseText != "" {
+		time.Sleep(2 * time.Second) // Simulate typing delay for better UX
 		err := b.whatsapp.SendText(ctx, msg.SenderID, responseText)
 		if err != nil {
 			logger.Error("Failed to send message", "error", err)
