@@ -125,19 +125,39 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 	originalNode := userState.CurrentNode
 	nextNode, action := b.fsm.DetermineNext(userState, msg)
 
-	logger.Debug("FSM determined next state", "to_node", nextNode, "action", action)
+	var responseText string
 
-	if action != "" {
-		err := b.actions.Execute(action, userState, msg, rawEvt, originalNode)
-		if err != nil {
-			logger.Error("Action failed", "action", action, "error", err)
+	if action == "trigger_fallback_response" {
+		// Fallback: stay in the same node but send the fallback message.
+		logger.Debug("Fallback triggered. Sending fallback message but staying in node.", "node", originalNode)
+
+		fallbackNodeID := b.fsm.GetFallbackNode()
+
+		fallbackNode := b.fsm.GetNode(fallbackNodeID)
+		if fallbackNode != nil && fallbackNode.Message.Content != "" {
+			data := b.prepareTemplateData(userState)
+			responseText = b.renderer.Render(fallbackNode.Message.Content, data)
+		} else {
+			logger.Error("Fallback node or its message is not configured properly", "fallback_node_id", fallbackNodeID)
 		}
+		// No change to nextNode; it stays at originalNode.
+	} else {
+		// Normal flow: move to the next node and run any action.
+		logger.Debug("FSM determined next state", "to_node", nextNode, "action", action)
+
+		if action != "" {
+			err := b.actions.Execute(action, userState, msg, rawEvt, originalNode)
+			if err != nil {
+				logger.Error("Action failed", "action", action, "error", err)
+			}
+		}
+
+		responseText = b.generateResponse(nextNode, userState)
 	}
 
+	// Update user state.
 	userState.CurrentNode = nextNode
 	userState.LastUpdated = time.Now()
-
-	responseText := b.generateResponse(nextNode, userState)
 
 	inMsg := &domain.ConversationMessage{
 		UserID:         msg.SenderID,

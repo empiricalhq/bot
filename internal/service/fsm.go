@@ -20,6 +20,7 @@ type FSM interface {
 	DetermineNext(state *domain.UserState, msg *message.Message) (nodeID, action string)
 	GetNode(nodeID string) *domain.Node
 	GetStartNode() string
+	GetFallbackNode() string
 }
 
 type fsm struct {
@@ -42,12 +43,13 @@ func (f *fsm) DetermineNext(state *domain.UserState, msg *message.Message) (node
 
 	currentNode, nodeExists := f.flow.Nodes[state.CurrentNode]
 	if !nodeExists {
+		// User is in a node that no longer exists => reset to start.
 		f.logger.Error("Current node in user state does not exist in flow", "node", state.CurrentNode)
 
 		return f.flow.StartNode, ""
 	}
 
-	// Check global transitions first, unless the current node ignores them.
+	// 1. Try global transitions (unless this node explicitly ignores them).
 	if !currentNode.IgnoreGlobalTransitions {
 		for _, transition := range f.flow.GlobalTransitions {
 			if f.matchesCondition(input, msg, transition.Condition) {
@@ -59,12 +61,12 @@ func (f *fsm) DetermineNext(state *domain.UserState, msg *message.Message) (node
 		}
 	}
 
-	// Check node-specific transitions
+	// 2. Try node-specific transitions.
 	for _, transition := range currentNode.Transitions {
 		if f.matchesCondition(input, msg, transition.Condition) {
 			action = transition.Action
 			if action == "" {
-				action = currentNode.Action // fallback
+				action = currentNode.Action // fallback to node's default action
 			}
 
 			f.logger.Debug("Matched node transition",
@@ -74,19 +76,23 @@ func (f *fsm) DetermineNext(state *domain.UserState, msg *message.Message) (node
 		}
 	}
 
-	// Use fallback
-	fallback := f.flow.FallbackNode
-	if fallback == "" || f.flow.Nodes[fallback].Message.Content == "" {
-		fallback = f.flow.StartNode
-	}
+	// 3. Nothing matched => remain in current node and trigger fallback response.
+	f.logger.Debug("No transition matched, staying in current node and triggering fallback response",
+		"user", state.UserID, "from_node", state.CurrentNode)
 
-	f.logger.Debug("No transition matched, using fallback",
-		"user", state.UserID, "from_node", state.CurrentNode, "fallback_node", fallback)
-
-	return fallback, ""
+	// Special action tells caller to send fallback message but keep state unchanged.
+	return state.CurrentNode, "trigger_fallback_response"
 }
 
 func (f *fsm) GetStartNode() string {
+	return f.flow.StartNode
+}
+
+func (f *fsm) GetFallbackNode() string {
+	if f.flow.FallbackNode != "" {
+		return f.flow.FallbackNode
+	}
+
 	return f.flow.StartNode
 }
 
