@@ -93,6 +93,7 @@
         "type": "text",
         "content": "¡Claro! ¿Cómo te gustaría que te llame?"
       },
+      "ignore_global_transitions": true,
       "transitions": [
         {
           "condition": { "type": "any_text" },
@@ -149,8 +150,7 @@
             ]
           },
           "target": "CONSULTED_SCHEDULE"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "MAIN_MENU": {
@@ -226,8 +226,7 @@
             "value": ["precio", "costo", "cuanto", "valor", "pago"]
           },
           "target": "CONSULTED_PRICE"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "INTERESTED_IN_ADVANCED": {
@@ -289,8 +288,7 @@
             "value": ["catalogo", "catálogo", "todos", "cursos"]
           },
           "target": "CONSULTED_CATALOG"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "CONSULTED_ONLINE": {
@@ -317,13 +315,12 @@
               "matrícula"
             ]
           },
-          "target": "ENROLLMENT_PROCESS"
+          "target": "CONFIRM_ENROLLMENT"
         },
         {
           "condition": { "type": "keyword", "value": ["presencial"] },
           "target": "CONSULTED_PRESENCIAL"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "CONSULTED_PRESENCIAL": {
@@ -350,13 +347,12 @@
               "matrícula"
             ]
           },
-          "target": "ENROLLMENT_PROCESS"
+          "target": "CONFIRM_ENROLLMENT"
         },
         {
           "condition": { "type": "keyword", "value": ["online"] },
           "target": "CONSULTED_ONLINE"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "CONSULTED_SCHEDULE": {
@@ -384,9 +380,8 @@
               "matrícula"
             ]
           },
-          "target": "ENROLLMENT_PROCESS"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+          "target": "CONFIRM_ENROLLMENT"
+        }
       ]
     },
     "CONSULTED_PRICE": {
@@ -407,7 +402,7 @@
               "matrícula"
             ]
           },
-          "target": "ENROLLMENT_PROCESS"
+          "target": "CONFIRM_ENROLLMENT"
         },
         {
           "condition": {
@@ -422,8 +417,7 @@
             ]
           },
           "target": "CONSULTED_SCHEDULE"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "COURSE_CORAZON": {
@@ -437,7 +431,7 @@
             "type": "keyword",
             "value": ["inscribir", "matricula"]
           },
-          "target": "ENROLLMENT_PROCESS"
+          "target": "CONFIRM_ENROLLMENT"
         },
         {
           "condition": {
@@ -445,8 +439,7 @@
             "value": ["volver", "menu", "atras"]
           },
           "target": "INTERESTED_IN_ADVANCED"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "COURSE_ANILLOS": {
@@ -460,7 +453,7 @@
             "type": "keyword",
             "value": ["inscribir", "matricula"]
           },
-          "target": "ENROLLMENT_PROCESS"
+          "target": "CONFIRM_ENROLLMENT"
         },
         {
           "condition": {
@@ -468,8 +461,7 @@
             "value": ["volver", "menu", "atras"]
           },
           "target": "INTERESTED_IN_ADVANCED"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "COURSE_VIBRACIONES": {
@@ -483,7 +475,7 @@
             "type": "keyword",
             "value": ["inscribir", "matricula"]
           },
-          "target": "ENROLLMENT_PROCESS"
+          "target": "CONFIRM_ENROLLMENT"
         },
         {
           "condition": {
@@ -491,8 +483,7 @@
             "value": ["volver", "menu", "atras"]
           },
           "target": "INTERESTED_IN_ADVANCED"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "COURSE_MAMA": {
@@ -506,7 +497,7 @@
             "type": "keyword",
             "value": ["inscribir", "matricula"]
           },
-          "target": "ENROLLMENT_PROCESS"
+          "target": "CONFIRM_ENROLLMENT"
         },
         {
           "condition": {
@@ -514,8 +505,7 @@
             "value": ["volver", "menu", "atras"]
           },
           "target": "INTERESTED_IN_ADVANCED"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "COURSE_HELICOIDALES": {
@@ -529,7 +519,7 @@
             "type": "keyword",
             "value": ["inscribir", "matricula"]
           },
-          "target": "ENROLLMENT_PROCESS"
+          "target": "CONFIRM_ENROLLMENT"
         },
         {
           "condition": {
@@ -537,8 +527,7 @@
             "value": ["volver", "menu", "atras"]
           },
           "target": "INTERESTED_IN_ADVANCED"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "COURSE_FLORES": {
@@ -552,7 +541,7 @@
             "type": "keyword",
             "value": ["inscribir", "matricula"]
           },
-          "target": "ENROLLMENT_PROCESS"
+          "target": "CONFIRM_ENROLLMENT"
         },
         {
           "condition": {
@@ -560,8 +549,7 @@
             "value": ["volver", "menu", "atras"]
           },
           "target": "INTERESTED_IN_ADVANCED"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "COURSE_TIARAS": {
@@ -575,7 +563,7 @@
             "type": "keyword",
             "value": ["inscribir", "matricula"]
           },
-          "target": "ENROLLMENT_PROCESS"
+          "target": "CONFIRM_ENROLLMENT"
         },
         {
           "condition": {
@@ -583,8 +571,7 @@
             "value": ["volver", "menu", "atras"]
           },
           "target": "INTERESTED_IN_ADVANCED"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "CONSULTED_CATALOG": {
@@ -638,8 +625,29 @@
             "value": ["tiaras", "tiara", "tocados", "tocado"]
           },
           "target": "COURSE_TIARAS"
+        }
+      ]
+    },
+    "CONFIRM_ENROLLMENT": {
+      "message": {
+        "type": "text",
+        "content": "¡Excelente! Estás a punto de iniciar tu matrícula. ¿Confirmas que quieres continuar con la inscripción?\n\n*SI* → Continuar\n*NO* → Volver"
+      },
+      "transitions": [
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["si", "sí", "yes", "continuar", "confirmar", "proceder"]
+          },
+          "target": "ENROLLMENT_PROCESS"
         },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["no", "cancelar", "volver", "atras", "atrás"]
+          },
+          "target": "MAIN_MENU"
+        }
       ]
     },
     "ENROLLMENT_PROCESS": {
@@ -647,6 +655,7 @@
         "type": "text",
         "content": "*💳PROCESO DE MATRÍCULA*\n\n*Paso 1:* Realiza el pago\n📱 *Yape:* 989 982 183\n🏦 *BCP:* 192-16056570056\nNombre: Magally Ana Rocio Juro Huerta\n\n*Paso 2:* Envía tu voucher aquí 📸\n\n*Paso 3:* Te agregamos al grupo VIP donde Magally te da la bienvenida personalmente 🎉\n\n¿Ya realizaste el pago? Envía tu voucher o escribe *PAGADO*"
       },
+      "ignore_global_transitions": true,
       "transitions": [
         {
           "condition": {
@@ -667,8 +676,7 @@
           "condition": { "type": "media_type", "value": ["image"] },
           "target": "PAYMENT_CONFIRMED",
           "action": "save_payment_voucher"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "WAITING_FOR_VOUCHER": {
@@ -676,6 +684,7 @@
         "type": "text",
         "content": "¡Excelente, {{name}}! \n\nPara confirmar tu pago, por favor *envía una foto de tu voucher* 📸\n\nSi tienes problemas para enviar la imagen, escribe *AYUDA* para contactar con una asesora."
       },
+      "ignore_global_transitions": true,
       "transitions": [
         {
           "condition": { "type": "media_type", "value": ["image"] },
@@ -685,8 +694,7 @@
         {
           "condition": { "type": "keyword", "value": ["ayuda"] },
           "target": "NEEDS_ASSISTANCE"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "PAYMENT_CONFIRMED": {
