@@ -24,13 +24,14 @@ const (
 )
 
 type Bot struct {
-	config   *config.Config
-	repo     repository.Repository
-	fsm      FSM
-	actions  ActionHandler
-	renderer template.Renderer
-	whatsapp WhatsAppClient
-	logger   *slog.Logger
+	config      *config.Config
+	repo        repository.Repository
+	fsm         FSM
+	actions     ActionHandler
+	renderer    template.Renderer
+	whatsapp    WhatsAppClient
+	logger      *slog.Logger
+	chatEmitter func(sender, message string)
 }
 
 type WhatsAppClient interface {
@@ -47,15 +48,17 @@ func NewBot(
 	renderer template.Renderer,
 	whatsapp WhatsAppClient,
 	logger *slog.Logger,
+	chatEmitter func(sender, message string),
 ) *Bot {
 	return &Bot{
-		config:   config,
-		repo:     repo,
-		fsm:      fsm,
-		actions:  actions,
-		renderer: renderer,
-		whatsapp: whatsapp,
-		logger:   logger,
+		config:      config,
+		repo:        repo,
+		fsm:         fsm,
+		actions:     actions,
+		renderer:    renderer,
+		whatsapp:    whatsapp,
+		logger:      logger,
+		chatEmitter: chatEmitter,
 	}
 }
 
@@ -88,6 +91,11 @@ func (b *Bot) HandleEvent(evt interface{}) {
 		b.logger.Debug("Ignoring event: message not processable", "sender", msgEvent.Info.Sender.ToNonAD().String())
 
 		return
+	}
+
+	// If a chatEmitter is configured (i.e., in GUI mode), send the message data.
+	if b.chatEmitter != nil {
+		b.chatEmitter(msg.SenderID, msg.Text)
 	}
 
 	if b.shouldIgnoreUser(msg.SenderID) {

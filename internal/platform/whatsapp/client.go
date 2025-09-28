@@ -21,6 +21,10 @@ import (
 
 const sendMessageTimeout = 15 * time.Second
 
+// OnQR is a function hook that can be set to handle the QR code string.
+// If set, it's used instead of printing to the console.
+var OnQR func(qrCode string)
+
 type Client struct {
 	*whatsmeow.Client
 
@@ -98,7 +102,12 @@ func LoginWithQR(client *whatsmeow.Client, logger *slog.Logger) error {
 	for evt := range qrChan {
 		switch evt.Event {
 		case "code":
-			qrterminal.GenerateHalfBlock(evt.Code, qrterminal.L, os.Stdout)
+			// If the OnQR hook is set (by the GUI), use it. Otherwise, print to console.
+			if OnQR != nil {
+				OnQR(evt.Code)
+			} else {
+				qrterminal.GenerateHalfBlock(evt.Code, qrterminal.L, os.Stdout)
+			}
 		case "success":
 			logger.Info("QR login successful")
 

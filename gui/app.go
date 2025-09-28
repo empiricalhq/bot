@@ -2,24 +2,26 @@ package gui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"strings"
-	"whatsbot/internal/config"
-	"whatsbot/internal/service"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+
+	"whatsbot/internal/config"
+	"whatsbot/internal/service"
 )
 
-// App struct
+// App struct.
 type App struct {
 	ctx    context.Context
 	logger *slog.Logger
 	bot    *service.Bot
 }
 
-// NewApp creates a new App application struct
+// NewApp creates a new App application struct.
 func NewApp(logger *slog.Logger) *App {
 	return &App{
 		logger: logger,
@@ -27,30 +29,31 @@ func NewApp(logger *slog.Logger) *App {
 }
 
 // startup is called when the app starts. The context is saved
-// so we can call the runtime methods
+// so we can call the runtime methods.
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-// SetBot is used to inject the bot instance after it's been created
+// SetBot is used to inject the bot instance after it's been created.
 func (a *App) SetBot(bot *service.Bot) {
 	a.bot = bot
 }
 
-// GetAllowedUsers returns the list of users from DEV_ALLOWED_USERS
+// GetAllowedUsers returns the list of users from DEV_ALLOWED_USERS.
 func (a *App) GetAllowedUsers() []string {
 	usersStr := os.Getenv("DEV_ALLOWED_USERS")
 	if usersStr == "" {
 		return []string{}
 	}
+
 	return strings.Split(usersStr, ",")
 }
 
-// AddAllowedUser adds a new user to the DEV_ALLOWED_USERS in the .env file
+// AddAllowedUser adds a new user to the DEV_ALLOWED_USERS in the .env file.
 func (a *App) AddAllowedUser(number string) error {
 	number = strings.TrimSpace(number)
 	if number == "" {
-		return fmt.Errorf("user number cannot be empty")
+		return errors.New("user number cannot be empty")
 	}
 
 	// For this demo, we'll just read/write the .env file directly.
@@ -61,21 +64,26 @@ func (a *App) AddAllowedUser(number string) error {
 	}
 
 	lines := strings.Split(string(env), "\n")
+
 	var newLines []string
+
 	found := false
 	key := "DEV_ALLOWED_USERS"
 
 	for _, line := range lines {
 		if strings.HasPrefix(line, key+"=") {
 			parts := strings.SplitN(line, "=", 2)
+
 			currentUsers := strings.TrimSpace(parts[1])
 			if currentUsers == "" {
 				line = fmt.Sprintf("%s=%s", key, number)
 			} else {
 				line = fmt.Sprintf("%s=%s,%s", key, currentUsers, number)
 			}
+
 			found = true
 		}
+
 		newLines = append(newLines, line)
 	}
 
@@ -93,14 +101,15 @@ func (a *App) AddAllowedUser(number string) error {
 
 	runtime.EventsEmit(a.ctx, "show:toast", "User added. Bot restart required to apply changes.")
 
-	return os.WriteFile(".env", []byte(strings.Join(newLines, "\n")), 0644)
+	return os.WriteFile(".env", []byte(strings.Join(newLines, "\n")), 0o644)
 }
 
-// GetEnv returns the current environment (dev/prod)
+// GetEnv returns the current environment (dev/prod).
 func (a *App) GetEnv() (string, error) {
 	cfg, err := config.Load()
 	if err != nil {
 		return "", err
 	}
+
 	return cfg.Environment, nil
 }

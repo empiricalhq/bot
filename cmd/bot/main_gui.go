@@ -11,7 +11,6 @@ import (
 	"log/slog"
 	"os"
 	"time"
-	"whatsbot/gui"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -19,6 +18,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
+	"whatsbot/gui"
 	"whatsbot/internal/config"
 	"whatsbot/internal/logger"
 	"whatsbot/internal/platform/database"
@@ -170,5 +170,5 @@ func createLogFile() (*os.File, error) {
 		return nil, fmt.Errorf("could not create log directory: %w", err)
 	}
 	fileName := fmt.Sprintf("log/bot-gui_%s.log", time.Now().Format("2006-01-02T15-04-05"))
-	return os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	return os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 }
