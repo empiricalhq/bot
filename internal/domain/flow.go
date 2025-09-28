@@ -19,9 +19,10 @@ type Transition struct {
 }
 
 type Node struct {
-	Message     MessageContent `json:"message"`
-	Transitions []Transition   `json:"transitions"`
-	Action      string         `json:"action,omitempty"`
+	Message                 MessageContent `json:"message"`
+	Transitions             []Transition   `json:"transitions"`
+	Action                  string         `json:"action,omitempty"`
+	IgnoreGlobalTransitions bool           `json:"ignore_global_transitions,omitempty"`
 }
 
 type Flow struct {

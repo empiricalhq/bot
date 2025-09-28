@@ -40,18 +40,25 @@ func NewFSM(flow *domain.Flow, logger *slog.Logger) FSM {
 func (f *fsm) DetermineNext(state *domain.UserState, msg *message.Message) (nodeID, action string) {
 	input := strings.ToLower(strings.TrimSpace(msg.Text))
 
-	// Check global transitions first
-	for _, transition := range f.flow.GlobalTransitions {
-		if f.matchesCondition(input, msg, transition.Condition) {
-			f.logger.Debug("Matched global transition",
-				"user", state.UserID, "from_node", state.CurrentNode, "to_node", transition.Target, "action", transition.Action, "condition_type", transition.Condition.Type)
+	currentNode, nodeExists := f.flow.Nodes[state.CurrentNode]
+	if !nodeExists {
+		f.logger.Error("Current node in user state does not exist in flow", "node", state.CurrentNode)
+		return f.flow.StartNode, ""
+	}
 
-			return transition.Target, transition.Action
+	// Check global transitions first, unless the current node ignores them.
+	if !currentNode.IgnoreGlobalTransitions {
+		for _, transition := range f.flow.GlobalTransitions {
+			if f.matchesCondition(input, msg, transition.Condition) {
+				f.logger.Debug("Matched global transition",
+					"user", state.UserID, "from_node", state.CurrentNode, "to_node", transition.Target, "action", transition.Action, "condition_type", transition.Condition.Type)
+
+				return transition.Target, transition.Action
+			}
 		}
 	}
 
 	// Check node-specific transitions
-	currentNode := f.flow.Nodes[state.CurrentNode]
 	for _, transition := range currentNode.Transitions {
 		if f.matchesCondition(input, msg, transition.Condition) {
 			action = transition.Action
