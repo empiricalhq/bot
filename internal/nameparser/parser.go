@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	minNameLength = 4
+	minNameLength = 3
 	maxWords      = 4
 	vowels        = "aeiouáéíóúàèìòùâêîôûãõäëïöü"
 )
