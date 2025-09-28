@@ -128,12 +128,13 @@ func (f *fsm) matchesCondition(input string, msg *message.Message, condition dom
 				} else if len(word) <= 4 || len(keywordLower) <= 4 {
 					threshold = 1 // More strict for short words
 				}
+
 				if distance <= threshold {
 					return true
 				}
 			}
 		}
-	
+
 	case "regex":
 		return f.matchesRegex(input, condition.Regex)
 	case "any_text":
