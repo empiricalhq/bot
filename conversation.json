@@ -1,5 +1,5 @@
 {
-  "start_node": "GREETING",
+  "start_node": "GREETING_INTRO",
   "global_transitions": [
     {
       "condition": {
@@ -68,7 +68,7 @@
           "type": "exact",
           "value": ["2", "avanzado", "experiencia", "intermedio"]
         },
-        "target": "INTERESTED_IN_ADVANCED"
+        "target": "INTERESTED_IN_ADVANCED_INTRO"
       },
       {
         "condition": { "type": "keyword", "value": ["online"] },
@@ -147,13 +147,24 @@
     ]
   },
   "nodes": {
-    "GREETING": {
+    "GREETING_INTRO": {
       "message": {
         "type": "text",
-        "content": "¡Hola, {{name}}! 💕 Soy un asistente de la Escuela de Joyería Tejida del Perú ✨\n\n¡Felicitaciones por tu deseo de aprender y emprender con esta hermosa técnica!\n\nPermíteme comentarte algo importante:\n\n👉 Nosotros somos Escuela de Joyería Tejida Perú de la maestra *Magally Juro* y tenemos más de *15 años en el mercado*, formando *alumnas y marcas de joyería tejida* en toda América Latina 🌎\n\nY esto lo hacemos a través de Cursos Modalidad Online, Modalidad Presencial, Seminarios internacionales etc.\n\nTe invito a conocer más de la maestra Magally Juro, diseñadora de joyas:\n📹 https://youtu.be/U2E4qRlGMM8\n\nAhora cuéntame:\n\n¿Tú ya sabes joyería tejida o deseas empezar desde cero?\n\n*1* → Desde Cero\n*2* → Ya tengo experiencia\n\n_(Si prefieres que no use tu nombre, escribe 'sin nombre')_"
+        "content": "¡Hola, {{name}}! 💕 Soy un asistente de la Escuela de Joyería Tejida del Perú ✨\n\n¡Felicitaciones por tu deseo de aprender y emprender con esta hermosa técnica!\n\nPermíteme comentarte algo importante:\n\n👉 Somos Escuela de Joyería Tejida Perú de la maestra *Magally Juro* y tenemos más de *15 años en el mercado*, formando *alumnas y marcas de joyería tejida* en toda América Latina 🌎\n\nPara continuar y mostrarte las opciones, solo escribe *OK* o envía cualquier mensaje."
       },
       "action": "create_new_lead",
-      "include_transitions": "main_menu_options",
+      "transitions": [
+        {
+          "condition": { "type": "any_text" },
+          "target": "GREETING_PROMPT"
+        }
+      ]
+    },
+    "GREETING_PROMPT": {
+      "message": {
+        "type": "text",
+        "content": "¡Excelente! Para poder ayudarte mejor, cuéntame:\n\n¿Tú ya sabes joyería tejida o deseas empezar desde cero?\n\n*1* → Desde Cero\n*2* → Ya tengo experiencia\n\n_(Si prefieres que no use tu nombre, escribe 'sin nombre')_"
+      },
       "transitions": [
         {
           "condition": {
@@ -167,7 +178,7 @@
             "type": "exact",
             "value": ["2", "avanzado", "experiencia", "intermedio"]
           },
-          "target": "INTERESTED_IN_ADVANCED"
+          "target": "INTERESTED_IN_ADVANCED_INTRO"
         }
       ]
     },
@@ -234,12 +245,24 @@
         }
       ]
     },
-    "INTERESTED_IN_ADVANCED": {
+    "INTERESTED_IN_ADVANCED_INTRO": {
       "message": {
         "type": "text",
-        "content": "¡Eso es genial, {{name}}! 🙌\n\nEn tu caso lo mejor son los *Cursos Avanzados*, tenemos más de *8 opciones* diseñadas para:\n\n💎 Cada clase ha sido diseñada por la maestra Magally Juro y te permitirá perfeccionar tu técnica\n💎 Innovar con nuevos diseños\n💎 Te actualizarás en lo último de la Joyería Tejida o Tecnología de Manufactura en Punto Peruano\n💎 Y contarás con el acompañamiento de la maestra Magally Juro para consultas vía WhatsApp\n\n📹 *VER RESUMEN DE CURSOS AVANZADOS:*\nhttps://www.youtube.com/watch?v=dOeCIBkbfqI\n\n*¿Cómo son las clases?*\n• Son de Acceso automático\n• Las clases ya están grabadas\n• Puedes ver las veces que desees\n\n¿Qué curso te interesa?\n\n*CORAZON* → Curso Joyas Modelo Corazón\n*ANILLOS* → Festival de Anillos\n*VIBRACIONES* → Joyas Tejidas Vibraciones\n*MAMA* → Joyas para Mamá\n*HELICOIDALES* → Joyas Helicoidales\n*FLORES* → Flores para Mamá\n*TIARAS* → Tiaras y Tocados\n*CATALOGO* → Ver todos los cursos\n*MENU* → Volver al menú principal"
+        "content": "¡Eso es genial, {{name}}! 🙌\n\nPara personas con experiencia como tú, tenemos más de *8 cursos avanzados* diseñados para perfeccionar tu técnica e innovar con nuevos diseños.\n\nTodas las clases son diseñadas por la maestra Magally Juro, son de acceso inmediato y puedes verlas las veces que desees.\n\n📹 *VER RESUMEN DE CURSOS AVANZADOS:*\nhttps://www.youtube.com/watch?v=dOeCIBkbfqI\n\nEscribe *VER CURSOS* para mostrarte el catálogo completo."
       },
       "action": "update_lead_interest_advanced",
+      "transitions": [
+        {
+          "condition": { "type": "any_text" },
+          "target": "INTERESTED_IN_ADVANCED_MENU"
+        }
+      ]
+    },
+    "INTERESTED_IN_ADVANCED_MENU": {
+      "message": {
+        "type": "text",
+        "content": "Aquí tienes nuestro catálogo de Cursos Avanzados.\n\n¿Qué curso te interesa más?\n\n*CORAZON* → Curso Joyas Modelo Corazón\n*ANILLOS* → Festival de Anillos\n*VIBRACIONES* → Joyas Tejidas Vibraciones\n*MAMA* → Joyas para Mamá\n*HELICOIDALES* → Joyas Helicoidales\n*FLORES* → Flores para Mamá\n*TIARAS* → Tiaras y Tocados\n*CATALOGO* → Ver todos los cursos\n*MENU* → Volver al menú principal"
+      },
       "include_transitions": "advanced_course_options",
       "transitions": [
         {
@@ -432,7 +455,7 @@
             "type": "keyword",
             "value": ["volver", "menu", "atras"]
           },
-          "target": "INTERESTED_IN_ADVANCED"
+          "target": "INTERESTED_IN_ADVANCED_MENU"
         }
       ]
     },
@@ -456,7 +479,7 @@
             "type": "keyword",
             "value": ["volver", "menu", "atras"]
           },
-          "target": "INTERESTED_IN_ADVANCED"
+          "target": "INTERESTED_IN_ADVANCED_MENU"
         }
       ]
     },
@@ -480,7 +503,7 @@
             "type": "keyword",
             "value": ["volver", "menu", "atras"]
           },
-          "target": "INTERESTED_IN_ADVANCED"
+          "target": "INTERESTED_IN_ADVANCED_MENU"
         }
       ]
     },
@@ -504,7 +527,7 @@
             "type": "keyword",
             "value": ["volver", "menu", "atras"]
           },
-          "target": "INTERESTED_IN_ADVANCED"
+          "target": "INTERESTED_IN_ADVANCED_MENU"
         }
       ]
     },
@@ -528,7 +551,7 @@
             "type": "keyword",
             "value": ["volver", "menu", "atras"]
           },
-          "target": "INTERESTED_IN_ADVANCED"
+          "target": "INTERESTED_IN_ADVANCED_MENU"
         }
       ]
     },
@@ -552,7 +575,7 @@
             "type": "keyword",
             "value": ["volver", "menu", "atras"]
           },
-          "target": "INTERESTED_IN_ADVANCED"
+          "target": "INTERESTED_IN_ADVANCED_MENU"
         }
       ]
     },
@@ -576,7 +599,7 @@
             "type": "keyword",
             "value": ["volver", "menu", "atras"]
           },
-          "target": "INTERESTED_IN_ADVANCED"
+          "target": "INTERESTED_IN_ADVANCED_MENU"
         }
       ]
     },
@@ -621,7 +644,7 @@
         },
         {
           "condition": { "type": "exact", "value": ["2"] },
-          "target": "INTERESTED_IN_ADVANCED"
+          "target": "INTERESTED_IN_ADVANCED_INTRO"
         },
         {
           "condition": {
