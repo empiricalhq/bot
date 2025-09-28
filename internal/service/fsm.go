@@ -13,6 +13,7 @@ import (
 
 	"whatsbot/internal/domain"
 	"whatsbot/internal/message"
+	"whatsbot/pkg/utils"
 )
 
 type FSM interface {
@@ -42,6 +43,7 @@ func (f *fsm) DetermineNext(state *domain.UserState, msg *message.Message) (node
 	currentNode, nodeExists := f.flow.Nodes[state.CurrentNode]
 	if !nodeExists {
 		f.logger.Error("Current node in user state does not exist in flow", "node", state.CurrentNode)
+
 		return f.flow.StartNode, ""
 	}
 
@@ -106,11 +108,32 @@ func (f *fsm) matchesCondition(input string, msg *message.Message, condition dom
 			}
 		}
 	case "keyword":
+		words := strings.Fields(input)
 		for _, keyword := range condition.Value {
-			if strings.Contains(input, strings.ToLower(keyword)) {
+			keywordLower := strings.ToLower(keyword)
+
+			if strings.Contains(input, keywordLower) {
 				return true
 			}
-		}	
+			// Then check with Levenshtein distance for fuzzy matching
+			// But be more strict with very short inputs to avoid false positives
+			for _, word := range words {
+				distance := utils.LevenshteinDistance(keywordLower, word)
+				// More restrictive threshold for short words to avoid false positives
+				// Este cambio se hizo porque al dar opciones como 1 o 2, el bot redirije a quickresponses
+				// parece ser que confunde 1 con un globaltransition que tiene ok como keyword
+				threshold := 2
+				if len(word) <= 2 || len(keywordLower) <= 2 {
+					threshold = 0 // Only exact matches for very short words
+				} else if len(word) <= 4 || len(keywordLower) <= 4 {
+					threshold = 1 // More strict for short words
+				}
+				if distance <= threshold {
+					return true
+				}
+			}
+		}
+	
 	case "regex":
 		return f.matchesRegex(input, condition.Regex)
 	case "any_text":
