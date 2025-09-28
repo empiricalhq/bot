@@ -207,18 +207,30 @@ func validateFlow(flow *domain.Flow) error {
 		return errors.New("start_node not found in nodes")
 	}
 
-	// Validate all transitions point to existing nodes
-	for nodeID, node := range flow.Nodes {
-		for _, transition := range node.Transitions {
+	// checkTransitions ensures that every transition points to a valid node.
+	checkTransitions := func(transitions []domain.Transition, source string) error {
+		for _, transition := range transitions {
 			if _, exists := flow.Nodes[transition.Target]; !exists {
-				return errors.New("invalid transition from " + nodeID + " to " + transition.Target)
+				return fmt.Errorf("invalid transition from %s to non-existent node %q", source, transition.Target)
 			}
 		}
+
+		return nil
 	}
 
-	for _, transition := range flow.GlobalTransitions {
-		if _, exists := flow.Nodes[transition.Target]; !exists {
-			return errors.New("invalid global transition to " + transition.Target)
+	// Validate global transitions.
+	err := checkTransitions(flow.GlobalTransitions, "global_transitions")
+	if err != nil {
+		return err
+	}
+
+	// Validate transitions for each node.
+	for nodeID, node := range flow.Nodes {
+		source := fmt.Sprintf("node %q", nodeID)
+
+		err := checkTransitions(node.Transitions, source)
+		if err != nil {
+			return err
 		}
 	}
 
