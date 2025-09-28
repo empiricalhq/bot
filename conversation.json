@@ -54,6 +54,98 @@
       "target": "CONVERSATION_CLOSED"
     }
   ],
+  "transition_groups": {
+    "main_menu_options": [
+      {
+        "condition": {
+          "type": "exact",
+          "value": ["1", "desde cero", "principiante", "basico", "básico"]
+        },
+        "target": "INTERESTED_IN_BEGINNER"
+      },
+      {
+        "condition": {
+          "type": "exact",
+          "value": ["2", "avanzado", "experiencia", "intermedio"]
+        },
+        "target": "INTERESTED_IN_ADVANCED"
+      },
+      {
+        "condition": { "type": "keyword", "value": ["online"] },
+        "target": "CONSULTED_ONLINE"
+      },
+      {
+        "condition": { "type": "keyword", "value": ["presencial"] },
+        "target": "CONSULTED_PRESENCIAL"
+      },
+      {
+        "condition": {
+          "type": "keyword",
+          "value": ["precio", "costo", "cuanto", "valor", "pago"]
+        },
+        "target": "CONSULTED_PRICE"
+      },
+      {
+        "condition": {
+          "type": "keyword",
+          "value": [
+            "horario",
+            "horarios",
+            "cuando",
+            "hora",
+            "calendario",
+            "schedule"
+          ]
+        },
+        "target": "CONSULTED_SCHEDULE"
+      }
+    ],
+    "advanced_course_options": [
+      {
+        "condition": { "type": "keyword", "value": ["corazon", "corazón"] },
+        "target": "COURSE_CORAZON"
+      },
+      {
+        "condition": {
+          "type": "keyword",
+          "value": ["anillos", "anillo", "festival"]
+        },
+        "target": "COURSE_ANILLOS"
+      },
+      {
+        "condition": {
+          "type": "keyword",
+          "value": ["vibraciones", "vibración"]
+        },
+        "target": "COURSE_VIBRACIONES"
+      },
+      {
+        "condition": { "type": "keyword", "value": ["mama", "mamá", "madre"] },
+        "target": "COURSE_MAMA"
+      },
+      {
+        "condition": {
+          "type": "keyword",
+          "value": ["helicoidales", "helicoidal"]
+        },
+        "target": "COURSE_HELICOIDALES"
+      },
+      {
+        "condition": {
+          "type": "keyword",
+          "value": ["flores", "flor", "florales"]
+        },
+        "target": "COURSE_FLORES"
+      },
+      {
+        "condition": {
+          "type": "keyword",
+          "value": ["tiaras", "tiara", "tocados", "tocado"]
+        },
+        "target": "COURSE_TIARAS"
+      }
+    ]
+  },
   "nodes": {
     "GREETING": {
       "message": {
@@ -107,101 +199,15 @@
         "type": "text",
         "content": "¡Perfecto, {{name}}! He actualizado tu nombre.\n\n¿En qué puedo ayudarte ahora?\n\n*1* → Información de cursos desde cero\n*2* → Cursos avanzados\n*ONLINE* → Modalidad Online\n*PRESENCIAL* → Modalidad Presencial\n*PRECIO* → Ver costos y promociones\n*HORARIOS* → Ver calendario disponible\n*AYUDA* → Hablar con una asesora"
       },
-      "transitions": [
-        {
-          "condition": {
-            "type": "exact",
-            "value": ["1", "desde cero", "principiante", "basico", "básico"]
-          },
-          "target": "INTERESTED_IN_BEGINNER"
-        },
-        {
-          "condition": {
-            "type": "exact",
-            "value": ["2", "avanzado", "experiencia", "intermedio"]
-          },
-          "target": "INTERESTED_IN_ADVANCED"
-        },
-        {
-          "condition": { "type": "keyword", "value": ["online"] },
-          "target": "CONSULTED_ONLINE"
-        },
-        {
-          "condition": { "type": "keyword", "value": ["presencial"] },
-          "target": "CONSULTED_PRESENCIAL"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": ["precio", "costo", "cuanto", "valor", "pago"]
-          },
-          "target": "CONSULTED_PRICE"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": [
-              "horario",
-              "horarios",
-              "cuando",
-              "hora",
-              "calendario",
-              "schedule"
-            ]
-          },
-          "target": "CONSULTED_SCHEDULE"
-        }
-      ]
+      "include_transitions": "main_menu_options"
     },
     "MAIN_MENU": {
       "message": {
         "type": "text",
         "content": "¡Hola, {{name}}! 💕 Qué gusto verte de nuevo!\n\n¿En qué puedo ayudarte hoy?\n\n*1* → Información de cursos desde cero\n*2* → Cursos avanzados\n*ONLINE* → Modalidad Online\n*PRESENCIAL* → Modalidad Presencial\n*PRECIO* → Ver costos y promociones\n*HORARIOS* → Ver calendario disponible\n*AYUDA* → Hablar con una asesora"
       },
+      "include_transitions": "main_menu_options",
       "transitions": [
-        {
-          "condition": {
-            "type": "exact",
-            "value": ["1", "desde cero", "principiante", "basico", "básico"]
-          },
-          "target": "INTERESTED_IN_BEGINNER"
-        },
-        {
-          "condition": {
-            "type": "exact",
-            "value": ["2", "avanzado", "experiencia", "intermedio"]
-          },
-          "target": "INTERESTED_IN_ADVANCED"
-        },
-        {
-          "condition": { "type": "keyword", "value": ["online"] },
-          "target": "CONSULTED_ONLINE"
-        },
-        {
-          "condition": { "type": "keyword", "value": ["presencial"] },
-          "target": "CONSULTED_PRESENCIAL"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": ["precio", "costo", "cuanto", "valor", "pago"]
-          },
-          "target": "CONSULTED_PRICE"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": [
-              "horario",
-              "horarios",
-              "cuando",
-              "hora",
-              "calendario",
-              "schedule"
-            ]
-          },
-          "target": "CONSULTED_SCHEDULE"
-        },
         { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
       ]
     },
@@ -235,53 +241,8 @@
         "content": "¡Eso es genial, {{name}}! 🙌\n\nEn tu caso lo mejor son los *Cursos Avanzados*, tenemos más de *8 opciones* diseñadas para:\n\n💎 Cada clase ha sido diseñada por la maestra Magally Juro y te permitirá perfeccionar tu técnica\n💎 Innovar con nuevos diseños\n💎 Te actualizarás en lo último de la Joyería Tejida o Tecnología de Manufactura en Punto Peruano\n💎 Y contarás con el acompañamiento de la maestra Magally Juro para consultas vía WhatsApp\n\n📹 *VER RESUMEN DE CURSOS AVANZADOS:*\nhttps://www.youtube.com/watch?v=dOeCIBkbfqI\n\n*¿Cómo son las clases?*\n• Son de Acceso automático\n• Las clases ya están grabadas\n• Puedes ver las veces que desees\n\n¿Qué curso te interesa?\n\n*CORAZON* → Curso Joyas Modelo Corazón\n*ANILLOS* → Festival de Anillos\n*VIBRACIONES* → Joyas Tejidas Vibraciones\n*MAMA* → Joyas para Mamá\n*HELICOIDALES* → Joyas Helicoidales\n*FLORES* → Flores para Mamá\n*TIARAS* → Tiaras y Tocados\n*CATALOGO* → Ver todos los cursos"
       },
       "action": "update_lead_interest_advanced",
+      "include_transitions": "advanced_course_options",
       "transitions": [
-        {
-          "condition": { "type": "keyword", "value": ["corazon", "corazón"] },
-          "target": "COURSE_CORAZON"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": ["anillos", "anillo", "festival"]
-          },
-          "target": "COURSE_ANILLOS"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": ["vibraciones", "vibración"]
-          },
-          "target": "COURSE_VIBRACIONES"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": ["mama", "mamá", "madre"]
-          },
-          "target": "COURSE_MAMA"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": ["helicoidales", "helicoidal"]
-          },
-          "target": "COURSE_HELICOIDALES"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": ["flores", "flor", "florales"]
-          },
-          "target": "COURSE_FLORES"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": ["tiaras", "tiara", "tocados", "tocado"]
-          },
-          "target": "COURSE_TIARAS"
-        },
         {
           "condition": {
             "type": "keyword",
@@ -579,54 +540,7 @@
         "type": "text",
         "content": "*📚CATÁLOGO COMPLETO DE CURSOS AVANZADOS*\n\nElige el curso que más despierte tu creatividad:\n\n*💝CORAZON* → Joyas Modelo Corazón ($84)\n*💍ANILLOS* → Festival de Anillos ($98)\n*✨VIBRACIONES* → Joyas Tejidas Vibraciones ($82)\n*💐MAMA* → Joyas para Mamá ($84)\n*🌀HELICOIDALES* → Joyas Helicoidales ($83)\n*🌸FLORES* → Flores para Mamá ($96)\n*👑TIARAS* → Tiaras y Tocados ($139)\n\n*INFORMACIÓN ADICIONAL:*\n*PRECIOS* → Ver todos los precios\n*HORARIOS* → Consultar horarios disponibles\n*ONLINE* → Modalidad virtual\n*PRESENCIAL* → Modalidad presencial\n\nEscribe el nombre del curso que más te interese para ver el programa completo."
       },
-      "transitions": [
-        {
-          "condition": { "type": "keyword", "value": ["corazon", "corazón"] },
-          "target": "COURSE_CORAZON"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": ["anillos", "anillo", "festival"]
-          },
-          "target": "COURSE_ANILLOS"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": ["vibraciones", "vibración"]
-          },
-          "target": "COURSE_VIBRACIONES"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": ["mama", "mamá", "madre"]
-          },
-          "target": "COURSE_MAMA"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": ["helicoidales", "helicoidal"]
-          },
-          "target": "COURSE_HELICOIDALES"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": ["flores", "flor", "florales"]
-          },
-          "target": "COURSE_FLORES"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": ["tiaras", "tiara", "tocados", "tocado"]
-          },
-          "target": "COURSE_TIARAS"
-        }
-      ]
+      "include_transitions": "advanced_course_options"
     },
     "CONFIRM_ENROLLMENT": {
       "message": {

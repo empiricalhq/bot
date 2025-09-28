@@ -19,14 +19,16 @@ type Transition struct {
 
 type Node struct {
 	Message                 MessageContent `json:"message"`
-	Transitions             []Transition   `json:"transitions"`
+	Transitions             []Transition   `json:"transitions,omitempty"`
+	IncludeTransitions      string         `json:"include_transitions,omitempty"`
 	Action                  string         `json:"action,omitempty"`
 	IgnoreGlobalTransitions bool           `json:"ignore_global_transitions,omitempty"`
 }
 
 type Flow struct {
-	StartNode         string          `json:"start_node"`
-	FallbackNode      string          `json:"fallback_node,omitempty"`
-	Nodes             map[string]Node `json:"nodes"`
-	GlobalTransitions []Transition    `json:"global_transitions,omitempty"`
+	StartNode         string                  `json:"start_node"`
+	FallbackNode      string                  `json:"fallback_node,omitempty"`
+	Nodes             map[string]Node         `json:"nodes"`
+	GlobalTransitions []Transition            `json:"global_transitions,omitempty"`
+	TransitionGroups  map[string][]Transition `json:"transition_groups,omitempty"`
 }

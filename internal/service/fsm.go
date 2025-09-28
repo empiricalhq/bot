@@ -174,6 +174,7 @@ func (f *fsm) matchesRegex(input, pattern string) bool {
 
 	if !exists {
 		f.mutex.Lock()
+
 		// Double-check after acquiring write lock
 		if regex, exists = f.regexCache[pattern]; !exists {
 			var err error
@@ -208,7 +209,40 @@ func LoadFlow(path string) (*domain.Flow, error) {
 		return nil, fmt.Errorf("failed to parse flow file: %w", err)
 	}
 
+	err = processTransitionIncludes(&flow)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process transition includes: %w", err)
+	}
+
 	return &flow, validateFlow(&flow)
+}
+
+// processTransitionIncludes merges shared transitions from TransitionGroups into nodes.
+func processTransitionIncludes(flow *domain.Flow) error {
+	if len(flow.TransitionGroups) == 0 {
+		return nil
+	}
+
+	processedNodes := make(map[string]domain.Node, len(flow.Nodes))
+	for nodeID, node := range flow.Nodes {
+		if node.IncludeTransitions != "" {
+			groupName := node.IncludeTransitions
+
+			group, ok := flow.TransitionGroups[groupName]
+			if !ok {
+				return fmt.Errorf("node %q includes non-existent transition group %q", nodeID, groupName)
+			}
+
+			// Prepend the group transitions so that node-specific transitions are checked last.
+			node.Transitions = append(group, node.Transitions...)
+		}
+
+		processedNodes[nodeID] = node
+	}
+
+	flow.Nodes = processedNodes
+
+	return nil
 }
 
 func validateFlow(flow *domain.Flow) error {
