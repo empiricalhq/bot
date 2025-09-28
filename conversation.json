@@ -156,8 +156,7 @@
       "transitions": [
         {
           "condition": {
-            "type": "keyword",
-            "value": ["ok", "si", "sí", "dale", "continua", "siguiente"]
+            "type": "any_text"
           },
           "target": "GREETING_PROMPT"
         }
@@ -188,8 +187,16 @@
     "NAME_REMOVED_CONFIRMATION": {
       "message": {
         "type": "text",
-        "content": "Entendido. De ahora en adelante no usaré un nombre para saludarte. Si cambias de opinión, puedes decir 'mi nombre es...' en cualquier momento."
-      }
+        "content": "Entendido. De ahora en adelante no usaré un nombre para saludarte. Si cambias de opinión, puedes decir 'mi nombre es...' en cualquier momento.\n\nEnvía cualquier mensaje para continuar."
+      },
+      "transitions": [
+        {
+          "condition": {
+            "type": "any_text"
+          },
+          "target": "MAIN_MENU"
+        }
+      ]
     },
     "CHANGE_NAME_PROMPT": {
       "message": {
@@ -307,7 +314,7 @@
     "CONSULTED_ONLINE": {
       "message": {
         "type": "text",
-        "content": "*✅CURSO INTEGRAL ONLINE - CADA NIVEL INCLUYE:*\n\n• 6 clases grabadas\n• Tendrás los videos de cada clase y podrás verlo las veces que desees\n• Se sugiere 10 horas de práctica en casa por cada clase\n• Tendrás el acompañamiento de la maestra Magally Juro durante todo el curso vía WhatsApp\n• 🎁 Y de regalo E-Books o materiales de soporte por clase\n• Y finalizando los 3 niveles, recibes la Certificación como Especialista en Tecnología de Manufactura en Punto Peruano\n\n*PRECIO* → Ver precios y formas de pago\n*MATRICULA* → Inscribirte ahora\n*PRESENCIAL* → Ver modalidad presencial"
+        "content": "*✅CURSO INTEGRAL ONLINE - CADA NIVEL INCLUYE:*\n\n• 6 clases grabadas\n• Tendrás los videos de cada clase y podrás verlo las veces que desees\n• Se sugiere 10 horas de práctica en casa por cada clase\n• Tendrás el acompañamiento de la maestra Magally Juro durante todo el curso vía WhatsApp\n• 🎁 Y de regalo E-Books o materiales de soporte por clase\n• Y finalizando los 3 niveles, recibes la Certificación como Especialista en Tecnología de Manufactura en Punto Peruano\n\n*PRECIO* → Ver precios y formas de pago\n*MATRICULA* → Inscribirte ahora\n*PRESENCIAL* → Ver modalidad presencial\n*VOLVER* → Volver atrás"
       },
       "transitions": [
         {
@@ -347,7 +354,7 @@
     "CONSULTED_PRESENCIAL": {
       "message": {
         "type": "text",
-        "content": "*✅CURSO INTEGRAL PRESENCIAL - CADA NIVEL INCLUYE:*\n\n• 6 clases Presenciales con la maestra Magally Juro\n• Se sugiere 10 horas de práctica en casa por cada clase\n• Las clases incluyen todos los materiales\n• Tendrás el acompañamiento de la maestra Magally Juro durante todo el curso\n• Recibes Charlas de gestión y emprendimiento en Joyería Tejida\n• 🎁 E-Books o materiales de soporte de regalo por clase\n• Y finalizando los 3 niveles, recibes la Certificación como Especialista en Tecnología de Manufactura en Punto Peruano\n• Ceremonia de Graduación y Certificación al finalizar el Curso\n\n📍 *Lugar:* Barranco-Perú\n📅 *Horario:* Sábados de 10:00 am a 1:00 pm\n🗓️ *INICIO:* SÁBADO 20 DE SEPTIEMBRE\n\n⚠️*VACANTES LIMITADAS*\n\n*PRECIO* → Ver precios y formas de pago\n*MATRICULA* → Inscribirte ahora\n*ONLINE* → Ver modalidad online"
+        "content": "*✅CURSO INTEGRAL PRESENCIAL - CADA NIVEL INCLUYE:*\n\n• 6 clases Presenciales con la maestra Magally Juro\n• Se sugiere 10 horas de práctica en casa por cada clase\n• Las clases incluyen todos los materiales\n• Tendrás el acompañamiento de la maestra Magally Juro durante todo el curso\n• Recibes Charlas de gestión y emprendimiento en Joyería Tejida\n• 🎁 E-Books o materiales de soporte de regalo por clase\n• Y finalizando los 3 niveles, recibes la Certificación como Especialista en Tecnología de Manufactura en Punto Peruano\n• Ceremonia de Graduación y Certificación al finalizar el Curso\n\n📍 *Lugar:* Barranco-Perú\n📅 *Horario:* Sábados de 10:00 am a 1:00 pm\n🗓️ *INICIO:* SÁBADO 20 DE SEPTIEMBRE\n\n⚠️*VACANTES LIMITADAS*\n\n*PRECIO* → Ver precios y formas de pago\n*MATRICULA* → Inscribirte ahora\n*ONLINE* → Ver modalidad online\n*VOLVER* → Volver atrás"
       },
       "transitions": [
         {
@@ -417,7 +424,7 @@
     "CONSULTED_PRICE": {
       "message": {
         "type": "text",
-        "content": "*💎PRECIOS CURSO INTEGRAL*\n\n*💰PRECIO NORMAL:*\n• Nivel Básico: 220 USD\n• Curso Completo (3 niveles): 660 USD\n\n*🎉PRECIO ESPECIAL CON DESCUENTO:*\n• Nivel Básico 10% dcto: *198 USD*\n• Curso Completo 20% dcto: *528 USD*\n\n*📱PAGO CON TARJETA:*\nNivel Básico: https://goe.run/6876946f06f08\nCurso Completo: https://goe.run/687694cd6f4ea\n\n*🏦PAGO POR TRANSFERENCIA:*\nBanco de Crédito del Perú\nCta Ahorro soles: 192-16056570056\n\n*📱YAPE o PLIN:* 989 982 183\nA nombre de: Magally Ana Rocio Juro Huerta\n\n¿Listo para matricularte?\n*MATRICULA* → Confirmar inscripción\n*HORARIOS* → Ver horarios disponibles"
+        "content": "*💎PRECIOS CURSO INTEGRAL*\n\n*💰PRECIO NORMAL:*\n• Nivel Básico: 220 USD\n• Curso Completo (3 niveles): 660 USD\n\n*🎉PRECIO ESPECIAL CON DESCUENTO:*\n• Nivel Básico 10% dcto: *198 USD*\n• Curso Completo 20% dcto: *528 USD*\n\n*📱PAGO CON TARJETA:*\nNivel Básico: https://goe.run/6876946f06f08\nCurso Completo: https://goe.run/687694cd6f4ea\n\n*🏦PAGO POR TRANSFERENCIA:*\nBanco de Crédito del Perú\nCta Ahorro soles: 192-16056570056\n\n*📱YAPE o PLIN:* 989 982 183\nA nombre de: Magally Ana Rocio Juro Huerta\n\n¿Listo para matricularte?\n*MATRICULA* → Confirmar inscripción\n*HORARIOS* → Ver horarios disponibles\n*VOLVER* → Volver atrás"
       },
       "action": "update_lead_consulted_price",
       "transitions": [
@@ -730,9 +737,9 @@
     "ENROLLMENT_PROCESS": {
       "message": {
         "type": "text",
-        "content": "*💳PROCESO DE MATRÍCULA*\n\n*Paso 1:* Realiza el pago\n📱 *Yape:* 989 982 183\n🏦 *BCP:* 192-16056570056\nNombre: Magally Ana Rocio Juro Huerta\n\n*Paso 2:* Envía tu voucher aquí 📸\n\n*Paso 3:* Te agregamos al grupo VIP donde Magally te da la bienvenida personalmente 🎉\n\n¿Ya realizaste el pago? Envía tu voucher o escribe *PAGADO*"
+        "content": "*💳PROCESO DE MATRÍCULA*\n\n*Paso 1:* Realiza el pago\n📱 *Yape:* 989 982 183\n🏦 *BCP:* 192-16056570056\nNombre: Magally Ana Rocio Juro Huerta\n\n*Paso 2:* Envía tu voucher aquí 📸\n\n*Paso 3:* Te agregamos al grupo VIP donde Magally te da la bienvenida personalmente 🎉\n\n¿Ya realizaste el pago? Envía tu voucher o escribe *PAGADO*.\n\n_(Si deseas cancelar, escribe *VOLVER*)_"
       },
-      "fallback_message": "Para continuar, por favor envía una foto de tu voucher de pago 📸. Si tienes algún problema, escribe *AYUDA* para contactar con una asesora.",
+      "fallback_message": "Para continuar, por favor envía una foto de tu voucher de pago 📸. Si tienes algún problema, escribe *AYUDA* para contactar con una asesora. (O *VOLVER* para cancelar)",
       "ignore_global_transitions": true,
       "transitions": [
         {
@@ -758,15 +765,22 @@
         {
           "condition": { "type": "keyword", "value": ["ayuda"] },
           "target": "NEEDS_ASSISTANCE"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["volver", "cancelar", "atras"]
+          },
+          "target": "ENROLLMENT_CANCELLED"
         }
       ]
     },
     "WAITING_FOR_VOUCHER": {
       "message": {
         "type": "text",
-        "content": "¡Excelente, {{name}}! \n\nPara confirmar tu pago, por favor *envía una foto de tu voucher* 📸\n\nSi tienes problemas para enviar la imagen, escribe *AYUDA* para contactar con una asesora."
+        "content": "¡Excelente, {{name}}! \n\nPara confirmar tu pago, por favor *envía una foto de tu voucher* 📸\n\nSi tienes problemas para enviar la imagen, escribe *AYUDA*.\n\n_(Si deseas cancelar, escribe *VOLVER*)_"
       },
-      "fallback_message": "Aún estoy esperando la foto de tu voucher 📸. Si no puedes enviarla, escribe *AYUDA* y una asesora te contactará.",
+      "fallback_message": "Aún estoy esperando la foto de tu voucher 📸. Si no puedes enviarla, escribe *AYUDA*. (O *VOLVER* para cancelar)",
       "ignore_global_transitions": true,
       "transitions": [
         {
@@ -777,6 +791,13 @@
         {
           "condition": { "type": "keyword", "value": ["ayuda"] },
           "target": "NEEDS_ASSISTANCE"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["volver", "cancelar", "atras"]
+          },
+          "target": "ENROLLMENT_CANCELLED"
         }
       ]
     },
