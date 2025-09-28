@@ -6,10 +6,9 @@ type MessageContent struct {
 }
 
 type Condition struct {
-	Type    string   `json:"type"`
-	Value   []string `json:"value,omitempty"`
-	Regex   string   `json:"regex,omitempty"`
-	IsMedia bool     `json:"is_media,omitempty"`
+	Type  string   `json:"type"`
+	Value []string `json:"value,omitempty"`
+	Regex string   `json:"regex,omitempty"`
 }
 
 type Transition struct {
