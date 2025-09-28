@@ -158,23 +158,9 @@
     "GREETING_INTRO": {
       "message": {
         "type": "text",
-        "content": "¡Hola, {{name}}! 💕 Soy un asistente de la Escuela de Joyería Tejida del Perú ✨\n\n¡Felicitaciones por tu deseo de aprender y emprender con esta hermosa técnica!\n\nPermíteme comentarte algo importante:\n\n👉 Somos Escuela de Joyería Tejida Perú de la maestra *Magally Juro* y tenemos más de *15 años en el mercado*, formando *alumnas y marcas de joyería tejida* en toda América Latina 🌎\n\nPara continuar y mostrarte las opciones, solo escribe *OK* o envía cualquier mensaje."
+        "content": "¡Hola, {{name}}! 💕 Soy un asistente de la Escuela de Joyería Tejida del Perú ✨\n\n¡Felicitaciones por tu deseo de aprender y emprender con esta hermosa técnica!\n\nPermíteme comentarte algo importante:\n\n👉 Somos Escuela de Joyería Tejida Perú de la maestra *Magally Juro* y tenemos más de *15 años en el mercado*, formando *alumnas y marcas de joyería tejida* en toda América Latina 🌎\n\nPara poder ayudarte mejor, cuéntame:\n\n¿Tú ya sabes joyería tejida o deseas empezar desde cero?\n\n*1* → Desde Cero\n*2* → Ya tengo experiencia\n\n_(Si prefieres que no use tu nombre, escribe 'sin nombre')_"
       },
       "action": "create_new_lead",
-      "transitions": [
-        {
-          "condition": {
-            "type": "any_text"
-          },
-          "target": "GREETING_PROMPT"
-        }
-      ]
-    },
-    "GREETING_PROMPT": {
-      "message": {
-        "type": "text",
-        "content": "¡Excelente! Para poder ayudarte mejor, cuéntame:\n\n¿Tú ya sabes joyería tejida o deseas empezar desde cero?\n\n*1* → Desde Cero\n*2* → Ya tengo experiencia\n\n_(Si prefieres que no use tu nombre, escribe 'sin nombre')_"
-      },
       "transitions": [
         {
           "condition": {
@@ -243,19 +229,19 @@
       "action": "update_lead_interest_beginner",
       "transitions": [
         {
+          "condition": {
+            "type": "keyword",
+            "value": ["precio", "costo", "cuanto", "valor", "pago"]
+          },
+          "target": "CONSULTED_PRICE"
+        },
+        {
           "condition": { "type": "keyword", "value": ["online"] },
           "target": "CONSULTED_ONLINE"
         },
         {
           "condition": { "type": "keyword", "value": ["presencial"] },
           "target": "CONSULTED_PRESENCIAL"
-        },
-        {
-          "condition": {
-            "type": "keyword",
-            "value": ["precio", "costo", "cuanto", "valor", "pago"]
-          },
-          "target": "CONSULTED_PRICE"
         },
         {
           "condition": {
@@ -901,7 +887,7 @@
         },
         {
           "condition": { "type": "any_text" },
-          "target": "MAIN_MENU"
+          "target": "CONVERSATION_CLOSED"
         }
       ]
     },
