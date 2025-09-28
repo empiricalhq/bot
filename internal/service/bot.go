@@ -162,13 +162,26 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 			logger.Debug("Fallback on terminal node. No response sent.", "node", originalNode)
 
 			responseText = ""
-		} else if fallbackNode != nil && fallbackNode.Message.Content != "" {
-			// On menu-like nodes, re-prompt with options to guide the user back on track.
-			logger.Debug("Fallback on menu node. Re-prompting user.", "node", originalNode)
-
+		} else if fallbackNode != nil {
 			data := b.prepareTemplateData(userState)
-			fallbackPrefix := "No entendí tu respuesta 😊 Por favor, revisa las opciones:\n\n"
-			responseText = b.renderer.Render(fallbackPrefix+fallbackNode.Message.Content, data)
+
+			// Use custom fallback message if available.
+			if fallbackNode.FallbackMessage != "" {
+				logger.Debug("Fallback with custom message.", "node", originalNode)
+
+				responseText = b.renderer.Render(fallbackNode.FallbackMessage, data)
+			} else if fallbackNode.Message.Content != "" {
+				// Otherwise, use the generic re-prompt for menu-like nodes.
+				logger.Debug("Fallback on menu node. Re-prompting user.", "node", originalNode)
+
+				fallbackPrefix := "No entendí tu respuesta 😊 Por favor, revisa las opciones:\n\n"
+				responseText = b.renderer.Render(fallbackPrefix+fallbackNode.Message.Content, data)
+			} else {
+				logger.Warn("Fallback in a node with no message. Resetting to start.", "node", originalNode)
+
+				nextNode = b.fsm.GetStartNode()
+				responseText = b.generateResponse(nextNode, userState)
+			}
 		} else {
 			logger.Warn("Fallback in a node with no message. Resetting to start.", "node", originalNode)
 

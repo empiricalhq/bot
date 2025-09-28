@@ -24,6 +24,7 @@ type Node struct {
 	IncludeTransitions      string         `json:"include_transitions,omitempty"`
 	Action                  string         `json:"action,omitempty"`
 	IgnoreGlobalTransitions bool           `json:"ignore_global_transitions,omitempty"`
+	FallbackMessage         string         `json:"fallback_message,omitempty"`
 }
 
 type Flow struct {

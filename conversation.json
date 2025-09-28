@@ -464,7 +464,7 @@
       "title": "CURSO JOYAS TEJIDAS VIBRACIONES",
       "message": {
         "type": "text",
-        "content": "*✨CURSO JOYAS TEJIDAS VIBRACIONES*\n\nTaller de 8 joyas avanzadas que te sorprenderán y movilizarán tu creatividad.\n\n*PROGRAMA VIBRACIONAL:*\n• Clase 1: Joya Malla Relámpago\n• Clase 2: Joya Malla Pentágono Helicoidal\n• Clase 3: Joya Patronaje Cuadrado\n• Clase 4: Joya con Patronaje en Círculo\n• Clase 5: Joya de Malla Multicalibrada\n• Clase 6: Joya Malla Volumétrica\n• Clase 7: Flor Helicoidal Especial\n• Clase 8: Arete Destello Brillante\n\n*TÉCNICAS EXCLUSIVAS:*\n✅ Patronaje geométrico avanzado\n✅ Mallas complejas profesionales\n✅ Efectos visuales únicos\n✅ Combinación de texturas\n✅ Acabados de alta gama\n\n*PRECIO NORMAL:* 112 USD\n*🔥PRECIO ESPECIAL:* 82 USD\n\nJoyas entregadas por alumnas:\nhttps://web.facebook.com/media/set/?set=a.1018857693582536&type=3&locale=es_LA\n\n*Inscripción directa:*\nhttps://goe.run/680daccd010e2\n\n*MATRICULA* → Confirmar inscripción\n*VOLVER* → Ver otros cursos\n*CATALOGO* → Ver todos los cursos"
+        "content": "*✨CURSO JOYAS TEJIDAS VIBRACIONES*\n\nTaller de 8 joyas avanzadas que te sorprenderán y movilizarán tu creatividad.\n\n*PROGRAMA VIBRACIONAL:*\n• Clase 1: Joya Malla Relámpago\n• Clase 2: Joya Malla Pentágono Helicoidal\n• Clase 3: Joya Patronaje Cuadrado\n• Clase 4: Joya con Patronaje en Círculo\n• Clase 5: Joya de Malla Multicalibrada\n• Clase 6: Joya Malla Volumétrica\n• Clase 7: Flor Helicoidal Especial\n• Clase 8: Arete Destello Brillante\n\n*TÉCNICAS EXCLUSIVAS:*\n✅ Patronaje geométrico avanzado\n✅ Mallas complexas profesionales\n✅ Efectos visuales únicos\n✅ Combinación de texturas\n✅ Acabados de alta gama\n\n*PRECIO NORMAL:* 112 USD\n*🔥PRECIO ESPECIAL:* 82 USD\n\nJoyas entregadas por alumnas:\nhttps://web.facebook.com/media/set/?set=a.1018857693582536&type=3&locale=es_LA\n\n*Inscripción directa:*\nhttps://goe.run/680daccd010e2\n\n*MATRICULA* → Confirmar inscripción\n*VOLVER* → Ver otros cursos\n*CATALOGO* → Ver todos los cursos"
       },
       "transitions": [
         {
@@ -637,6 +637,7 @@
         "type": "text",
         "content": "*💳PROCESO DE MATRÍCULA*\n\n*Paso 1:* Realiza el pago\n📱 *Yape:* 989 982 183\n🏦 *BCP:* 192-16056570056\nNombre: Magally Ana Rocio Juro Huerta\n\n*Paso 2:* Envía tu voucher aquí 📸\n\n*Paso 3:* Te agregamos al grupo VIP donde Magally te da la bienvenida personalmente 🎉\n\n¿Ya realizaste el pago? Envía tu voucher o escribe *PAGADO*"
       },
+      "fallback_message": "Para continuar, por favor envía una foto de tu voucher de pago 📸. Si tienes algún problema, escribe *AYUDA* para contactar con una asesora.",
       "ignore_global_transitions": true,
       "transitions": [
         {
@@ -666,6 +667,7 @@
         "type": "text",
         "content": "¡Excelente, {{name}}! \n\nPara confirmar tu pago, por favor *envía una foto de tu voucher* 📸\n\nSi tienes problemas para enviar la imagen, escribe *AYUDA* para contactar con una asesora."
       },
+      "fallback_message": "Aún estoy esperando la foto de tu voucher 📸. Si no puedes enviarla, escribe *AYUDA* y una asesora te contactará.",
       "ignore_global_transitions": true,
       "transitions": [
         {
