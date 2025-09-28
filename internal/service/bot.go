@@ -82,7 +82,7 @@ func (b *Bot) HandleEvent(evt interface{}) {
 
 	msg := message.FromEvent(msgEvent)
 	if msg == nil {
-		if msgEvent.Info.Chat.Server != "s.whatsapp.net" {
+		if msgEvent.Info.Chat.Server != "s.whatsapp.net" && msgEvent.Info.Chat.Server != "lid" {
 			b.logger.Debug("Ignoring event: not a 1-on-1 chat", "chat_jid", msgEvent.Info.Chat.String())
 		} else {
 			b.logger.Debug("Ignoring event: no usable text or media", "sender", msgEvent.Info.Sender.ToNonAD().String())
