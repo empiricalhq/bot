@@ -212,6 +212,7 @@
       ]
     },
     "INTERESTED_IN_BEGINNER": {
+      "title": "CURSO INTEGRAL DE JOYERÍA TEJIDA",
       "message": {
         "type": "text",
         "content": "Perfecto, {{name}} 🌸\n\nSi no tienes ningún conocimiento de la técnica de joyería tejida a crochet con hilos metálicos y deseas empezar desde cero, te sugiero el *Curso Integral de Joyería Tejida* 👑\n\nEste incluye los tres niveles: *básico, intermedio y avanzado*.\n\n✔️ Puedes llevarlo *online* o *presencial*\n✔️ No requieres experiencia previa\n✔️ Se te acompaña y guía paso a paso hasta crear tus propias piezas\n✔️ Logras joyas que te permiten recuperar tu inversión desde el primer nivel\n✔️ Recibes Charlas de gestión en Joyería Tejida\n✔️ Recibes E-Books o material de apoyo por clase\n✔️ Y formarás parte de la comunidad más grande de habla hispana que conoce y ama la joyería tejida\n\n¿Qué modalidad prefieres?\n\n*ONLINE* → Ver detalles del Curso Online\n*PRESENCIAL* → Ver detalles del Curso Presencial\n*PRECIO* → Ver precios y formas de pago"
@@ -276,7 +277,8 @@
               "matrícula"
             ]
           },
-          "target": "CONFIRM_ENROLLMENT"
+          "target": "CONFIRM_ENROLLMENT",
+          "action": "set_selected_course"
         },
         {
           "condition": { "type": "keyword", "value": ["presencial"] },
@@ -308,7 +310,8 @@
               "matrícula"
             ]
           },
-          "target": "CONFIRM_ENROLLMENT"
+          "target": "CONFIRM_ENROLLMENT",
+          "action": "set_selected_course"
         },
         {
           "condition": { "type": "keyword", "value": ["online"] },
@@ -341,7 +344,8 @@
               "matrícula"
             ]
           },
-          "target": "CONFIRM_ENROLLMENT"
+          "target": "CONFIRM_ENROLLMENT",
+          "action": "set_selected_course"
         }
       ]
     },
@@ -363,7 +367,8 @@
               "matrícula"
             ]
           },
-          "target": "CONFIRM_ENROLLMENT"
+          "target": "CONFIRM_ENROLLMENT",
+          "action": "set_selected_course"
         },
         {
           "condition": {
@@ -382,6 +387,7 @@
       ]
     },
     "COURSE_CORAZON": {
+      "title": "CURSO JOYAS MODELO CORAZÓN",
       "message": {
         "type": "text",
         "content": "*💝CURSO JOYAS MODELO CORAZÓN*\n\nAprende a crear hermosas joyas con la forma más universal del amor.\n\n*PROGRAMA COMPLETO:*\n• Clase 1: Corazón Básico Tradicional\n• Clase 2: Corazón Bombé Volumétrico\n• Clase 3: Corazón Helicoidal Avanzado\n• Clase 4: Corazón con Textura Especial\n• Clase 5: Corazón Doble Entrelazado\n• Clase 6: Corazón Miniatura para Aretes\n• Clase 7: Corazón XXL Statement\n• Clase 8: Corazón con Incrustaciones\n\n*INCLUYE:*\n✅ 8 clases paso a paso\n✅ Videos HD de alta calidad\n✅ Materiales sugeridos\n✅ Patrones y moldes\n✅ Soporte técnico 24/7\n\n*PRECIO NORMAL:* 98 USD\n*🔥PRECIO ESPECIAL:* 84 USD\n\n*Inscripción directa:*\nhttps://goe.run/curso-corazon-2024\n\n*MATRICULA* → Confirmar inscripción\n*VOLVER* → Ver otros cursos\n*CATALOGO* → Ver todos los cursos"
@@ -392,7 +398,8 @@
             "type": "keyword",
             "value": ["inscribir", "matricula"]
           },
-          "target": "CONFIRM_ENROLLMENT"
+          "target": "CONFIRM_ENROLLMENT",
+          "action": "set_selected_course"
         },
         {
           "condition": {
@@ -404,6 +411,7 @@
       ]
     },
     "COURSE_ANILLOS": {
+      "title": "FESTIVAL DE ANILLOS",
       "message": {
         "type": "text",
         "content": "*💍FESTIVAL DE ANILLOS*\n\nEl curso más completo de anillos tejidos. ¡Domina todas las técnicas!\n\n*PROGRAMA FESTIVAL:*\n• Clase 1: Anillo Clásico Base\n• Clase 2: Anillo con Piedra Central\n• Clase 3: Anillo Helicoidal Elegante\n• Clase 4: Anillo Bombé Volumétrico\n• Clase 5: Anillo Trenzado Artesanal\n• Clase 6: Anillo Minimalista Moderno\n• Clase 7: Anillo Vintage Retro\n• Clase 8: Anillo Compromiso Especial\n• Clase 9: Set de 3 Anillos Apilables\n• Clase 10: Anillo Ajustable Universal\n\n*INCLUYE:*\n✅ 10 clases magistrales\n✅ Técnicas para todas las tallas\n✅ Tips de acabados profesionales\n✅ Herramientas recomendadas\n✅ Certificado de especialización\n\n*PRECIO NORMAL:* 128 USD\n*🔥PRECIO ESPECIAL:* 98 USD\n\n*Inscripción directa:*\nhttps://goe.run/festival-anillos-2024\n\n*MATRICULA* → Confirmar inscripción\n*VOLVER* → Ver otros cursos\n*CATALOGO* → Ver todos los cursos"
@@ -414,7 +422,8 @@
             "type": "keyword",
             "value": ["inscribir", "matricula"]
           },
-          "target": "CONFIRM_ENROLLMENT"
+          "target": "CONFIRM_ENROLLMENT",
+          "action": "set_selected_course"
         },
         {
           "condition": {
@@ -426,6 +435,7 @@
       ]
     },
     "COURSE_VIBRACIONES": {
+      "title": "CURSO JOYAS TEJIDAS VIBRACIONES",
       "message": {
         "type": "text",
         "content": "*✨CURSO JOYAS TEJIDAS VIBRACIONES*\n\nTaller de 8 joyas avanzadas que te sorprenderán y movilizarán tu creatividad.\n\n*PROGRAMA VIBRACIONAL:*\n• Clase 1: Joya Malla Relámpago\n• Clase 2: Joya Malla Pentágono Helicoidal\n• Clase 3: Joya Patronaje Cuadrado\n• Clase 4: Joya con Patronaje en Círculo\n• Clase 5: Joya de Malla Multicalibrada\n• Clase 6: Joya Malla Volumétrica\n• Clase 7: Flor Helicoidal Especial\n• Clase 8: Arete Destello Brillante\n\n*TÉCNICAS EXCLUSIVAS:*\n✅ Patronaje geométrico avanzado\n✅ Mallas complejas profesionales\n✅ Efectos visuales únicos\n✅ Combinación de texturas\n✅ Acabados de alta gama\n\n*PRECIO NORMAL:* 112 USD\n*🔥PRECIO ESPECIAL:* 82 USD\n\nJoyas entregadas por alumnas:\nhttps://web.facebook.com/media/set/?set=a.1018857693582536&type=3&locale=es_LA\n\n*Inscripción directa:*\nhttps://goe.run/680daccd010e2\n\n*MATRICULA* → Confirmar inscripción\n*VOLVER* → Ver otros cursos\n*CATALOGO* → Ver todos los cursos"
@@ -436,7 +446,8 @@
             "type": "keyword",
             "value": ["inscribir", "matricula"]
           },
-          "target": "CONFIRM_ENROLLMENT"
+          "target": "CONFIRM_ENROLLMENT",
+          "action": "set_selected_course"
         },
         {
           "condition": {
@@ -448,6 +459,7 @@
       ]
     },
     "COURSE_MAMA": {
+      "title": "CURSO JOYAS PARA MAMÁ",
       "message": {
         "type": "text",
         "content": "*💐CURSO JOYAS PARA MAMÁ*\n\nAprenderás a elaborar 10 joyas hermosas más una de regalo especial.\n\n*PROGRAMA MATERNAL:*\n• Clase 1: Joya Medusa Elegante\n• Clase 2: Joya Tulipán Primaveral\n• Clase 3: Joya Tulipán con Recurso Chasis\n• Clase 4: Joya Hespitan Helicoidal\n• Clase 5: Joya Ameba Orgánica\n• Clase 6: Joya Marinera Náutica\n• Clase 7: Joya Corazón Bombé Helicoidal\n• Clase 8: Orquídea Guaria de Costa Rica\n• Clase 9: Joya Colección Madre/Hija\n• Clase 10: Joya Arete Bombé Sofisticado\n• Clase 11: REGALO - Joya Mágica Sorpresa\n\n*IDEAL PARA:*\n✅ Regalo perfecto para mamá\n✅ Día de las madres\n✅ Proyectos madre-hija\n✅ Recuerdos familiares\n✅ Emprendimiento maternal\n\n*PRECIO NORMAL:* 120 USD\n*🔥PRECIO ESPECIAL:* 84 USD\n\nJoyas entregadas por alumnas:\nhttps://www.facebook.com/media/set/?set=a.1027447639390208&type=3&locale=es_LA&_rdc=1&_rdr#\n\n*Inscripción directa:*\nhttps://goe.run/641a560abf92a\n\n*MATRICULA* → Confirmar inscripción\n*VOLVER* → Ver otros cursos\n*CATALOGO* → Ver todos los cursos"
@@ -458,7 +470,8 @@
             "type": "keyword",
             "value": ["inscribir", "matricula"]
           },
-          "target": "CONFIRM_ENROLLMENT"
+          "target": "CONFIRM_ENROLLMENT",
+          "action": "set_selected_course"
         },
         {
           "condition": {
@@ -470,6 +483,7 @@
       ]
     },
     "COURSE_HELICOIDALES": {
+      "title": "CURSO JOYAS HELICOIDALES",
       "message": {
         "type": "text",
         "content": "*🌀CURSO JOYAS HELICOIDALES*\n\nDomina la técnica más elegante y sofisticada de la joyería tejida.\n\n*PROGRAMA HELICOIDAL:*\n• Clase 1: Fundamentos de la Técnica Helicoidal\n• Clase 2: Helicoidal Simple Básico\n• Clase 3: Helicoidal Doble Entrelazado\n• Clase 4: Helicoidal Triple Complejo\n• Clase 5: Helicoidal con Variaciones de Color\n• Clase 6: Helicoidal Bombé Voluminoso\n• Clase 7: Aretes Helicoidales Pareados\n• Clase 8: Collar Helicoidal Largo\n• Clase 9: Pulsera Helicoidal Ajustable\n\n*TÉCNICAS AVANZADAS:*\n✅ Matemática de la espiral perfecta\n✅ Control de tensión especializado\n✅ Transiciones suaves de color\n✅ Acabados profesionales\n✅ Variaciones de grosor\n\n*PRECIO NORMAL:* 108 USD\n*🔥PRECIO ESPECIAL:* 83 USD\n\nJoyas entregadas por alumnas:\nhttps://www.facebook.com/media/set/?set=a.1032230308911941&type=3&locale=es_LA&_rdc=1&_rdr#\n\n*Inscripción directa:*\nhttps://goe.run/curso-helicoidales-2024\n\n*MATRICULA* → Confirmar inscripción\n*VOLVER* → Ver otros cursos\n*CATALOGO* → Ver todos los cursos"
@@ -480,7 +494,8 @@
             "type": "keyword",
             "value": ["inscribir", "matricula"]
           },
-          "target": "CONFIRM_ENROLLMENT"
+          "target": "CONFIRM_ENROLLMENT",
+          "action": "set_selected_course"
         },
         {
           "condition": {
@@ -492,6 +507,7 @@
       ]
     },
     "COURSE_FLORES": {
+      "title": "CURSO FLORES PARA MAMÁ",
       "message": {
         "type": "text",
         "content": "*🌸CURSO FLORES PARA MAMÁ*\n\nCrea las flores más hermosas y realistas en joyería tejida.\n\n*PROGRAMA FLORAL:*\n• Clase 1: Rosa Clásica Tradicional\n• Clase 2: Tulipán Holandés Elegante\n• Clase 3: Orquídea Tropical Exótica\n• Clase 4: Girasol Radiante Alegre\n• Clase 5: Margarita Campestre Dulce\n• Clase 6: Lirio Imperial Majestuoso\n• Clase 7: Gardenia Perfumada Refinada\n• Clase 8: Violeta Africana Delicada\n• Clase 9: Bouquet Combinado Especial\n• Clase 10: Corona Floral Primaveral\n\n*TÉCNICAS BOTÁNICAS:*\n✅ Pétalos realistas en 3D\n✅ Gradientes naturales de color\n✅ Texturas orgánicas auténticas\n✅ Ensamble de bouquets\n✅ Follaje y complementos\n\n*PRECIO NORMAL:* 125 USD\n*🔥PRECIO ESPECIAL:* 96 USD\n\n*Inscripción directa:*\nhttps://goe.run/curso-flores-mama-2024\n\n*MATRICULA* → Confirmar inscripción\n*VOLVER* → Ver otros cursos\n*CATALOGO* → Ver todos los cursos"
@@ -502,7 +518,8 @@
             "type": "keyword",
             "value": ["inscribir", "matricula"]
           },
-          "target": "CONFIRM_ENROLLMENT"
+          "target": "CONFIRM_ENROLLMENT",
+          "action": "set_selected_course"
         },
         {
           "condition": {
@@ -514,6 +531,7 @@
       ]
     },
     "COURSE_TIARAS": {
+      "title": "CURSO TIARAS Y TOCADOS",
       "message": {
         "type": "text",
         "content": "*👑CURSO TIARAS Y TOCADOS*\n\nEl curso más exclusivo para crear tocados dignos de realeza.\n\n*PROGRAMA REAL:*\n• Clase 1: Tiara Clásica Princesa\n• Clase 2: Corona Reina Majestuosa\n• Clase 3: Tocado Vintage Gatsby\n• Clase 4: Diadema Griega Antigua\n• Clase 5: Tocado Boho Silvestre\n• Clase 6: Tiara Nupcial Elegante\n• Clase 7: Corona Floral Primaveral\n• Clase 8: Tocado Oriental Zen\n• Clase 9: Tiara Gótica Dramática\n• Clase 10: Corona de Quinceañera\n• Clase 11: Tocado Carnaval Festivo\n• Clase 12: Tiara Minimalista Moderna\n\n*NIVEL PREMIUM:*\n✅ Diseños de alta costura\n✅ Técnicas de joyería fina\n✅ Incrustación de cristales\n✅ Estructuras arquitectónicas\n✅ Acabados de lujo profesional\n\n*PRECIO NORMAL:* 180 USD\n*🔥PRECIO ESPECIAL:* 139 USD\n\nJoyas entregadas por nuestras alumnas:\nhttps://www.facebook.com/media/set/?set=a.346272843740436&type=3&locale=es_LA&_rdc=1&_rdr#\n\n*Inscripción directa:*\nhttps://goe.run/curso-tiaras-tocados-2024\n\n*MATRICULA* → Confirmar inscripción\n*VOLVER* → Ver otros cursos\n*CATALOGO* → Ver todos los cursos"
@@ -524,7 +542,8 @@
             "type": "keyword",
             "value": ["inscribir", "matricula"]
           },
-          "target": "CONFIRM_ENROLLMENT"
+          "target": "CONFIRM_ENROLLMENT",
+          "action": "set_selected_course"
         },
         {
           "condition": {
@@ -545,7 +564,7 @@
     "CONFIRM_ENROLLMENT": {
       "message": {
         "type": "text",
-        "content": "¡Excelente! Estás a punto de iniciar tu matrícula. ¿Confirmas que quieres continuar con la inscripción?\n\n*SI* → Continuar\n*NO* → Volver"
+        "content": "¡Excelente! Estás a punto de iniciar tu matrícula para el curso *{{course_name}}*. ¿Confirmas que quieres continuar con la inscripción?\n\n*SI* → Continuar\n*NO* → Volver"
       },
       "transitions": [
         {

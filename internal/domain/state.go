@@ -7,6 +7,7 @@ type UserState struct {
 	CurrentNode        string    `db:"current_node"`
 	UserName           string    `db:"user_name"`
 	CourseInterest     string    `db:"course_interest"`
+	SelectedCourseID   string    `db:"selected_course_id"`
 	ConsultedPrice     bool      `db:"consulted_price"`
 	VoucherPath        string    `db:"voucher_path"`
 	RequiresHumanAgent bool      `db:"requires_human_agent"`
