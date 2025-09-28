@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -19,11 +18,6 @@ import (
 )
 
 const messageTimeout = 30 * time.Second
-
-// ErrNewUserInitialized is a sentinel error used to indicate that a new user
-// has been successfully created and greeted, and that further processing of their
-// first message should be skipped.
-var ErrNewUserInitialized = errors.New("new user initialized and greeted")
 
 type Bot struct {
 	config   *config.Config
@@ -87,11 +81,7 @@ func (b *Bot) HandleEvent(evt interface{}) {
 
 	msg := message.FromEvent(msgEvent)
 	if msg == nil {
-		if msgEvent.Info.Chat.Server != "s.whatsapp.net" {
-			b.logger.Debug("Ignoring event: not a 1-on-1 chat", "chat_jid", msgEvent.Info.Chat.String())
-		} else {
-			b.logger.Debug("Ignoring event: no usable text or media", "sender", msgEvent.Info.Sender.ToNonAD().String())
-		}
+		b.logger.Debug("Ignoring event: message not processable", "sender", msgEvent.Info.Sender.ToNonAD().String())
 
 		return
 	}
@@ -105,23 +95,31 @@ func (b *Bot) HandleEvent(evt interface{}) {
 	ctx, cancel := context.WithTimeout(context.Background(), messageTimeout)
 	defer cancel()
 
-	err := b.processMessage(ctx, msg, msgEvent)
-	if err != nil && !errors.Is(err, ErrNewUserInitialized) {
-		b.logger.Error("Message processing failed", "error", err, "user", msg.SenderID)
+	// Get user state. This step also handles onboarding new users.
+	userState, isNewUser, err := b.getOrCreateUserState(ctx, msg)
+	if err != nil {
+		b.logger.Error("Failed to get or create user state", "error", err, "user", msg.SenderID)
+
+		return
+	}
+
+	// If the user is new, their onboarding is complete. Stop here.
+	if isNewUser {
+		b.logger.Info("New user onboarded and greeted", "user", msg.SenderID)
+
+		return
+	}
+
+	// If the user already exists, process their message through the FSM.
+	err = b.processExistingUserMessage(ctx, userState, msg, msgEvent)
+	if err != nil {
+		b.logger.Error("Message processing failed for existing user", "error", err, "user", msg.SenderID)
 	}
 }
 
-func (b *Bot) processMessage(ctx context.Context, msg *message.Message, rawEvt interface{}) error {
-	logger := b.logger.With("user", msg.SenderID)
-
+func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.UserState, msg *message.Message, rawEvt interface{}) error {
+	logger := b.logger.With("user", msg.SenderID, "from_node", userState.CurrentNode)
 	logger.Debug("Processing message", "text", msg.Text, "has_media", msg.HasMedia)
-
-	userState, err := b.getOrCreateUserState(ctx, msg)
-	if err != nil {
-		return err
-	}
-
-	logger = logger.With("from_node", userState.CurrentNode)
 
 	originalNode := userState.CurrentNode
 	nextNode, action := b.fsm.DetermineNext(userState, msg)
@@ -129,7 +127,7 @@ func (b *Bot) processMessage(ctx context.Context, msg *message.Message, rawEvt i
 	logger.Debug("FSM determined next state", "to_node", nextNode, "action", action)
 
 	if action != "" {
-		err = b.actions.Execute(action, userState, msg, rawEvt)
+		err := b.actions.Execute(action, userState, msg, rawEvt)
 		if err != nil {
 			logger.Error("Action failed", "action", action, "error", err)
 		}
@@ -159,13 +157,13 @@ func (b *Bot) processMessage(ctx context.Context, msg *message.Message, rawEvt i
 		}
 	}
 
-	err = b.repo.SaveStateAndMessages(ctx, userState, inMsg, outMsg)
+	err := b.repo.SaveStateAndMessages(ctx, userState, inMsg, outMsg)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to save state and messages: %w", err)
 	}
 
 	if responseText != "" {
-		err = b.whatsapp.SendText(ctx, msg.SenderID, responseText)
+		err := b.whatsapp.SendText(ctx, msg.SenderID, responseText)
 		if err != nil {
 			logger.Error("Failed to send message", "error", err)
 		}
@@ -181,36 +179,51 @@ func (b *Bot) processMessage(ctx context.Context, msg *message.Message, rawEvt i
 	return nil
 }
 
-func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message) (*domain.UserState, error) {
-	state, err := b.repo.GetUserState(ctx, msg.SenderID)
+// getOrCreateUserState retrieves a user's state. If the user does not exist,
+// it creates a new state, sends the initial greeting, and returns isNew=true.
+func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message) (state *domain.UserState, isNew bool, err error) {
+	userState, err := b.repo.GetUserState(ctx, msg.SenderID)
 	if err != nil {
-		return nil, err
+		return nil, false, fmt.Errorf("could not get user state from repository: %w", err)
 	}
 
-	if state.CurrentNode == "" {
-		state.CurrentNode = b.fsm.GetStartNode()
-		state.UserName = msg.PushName
-		state.LastUpdated = time.Now()
+	// If CurrentNode is empty, this is a new user.
+	if userState.CurrentNode == "" {
+		b.logger.Info("New user initialized", "user", msg.SenderID, "node", b.fsm.GetStartNode(), "push_name", msg.PushName)
 
-		b.logger.Info("New user initialized", "user", msg.SenderID, "node", state.CurrentNode, "push_name", msg.PushName)
+		userState.CurrentNode = b.fsm.GetStartNode()
+		userState.UserName = msg.PushName
+		userState.LastUpdated = time.Now()
 
-		responseText := b.generateResponse(state.CurrentNode, state)
-		if responseText != "" {
-			outMsg := &domain.ConversationMessage{
-				UserID:         msg.SenderID,
-				Timestamp:      time.Now(),
-				Direction:      "outbound",
-				MessageContent: responseText,
-				NodeID:         state.CurrentNode,
-			}
-			b.repo.SaveStateAndMessages(ctx, state, nil, outMsg)
-			b.whatsapp.SendText(ctx, msg.SenderID, responseText)
+		responseText := b.generateResponse(userState.CurrentNode, userState)
+		if responseText == "" {
+			b.logger.Warn("Start node has no message content, new user will not be greeted", "node", userState.CurrentNode)
 		}
 
-		return nil, ErrNewUserInitialized
+		outMsg := &domain.ConversationMessage{
+			UserID:         msg.SenderID,
+			Timestamp:      time.Now(),
+			Direction:      "outbound",
+			MessageContent: responseText,
+			NodeID:         userState.CurrentNode,
+		}
+
+		err := b.repo.SaveStateAndMessages(ctx, userState, nil, outMsg)
+		if err != nil {
+			return nil, false, fmt.Errorf("failed to save new user state: %w", err)
+		}
+
+		if responseText != "" {
+			err := b.whatsapp.SendText(ctx, msg.SenderID, responseText)
+			if err != nil {
+				b.logger.Error("Failed to send welcome message to new user", "error", err)
+			}
+		}
+
+		return userState, true, nil
 	}
 
-	return state, nil
+	return userState, false, nil
 }
 
 func (b *Bot) generateResponse(nodeID string, state *domain.UserState) string {
