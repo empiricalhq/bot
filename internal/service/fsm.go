@@ -43,6 +43,7 @@ func (f *fsm) DetermineNext(state *domain.UserState, msg *message.Message) (node
 	currentNode, nodeExists := f.flow.Nodes[state.CurrentNode]
 	if !nodeExists {
 		f.logger.Error("Current node in user state does not exist in flow", "node", state.CurrentNode)
+
 		return f.flow.StartNode, ""
 	}
 
@@ -107,66 +108,32 @@ func (f *fsm) matchesCondition(input string, msg *message.Message, condition dom
 			}
 		}
 	case "keyword":
-		f.logger.Debug("Checking keyword condition",
-			"input", input,
-			"keywords", condition.Value)
-
 		words := strings.Fields(input)
-		f.logger.Debug("Split input into words", "words", words)
-
 		for _, keyword := range condition.Value {
 			keywordLower := strings.ToLower(keyword)
-			f.logger.Debug("Checking keyword", "keyword", keywordLower)
 
-			// First check for exact substring match (original behavior)
 			if strings.Contains(input, keywordLower) {
-				f.logger.Debug("Exact substring match found", "keyword", keywordLower, "input", input)
 				return true
 			}
-
 			// Then check with Levenshtein distance for fuzzy matching
 			// But be more strict with very short inputs to avoid false positives
 			for _, word := range words {
 				distance := utils.LevenshteinDistance(keywordLower, word)
-				f.logger.Debug("Levenshtein distance check",
-					"keyword", keywordLower,
-					"word", word,
-					"distance", distance)
-
 				// More restrictive threshold for short words to avoid false positives
+				// Este cambio se hizo porque al dar opciones como 1 o 2, el bot redirije a quickresponses
+				// parece ser que confunde 1 con un globaltransition que tiene ok como keyword
 				threshold := 2
 				if len(word) <= 2 || len(keywordLower) <= 2 {
 					threshold = 0 // Only exact matches for very short words
 				} else if len(word) <= 4 || len(keywordLower) <= 4 {
 					threshold = 1 // More strict for short words
 				}
-
-				f.logger.Debug("Using threshold", "threshold", threshold, "word_len", len(word), "keyword_len", len(keywordLower))
-
 				if distance <= threshold {
-					f.logger.Debug("Fuzzy match found with Levenshtein distance",
-						"keyword", keywordLower,
-						"word", word,
-						"distance", distance,
-						"threshold", threshold)
 					return true
 				}
 			}
 		}
-	// on MAIN_MENU, if user sends 1 or 2, it will be redirected to QUICK_RESPONSE
-	// we undid the code and now it works and sends to the corresponding node
-	/*
-		case "keyword":
-				words := strings.Fields(input)
-				for _, keyword := range condition.Value {
-					for _, word := range words {
-						distance := utils.LevenshteinDistance(strings.ToLower(keyword), word)
-						if distance <= 2 {
-							return true
-						}
-					}
-				}
-	*/
+	
 	case "regex":
 		return f.matchesRegex(input, condition.Regex)
 	case "any_text":
