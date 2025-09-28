@@ -13,7 +13,7 @@
     {
       "condition": {
         "type": "keyword",
-        "value": ["mi nombre es", "me llamo", "llámame"]
+        "value": ["mi nombre es", "me llamo", "llámame", "soy"]
       },
       "target": "NAME_CHANGE_CONFIRMED",
       "action": "save_user_name"
