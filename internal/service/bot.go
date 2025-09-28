@@ -213,6 +213,14 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 				if errors.Is(err, ErrInvalidName) {
 					responseText = "No pude reconocer eso como un nombre. ¿Podrías intentarlo de nuevo, por favor?"
 					nextNode = originalNode // Stay in the current node to re-prompt
+				} else {
+					logger.Error("Critical action failure, escalating to human agent", "action", action, "error", err)
+
+					responseText = "Hubo un problema al procesar tu comprobante. Por favor, contacta a una asesora para completar tu matrícula. Disculpa las molestias."
+					nextNode = "NEEDS_ASSISTANCE"
+
+					// Ensure the escalation action is executed to update state before saving.
+					_ = b.actions.Execute("escalate_to_human_agent", userState, msg, rawEvt, originalNode)
 				}
 			}
 		}

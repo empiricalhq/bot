@@ -80,7 +80,7 @@
       },
       {
         "condition": {
-          "type": "exact",
+          "type": "keyword",
           "value": [
             "precio",
             "precios",
@@ -106,6 +106,19 @@
           ]
         },
         "target": "CONSULTED_SCHEDULE"
+      },
+      {
+        "condition": {
+          "type": "keyword",
+          "value": [
+            "matricula",
+            "matrícula",
+            "inscribir",
+            "inscripcion",
+            "inscribirme"
+          ]
+        },
+        "target": "CLARIFY_ENROLLMENT_COURSE"
       }
     ],
     "advanced_course_options": [
@@ -194,7 +207,7 @@
     "NAME_REMOVED_CONFIRMATION": {
       "message": {
         "type": "text",
-        "content": "Entendido. De ahora en adelante no usaré un nombre para saludarte. Si cambias de opinión, puedes decir 'mi nombre es...' en cualquier momento.\n\nPara volver al menú principal, escribe *MENU*."
+        "content": "Entendido. De ahora en adelante no usaré un nombre para saludarte. Si cambias de opinión, puedes decir 'mi nombre es...' en cualquier momento.\n\n(Si lo necesitas, puedes escribir 'cambiar nombre' para que usemos uno diferente).\n\nPara volver al menú principal, escribe *MENU*."
       },
       "transitions": [
         {
@@ -223,7 +236,7 @@
     "NAME_CHANGE_CONFIRMED": {
       "message": {
         "type": "text",
-        "content": "¡Perfecto, {{name}}! He actualizado tu nombre.\n\n¿En qué puedo ayudarte ahora?\n\n*1* → Información de cursos desde cero\n*2* → Cursos avanzados\n*ONLINE* → Modalidad Online\n*PRESENCIAL* → Modalidad Presencial\n*PRECIO* → Ver costos y promociones\n*HORARIOS* → Ver calendario disponible\n*AYUDA* → Hablar con una asesora"
+        "content": "¡Perfecto, {{name}}! He actualizado tu nombre. (Recuerda que puedes volver a cambiarlo cuando quieras escribiendo 'cambiar nombre').\n\n¿En qué puedo ayudarte ahora?\n\n*1* → Información de cursos desde cero\n*2* → Cursos avanzados\n*ONLINE* → Modalidad Online\n*PRESENCIAL* → Modalidad Presencial\n*PRECIO* → Ver costos y promociones\n*HORARIOS* → Ver calendario disponible\n*AYUDA* → Hablar con una asesora"
       },
       "include_transitions": "main_menu_options"
     },
@@ -868,8 +881,9 @@
     "PAYMENT_CONFIRMED_ACK_EXTRA": {
       "message": {
         "type": "text",
-        "content": "¡Gracias! Ya recibí tu comprobante principal. Mis asesoras lo revisarán todo junto. 😊\n\n¿Puedo ayudarte con algo más?"
+        "content": "¡Gracias! Ya recibí tu comprobante principal. Mis asesoras lo revisarán todo junto. 😊\n\nEscribe *MENU* para volver al inicio."
       },
+      "include_transitions": "common_navigation",
       "transitions": []
     },
     "NEEDS_ASSISTANCE": {
@@ -899,7 +913,7 @@
     "CONVERSATION_CLOSED": {
       "message": {
         "type": "text",
-        "content": "¡Ha sido un placer ayudarte! 😊\n\nRecuerda que estamos aquí cuando lo necesites.\nSolo escribe *HOLA* para volver a empezar.\n\n¡Que tengas un excelente día! ✨"
+        "content": "¡Ha sido un placer ayudarte! 😊\n\nRecuerda que estamos aquí cuando lo necesites.\nCuando quieras volver a conversar, solo envía cualquier mensaje. ¡Estaré aquí para ayudarte! ✨"
       },
       "transitions": [
         {
