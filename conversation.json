@@ -80,8 +80,16 @@
       },
       {
         "condition": {
-          "type": "keyword",
-          "value": ["precio", "costo", "cuanto", "valor", "pago"]
+          "type": "exact",
+          "value": [
+            "precio",
+            "precios",
+            "costo",
+            "costos",
+            "cuanto",
+            "valor",
+            "pago"
+          ]
         },
         "target": "CONSULTED_PRICE"
       },
@@ -277,28 +285,41 @@
               "si"
             ]
           },
-          "target": "INTERESTED_IN_ADVANCED_MENU"
+          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
         }
       ]
     },
-    "INTERESTED_IN_ADVANCED_MENU": {
+    "INTERESTED_IN_ADVANCED_CATEGORIES": {
       "message": {
         "type": "text",
-        "content": "Aquí tienes nuestro catálogo de Cursos Avanzados.\n\n¿Qué curso te interesa más?\n\n*CORAZON* → Curso Joyas Modelo Corazón\n*ANILLOS* → Festival de Anillos\n*VIBRACIONES* → Joyas Tejidas Vibraciones\n*MAMA* → Joyas para Mamá\n*HELICOIDALES* → Joyas Helicoidales\n*FLORES* → Flores para Mamá\n*TIARAS* → Tiaras y Tocados\n*CATALOGO* → Ver todos los cursos\n*MENU* → Volver al menú principal"
+        "content": "¡Perfecto! Nuestros cursos avanzados se agrupan en categorías para que encuentres justo lo que buscas.\n\n¿Qué te gustaría aprender a crear?\n\n*1* → TÉCNICAS ESPECIALES (Corazón, Vibraciones, Helicoidales)\n*2* → ANILLOS Y ACCESORIOS (Tiaras y Tocados)\n*3* → FLORES Y DISEÑOS TEMÁTICOS\n\n*CATALOGO* → Ver todos los cursos\n*MENU* → Volver al menú principal"
       },
-      "include_transitions": "advanced_course_options",
       "transitions": [
         {
           "condition": {
-            "type": "keyword",
-            "value": ["precio", "costo", "valor"]
+            "type": "exact",
+            "value": ["1", "tecnicas", "técnicas"]
           },
-          "target": "CONSULTED_CATALOG"
+          "target": "ADVANCED_MENU_TECHNIQUES"
+        },
+        {
+          "condition": {
+            "type": "exact",
+            "value": ["2", "anillos", "accesorios"]
+          },
+          "target": "ADVANCED_MENU_ACCESSORIES"
+        },
+        {
+          "condition": {
+            "type": "exact",
+            "value": ["3", "flores", "tematicos"]
+          },
+          "target": "ADVANCED_MENU_THEMES"
         },
         {
           "condition": {
             "type": "keyword",
-            "value": ["catalogo", "catálogo", "todos", "cursos"]
+            "value": ["catalogo", "catálogo", "todos"]
           },
           "target": "CONSULTED_CATALOG"
         },
@@ -308,6 +329,54 @@
             "value": ["menu", "inicio", "principal", "volver"]
           },
           "target": "MAIN_MENU"
+        }
+      ]
+    },
+    "ADVANCED_MENU_TECHNIQUES": {
+      "message": {
+        "type": "text",
+        "content": "*TÉCNICAS ESPECIALES*\n\nEstos cursos se enfocan en dominar métodos únicos y muy solicitados.\n\n*CORAZON* → Curso Joyas Modelo Corazón\n*VIBRACIONES* → Joyas Tejidas Vibraciones\n*HELICOIDALES* → Joyas Helicoidales\n\n*VOLVER* → Ver otras categorías"
+      },
+      "include_transitions": "advanced_course_options",
+      "transitions": [
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["volver", "atras", "atrás", "categorias"]
+          },
+          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
+        }
+      ]
+    },
+    "ADVANCED_MENU_ACCESSORIES": {
+      "message": {
+        "type": "text",
+        "content": "*ANILLOS Y ACCESORIOS*\n\nConviértete en una experta creando los accesorios más deslumbrantes.\n\n*ANILLOS* → Festival de Anillos\n*TIARAS* → Tiaras y Tocados\n\n*VOLVER* → Ver otras categorías"
+      },
+      "include_transitions": "advanced_course_options",
+      "transitions": [
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["volver", "atras", "atrás", "categorias"]
+          },
+          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
+        }
+      ]
+    },
+    "ADVANCED_MENU_THEMES": {
+      "message": {
+        "type": "text",
+        "content": "*FLORES Y DISEÑOS TEMÁTICOS*\n\nAprende a crear piezas inspiradas en la naturaleza y ocasiones especiales.\n\n*FLORES* → Flores para Mamá\n*MAMA* → Joyas para Mamá\n\n*VOLVER* → Ver otras categorías"
+      },
+      "include_transitions": "advanced_course_options",
+      "transitions": [
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["volver", "atras", "atrás", "categorias"]
+          },
+          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
         }
       ]
     },
@@ -485,7 +554,7 @@
             "type": "keyword",
             "value": ["volver", "atras", "atrás"]
           },
-          "target": "INTERESTED_IN_ADVANCED_MENU"
+          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
         },
         {
           "condition": {
@@ -516,7 +585,7 @@
             "type": "keyword",
             "value": ["volver", "atras", "atrás"]
           },
-          "target": "INTERESTED_IN_ADVANCED_MENU"
+          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
         },
         {
           "condition": {
@@ -547,7 +616,7 @@
             "type": "keyword",
             "value": ["volver", "atras", "atrás"]
           },
-          "target": "INTERESTED_IN_ADVANCED_MENU"
+          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
         },
         {
           "condition": {
@@ -578,7 +647,7 @@
             "type": "keyword",
             "value": ["volver", "atras", "atrás"]
           },
-          "target": "INTERESTED_IN_ADVANCED_MENU"
+          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
         },
         {
           "condition": {
@@ -609,7 +678,7 @@
             "type": "keyword",
             "value": ["volver", "atras", "atrás"]
           },
-          "target": "INTERESTED_IN_ADVANCED_MENU"
+          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
         },
         {
           "condition": {
@@ -640,7 +709,7 @@
             "type": "keyword",
             "value": ["volver", "atras", "atrás"]
           },
-          "target": "INTERESTED_IN_ADVANCED_MENU"
+          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
         },
         {
           "condition": {
@@ -671,7 +740,7 @@
             "type": "keyword",
             "value": ["volver", "atras", "atrás"]
           },
-          "target": "INTERESTED_IN_ADVANCED_MENU"
+          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
         },
         {
           "condition": {
@@ -692,7 +761,7 @@
     "CONFIRM_ENROLLMENT": {
       "message": {
         "type": "text",
-        "content": "¡Excelente! Estás a punto de iniciar tu matrícula para el curso *{{course_name}}*. ¿Confirmas que quieres continuar con la inscripción?\n\n*SI* → Continuar\n*NO* → Volver"
+        "content": "¡Excelente! Estás a punto de iniciar tu matrícula para el curso *{{course_name}}*. ¿Confirmas que quieres continuar con la inscripción?\n\n*SI* → Continuar\n*NO* / *VOLVER* → Cancelar"
       },
       "transitions": [
         {
@@ -737,7 +806,7 @@
     "ENROLLMENT_PROCESS": {
       "message": {
         "type": "text",
-        "content": "*💳PROCESO DE MATRÍCULA*\n\n*Paso 1:* Realiza el pago\n📱 *Yape:* 989 982 183\n🏦 *BCP:* 192-16056570056\nNombre: Magally Ana Rocio Juro Huerta\n\n*Paso 2:* Envía tu voucher aquí 📸\n\n*Paso 3:* Te agregamos al grupo VIP donde Magally te da la bienvenida personalmente 🎉\n\n¿Ya realizaste el pago? Envía tu voucher o escribe *PAGADO*.\n\n_(Si deseas cancelar, escribe *VOLVER*)_"
+        "content": "*💳PROCESO DE MATRÍCULA*\n\n*Paso 1:* Realiza el pago\n📱 *Yape:* 989 982 183\n🏦 *BCP:* 192-16056570056\nNombre: Magally Ana Rocio Juro Huerta\n\n*Paso 2:* Envía tu voucher aquí 📸\n\n*Paso 3:* Te agregamos al grupo VIP donde Magally te da la bienvenida personalmente 🎉\n\n¿Ya realizaste el pago? Envía tu voucher o escribe *PAGADO*.\n\n_(Si deseas cancelar, escribe *VOLVER* o *MENU*)_"
       },
       "fallback_message": "Para continuar, por favor envía una foto de tu voucher de pago 📸. Si tienes algún problema, escribe *AYUDA* para contactar con una asesora. (O *VOLVER* para cancelar)",
       "ignore_global_transitions": true,
@@ -772,13 +841,17 @@
             "value": ["volver", "cancelar", "atras"]
           },
           "target": "ENROLLMENT_CANCELLED"
+        },
+        {
+          "condition": { "type": "keyword", "value": ["menu", "inicio"] },
+          "target": "MAIN_MENU"
         }
       ]
     },
     "WAITING_FOR_VOUCHER": {
       "message": {
         "type": "text",
-        "content": "¡Excelente, {{name}}! \n\nPara confirmar tu pago, por favor *envía una foto de tu voucher* 📸\n\nSi tienes problemas para enviar la imagen, escribe *AYUDA*.\n\n_(Si deseas cancelar, escribe *VOLVER*)_"
+        "content": "¡Excelente, {{name}}! \n\nPara confirmar tu pago, por favor *envía una foto de tu voucher* 📸\n\nSi tienes problemas para enviar la imagen, escribe *AYUDA*.\n\n_(Si deseas cancelar, escribe *VOLVER* o *MENU*)_"
       },
       "fallback_message": "Aún estoy esperando la foto de tu voucher 📸. Si no puedes enviarla, escribe *AYUDA*. (O *VOLVER* para cancelar)",
       "ignore_global_transitions": true,
@@ -798,6 +871,10 @@
             "value": ["volver", "cancelar", "atras"]
           },
           "target": "ENROLLMENT_CANCELLED"
+        },
+        {
+          "condition": { "type": "keyword", "value": ["menu", "inicio"] },
+          "target": "MAIN_MENU"
         }
       ]
     },
@@ -810,13 +887,17 @@
         {
           "condition": {
             "type": "keyword",
-            "value": ["menu", "inicio", "principal", "volver"]
+            "value": ["menu", "inicio", "principal"]
           },
           "target": "MAIN_MENU"
         },
         {
           "condition": { "type": "keyword", "value": ["ayuda", "asesora"] },
           "target": "NEEDS_ASSISTANCE"
+        },
+        {
+          "condition": { "type": "any_text" },
+          "target": "MAIN_MENU"
         }
       ]
     },
@@ -847,7 +928,13 @@
       "message": {
         "type": "text",
         "content": "¡Ha sido un placer ayudarte! 😊\n\nRecuerda que estamos aquí cuando lo necesites.\nSolo escribe *HOLA* para volver a empezar.\n\n¡Que tengas un excelente día! ✨"
-      }
+      },
+      "transitions": [
+        {
+          "condition": { "type": "any_text" },
+          "target": "MAIN_MENU"
+        }
+      ]
     }
   }
 }
