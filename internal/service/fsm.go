@@ -20,7 +20,6 @@ type FSM interface {
 	DetermineNext(state *domain.UserState, msg *message.Message) (nodeID, action string)
 	GetNode(nodeID string) *domain.Node
 	GetStartNode() string
-	GetFallbackNode() string
 }
 
 type fsm struct {
@@ -85,14 +84,6 @@ func (f *fsm) DetermineNext(state *domain.UserState, msg *message.Message) (node
 }
 
 func (f *fsm) GetStartNode() string {
-	return f.flow.StartNode
-}
-
-func (f *fsm) GetFallbackNode() string {
-	if f.flow.FallbackNode != "" {
-		return f.flow.FallbackNode
-	}
-
 	return f.flow.StartNode
 }
 

@@ -128,21 +128,26 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 	var responseText string
 
 	if action == "trigger_fallback_response" {
-		// Fallback: stay in the same node but send the fallback message.
-		logger.Debug("Fallback triggered. Sending fallback message but staying in node.", "node", originalNode)
+		// No transition matched => re-prompt in the current node.
+		logger.Debug("Fallback triggered. Re-prompting user in current node.", "node", originalNode)
 
-		fallbackNodeID := b.fsm.GetFallbackNode()
-
-		fallbackNode := b.fsm.GetNode(fallbackNodeID)
-		if fallbackNode != nil && fallbackNode.Message.Content != "" {
+		repromptNode := b.fsm.GetNode(originalNode)
+		if repromptNode != nil && repromptNode.Message.Content != "" {
 			data := b.prepareTemplateData(userState)
-			responseText = b.renderer.Render(fallbackNode.Message.Content, data)
+			fallbackPrefix := "No entendí tu respuesta 😊 Por favor, revisa las opciones:\n\n"
+			fullMessage := fallbackPrefix + repromptNode.Message.Content
+			responseText = b.renderer.Render(fullMessage, data)
 		} else {
-			logger.Error("Fallback node or its message is not configured properly", "fallback_node_id", fallbackNodeID)
+			// Safety net: if the node has no message, reset to the start node.
+			logger.Warn("Fallback triggered in a node with no message. Resetting to start.", "node", originalNode)
+
+			nextNode = b.fsm.GetStartNode()
+			responseText = b.generateResponse(nextNode, userState)
 		}
-		// No change to nextNode; it stays at originalNode.
+
+		// State does not change; no action is executed.
 	} else {
-		// Normal flow: move to the next node and run any action.
+		// Transition matched => move to the next node and execute action if any.
 		logger.Debug("FSM determined next state", "to_node", nextNode, "action", action)
 
 		if action != "" {
@@ -229,7 +234,7 @@ func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message) (s
 			NodeID:         userState.CurrentNode,
 		}
 
-		err := b.repo.SaveStateAndMessages(ctx, userState, nil, outMsg)
+		err = b.repo.SaveStateAndMessages(ctx, userState, nil, outMsg)
 		if err != nil {
 			return nil, false, fmt.Errorf("failed to save new user state: %w", err)
 		}

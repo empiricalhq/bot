@@ -1,6 +1,5 @@
 {
   "start_node": "GREETING",
-  "fallback_node": "FALLBACK_MENU",
   "global_transitions": [
     {
       "condition": {
@@ -724,27 +723,6 @@
           },
           "target": "MAIN_MENU"
         }
-      ]
-    },
-    "FALLBACK_MENU": {
-      "message": {
-        "type": "text",
-        "content": "No entendí tu mensaje 😊\n\n{{name}}, estas son las opciones disponibles:\n*1* → Curso desde cero\n*2* → Cursos avanzados\n*PRECIO* → Ver precios\n*AYUDA* → Hablar con asesora\n\n¿En qué te puedo ayudar?"
-      },
-      "transitions": [
-        {
-          "condition": { "type": "exact", "value": ["1"] },
-          "target": "INTERESTED_IN_BEGINNER"
-        },
-        {
-          "condition": { "type": "exact", "value": ["2"] },
-          "target": "INTERESTED_IN_ADVANCED"
-        },
-        {
-          "condition": { "type": "keyword", "value": ["precio", "costo"] },
-          "target": "CONSULTED_PRICE"
-        },
-        { "condition": { "type": "any_text" }, "target": "FALLBACK_MENU" }
       ]
     }
   }
