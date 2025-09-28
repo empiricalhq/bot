@@ -167,10 +167,7 @@
       "message": {
         "type": "text",
         "content": "Entendido. De ahora en adelante no usaré un nombre para saludarte. Si cambias de opinión, puedes decir 'mi nombre es...' en cualquier momento."
-      },
-      "transitions": [
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
-      ]
+      }
     },
     "CHANGE_NAME_PROMPT": {
       "message": {
@@ -670,10 +667,7 @@
       "message": {
         "type": "text",
         "content": "🎉 ¡FELICITACIONES, {{name}}! 🎉\n\n*Hemos recibido tu comprobante de pago* ✅\n\nLo hemos enviado a nuestras asesoras para su validación. En breve te confirmarán tu matrícula y te darán la bienvenida al curso.\n\n¡Estamos encantadas de acompañarte en esta nueva aventura!"
-      },
-      "transitions": [
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
-      ]
+      }
     },
     "NEEDS_ASSISTANCE": {
       "message": {
@@ -688,8 +682,7 @@
             "value": ["urgente", "urge", "emergencia"]
           },
           "target": "URGENT_ASSISTANCE"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "URGENT_ASSISTANCE": {
@@ -697,33 +690,19 @@
         "type": "text",
         "content": "*🚨ATENCIÓN PRIORITARIA*\n\nTu caso ha sido marcado como URGENTE.\n\n*Contacto inmediato:*\n📱 *Llama ahora:* +51 989 982 183\n📱 *WhatsApp Escuela:* +51 923 845 189\n\nUna asesora te contactará en los próximos 30 minutos."
       },
-      "action": "escalate_to_human_agent",
-      "transitions": [
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
-      ]
+      "action": "escalate_to_human_agent"
     },
     "CONVERSATION_CLOSED": {
       "message": {
         "type": "text",
         "content": "¡Ha sido un placer ayudarte! 😊\n\nRecuerda que estamos aquí cuando lo necesites.\nSolo escribe *HOLA* para volver a empezar.\n\n¡Que tengas un excelente día! ✨"
-      },
-      "transitions": [
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
-      ]
+      }
     },
     "QUICK_RESPONSES": {
       "message": {
         "type": "text",
         "content": "¡Perfecto! 💕 Si necesitas algo más, aquí estoy para ayudarte."
-      },
-      "transitions": [
-        {
-          "condition": {
-            "type": "any_text"
-          },
-          "target": "MAIN_MENU"
-        }
-      ]
+      }
     }
   }
 }

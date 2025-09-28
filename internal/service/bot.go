@@ -128,26 +128,36 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 	var responseText string
 
 	if action == "trigger_fallback_response" {
-		// No transition matched => re-prompt in the current node.
-		logger.Debug("Fallback triggered. Re-prompting user in current node.", "node", originalNode)
+		fallbackNode := b.fsm.GetNode(originalNode)
 
-		repromptNode := b.fsm.GetNode(originalNode)
-		if repromptNode != nil && repromptNode.Message.Content != "" {
+		// A terminal node has a message but no transitions.
+		// Example: "¡Ha sido un placer ayudarte!" => nothing else to offer.
+		isTerminalNode := fallbackNode != nil && len(fallbackNode.Transitions) == 0 && fallbackNode.IncludeTransitions == ""
+
+		if isTerminalNode {
+			// On terminal nodes, a fallback means the conversation has likely ended (e.g., user says "thanks").
+			// We remain silent to allow a natural pause. The user can re-engage with a global keyword.
+			logger.Debug("Fallback triggered on a terminal node. No response will be sent.", "node", originalNode)
+
+			responseText = ""
+		} else if fallbackNode != nil && fallbackNode.Message.Content != "" {
+			// On menu-like nodes, re-prompt with options to guide the user back on track.
+			logger.Debug("Fallback triggered on a menu node. Re-prompting user.", "node", originalNode)
+
 			data := b.prepareTemplateData(userState)
 			fallbackPrefix := "No entendí tu respuesta 😊 Por favor, revisa las opciones:\n\n"
-			fullMessage := fallbackPrefix + repromptNode.Message.Content
+			fullMessage := fallbackPrefix + fallbackNode.Message.Content
 			responseText = b.renderer.Render(fullMessage, data)
 		} else {
-			// Safety net: if the node has no message, reset to the start node.
+			// Safeguard: If user is in a broken or message-less node, reset to start.
 			logger.Warn("Fallback triggered in a node with no message. Resetting to start.", "node", originalNode)
 
 			nextNode = b.fsm.GetStartNode()
 			responseText = b.generateResponse(nextNode, userState)
 		}
-
-		// State does not change; no action is executed.
+		// The state remains unchanged (nextNode = originalNode) unless reset by the safeguard.
 	} else {
-		// Transition matched => move to the next node and execute action if any.
+		// Normal flow: move to the next node and run any action.
 		logger.Debug("FSM determined next state", "to_node", nextNode, "action", action)
 
 		if action != "" {
