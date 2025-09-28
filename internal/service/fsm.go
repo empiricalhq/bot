@@ -102,31 +102,41 @@ func (f *fsm) GetNode(nodeID string) *domain.Node {
 func (f *fsm) matchesCondition(input string, msg *message.Message, condition domain.Condition) bool {
 	switch condition.Type {
 	case "exact":
+		// Match only if input equals one of the values (case-insensitive).
 		for _, value := range condition.Value {
 			if strings.EqualFold(input, value) {
 				return true
 			}
 		}
+
 	case "keyword":
+		// Quick check: input must contain a keyword as a substring.
+		// Example: "I need help" matches keyword "help".
+		for _, keyword := range condition.Value {
+			if strings.Contains(input, strings.ToLower(keyword)) {
+				return true
+			}
+		}
+
+		// Fallback: fuzzy match each word in input against keywords.
+		// Uses Levenshtein distance with stricter thresholds for short words
+		// to avoid false positives (e.g., confusing "1" with "ok").
 		words := strings.Fields(input)
 		for _, keyword := range condition.Value {
 			keywordLower := strings.ToLower(keyword)
 
-			if strings.Contains(input, keywordLower) {
-				return true
-			}
-			// Then check with Levenshtein distance for fuzzy matching
-			// But be more strict with very short inputs to avoid false positives
 			for _, word := range words {
 				distance := utils.LevenshteinDistance(keywordLower, word)
-				// More restrictive threshold for short words to avoid false positives
-				// Este cambio se hizo porque al dar opciones como 1 o 2, el bot redirije a quickresponses
-				// parece ser que confunde 1 con un globaltransition que tiene ok como keyword
+
+				// Threshold rules:
+				// - Very short words (=< 2): exact match only
+				// - Short words (=< 4): allow distance 1
+				// - Otherwise: allow distance 2
 				threshold := 2
 				if len(word) <= 2 || len(keywordLower) <= 2 {
-					threshold = 0 // Only exact matches for very short words
+					threshold = 0
 				} else if len(word) <= 4 || len(keywordLower) <= 4 {
-					threshold = 1 // More strict for short words
+					threshold = 1
 				}
 
 				if distance <= threshold {
@@ -137,10 +147,13 @@ func (f *fsm) matchesCondition(input string, msg *message.Message, condition dom
 
 	case "regex":
 		return f.matchesRegex(input, condition.Regex)
+
 	case "any_text":
 		return input != "" && !msg.HasMedia
+
 	case "media":
 		return msg.HasMedia
+
 	case "media_type":
 		if slices.Contains(condition.Value, msg.MediaType) {
 			return true
@@ -207,7 +220,7 @@ func validateFlow(flow *domain.Flow) error {
 		return errors.New("start_node not found in nodes")
 	}
 
-	// checkTransitions ensures that every transition points to a valid node.
+	// Helper to check that all transitions in a slice point to existing nodes.
 	checkTransitions := func(transitions []domain.Transition, source string) error {
 		for _, transition := range transitions {
 			if _, exists := flow.Nodes[transition.Target]; !exists {
