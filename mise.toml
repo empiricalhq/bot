@@ -13,7 +13,7 @@ run = "air"
 
 [tasks.build]
 description = "Build the app"
-run = "go build -o build/main.exe cmd/bot/main.go"
+run = "go build -o temp/main.exe cmd/bot/main.go"
 
 [tasks.test]
 description = "Run tests"
