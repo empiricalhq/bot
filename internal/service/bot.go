@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"go.mau.fi/whatsmeow"
@@ -26,6 +27,8 @@ const (
 	actionTriggerFallbackResponse   = "trigger_fallback_response"
 	actionTriggerFallbackWrongMedia = "trigger_fallback_wrong_media"
 )
+
+var unsupportedMediaTypes = []string{"audio", "sticker", "video", "document"}
 
 type Bot struct {
 	config   *config.Config
@@ -128,6 +131,32 @@ func (b *Bot) HandleEvent(evt interface{}) {
 func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.UserState, msg *message.Message, rawEvt interface{}) error {
 	logger := b.logger.With("user", msg.SenderID, "from_node", userState.CurrentNode)
 	logger.Debug("Processing message", "text", msg.Text, "has_media", msg.HasMedia)
+
+	// Early exit for unsupported media types, unless the current node is expecting them.
+	// This provides immediate, clear feedback to the user.
+	if msg.HasMedia && slices.Contains(unsupportedMediaTypes, msg.MediaType) {
+		currentNode := b.fsm.GetNode(userState.CurrentNode)
+		canHandleMedia := false
+		if currentNode != nil {
+			for _, transition := range currentNode.Transitions {
+				if transition.Condition.Type == "media_type" && slices.Contains(transition.Condition.Value, msg.MediaType) {
+					canHandleMedia = true
+					break
+				}
+			}
+		}
+
+		if !canHandleMedia {
+			logger.Info("User sent an unsupported media type. Sending feedback.", "media_type", msg.MediaType)
+			responseText := "Lo siento, no puedo procesar ese tipo de mensaje. Por favor, envíame un mensaje de texto. 😊"
+			err := b.whatsapp.SendText(ctx, msg.SenderID, responseText)
+			if err != nil {
+				logger.Error("Failed to send unsupported media message", "error", err)
+			}
+			// We stop processing here to avoid running the FSM unnecessarily.
+			return nil
+		}
+	}
 
 	originalNode := userState.CurrentNode
 
