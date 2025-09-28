@@ -109,12 +109,19 @@ func (f *fsm) DetermineNext(state *domain.UserState, msg *message.Message) (node
 		}
 	}
 
-	// 2. If no local transition matches, try global transitions (unless this node explicitly ignores them).
-	if !currentNode.IgnoreGlobalTransitions {
-		for _, transition := range f.flow.GlobalTransitions {
+	// 2. If no node transition matched, check global transitions.
+	// Normally skipped if node ignores globals, except for help requests
+	// (e.g., user types "ayuda" => always allowed).
+	for _, transition := range f.flow.GlobalTransitions {
+		isHelpTransition := transition.Target == "NEEDS_ASSISTANCE"
+
+		// Allowed if:
+		// - Node accepts globals, OR
+		// - Transition is a help override.
+		if !currentNode.IgnoreGlobalTransitions || isHelpTransition {
 			if f.matchesCondition(input, msg, transition.Condition) {
 				f.logger.Debug("Matched global transition",
-					"user", state.UserID, "from_node", state.CurrentNode, "to_node", transition.Target, "action", transition.Action, "condition_type", transition.Condition.Type)
+					"user", state.UserID, "from_node", state.CurrentNode, "to_node", transition.Target, "action", transition.Action, "condition_type", transition.Condition.Type, "is_help_override", isHelpTransition && currentNode.IgnoreGlobalTransitions)
 
 				return transition.Target, transition.Action
 			}
