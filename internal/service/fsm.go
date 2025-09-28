@@ -75,7 +75,20 @@ func (f *fsm) DetermineNext(state *domain.UserState, msg *message.Message) (node
 		}
 	}
 
-	// 3. Nothing matched => remain in current node and trigger fallback response.
+	// 3. If no transition matched, handle special fallback cases.
+	// Example: user sends a video where an image (voucher) was expected.
+	if msg.HasMedia {
+		for _, transition := range currentNode.Transitions {
+			if transition.Condition.Type == "media_type" {
+				f.logger.Debug("Matched specific fallback for wrong media type",
+					"user", state.UserID, "from_node", state.CurrentNode, "sent_media", msg.MediaType, "expected_media", transition.Condition.Value)
+
+				return state.CurrentNode, "trigger_fallback_wrong_media"
+			}
+		}
+	}
+
+	// 4. Nothing matched => remain in current node and trigger generic fallback response.
 	f.logger.Debug("No transition matched, staying in current node and triggering fallback response",
 		"user", state.UserID, "from_node", state.CurrentNode)
 

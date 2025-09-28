@@ -19,9 +19,11 @@ import (
 )
 
 const (
-	messageTimeout              = 30 * time.Second
-	fallbackEscalationThreshold = 3
-	conversationTimeout         = 24 * time.Hour
+	messageTimeout                  = 30 * time.Second
+	fallbackEscalationThreshold     = 3
+	conversationTimeout             = 24 * time.Hour
+	actionTriggerFallbackResponse   = "trigger_fallback_response"
+	actionTriggerFallbackWrongMedia = "trigger_fallback_wrong_media"
 )
 
 type Bot struct {
@@ -133,12 +135,14 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 	// 1: FSM decides the next node and action.
 	nextNode, action := b.fsm.DetermineNext(userState, msg)
 
-	if action != "trigger_fallback_response" {
-		// Reset fallback counter when user makes valid progress.
+	isGenericFallback := (action == actionTriggerFallbackResponse)
+
+	if !isGenericFallback {
+		// Reset fallback counter when user makes valid progress or gets specific guidance.
 		userState.RepromptCount = 0
 	} else {
 		userState.RepromptCount++
-		logger.Debug("Fallback triggered", "count", userState.RepromptCount)
+		logger.Debug("Generic fallback triggered", "count", userState.RepromptCount)
 
 		if userState.RepromptCount >= fallbackEscalationThreshold {
 			// Example: user keeps typing nonsense (e.g. '???') => escalate to human.
@@ -150,7 +154,13 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 		}
 	}
 
-	if action == "trigger_fallback_response" {
+	switch action {
+	case actionTriggerFallbackWrongMedia:
+		logger.Debug("Handling specific fallback for wrong media type", "node", originalNode)
+
+		responseText = "Parece que enviaste un tipo de archivo incorrecto. Por favor, asegúrate de enviar una **imagen** (foto) para que pueda procesarlo. Gracias 😊"
+
+	case actionTriggerFallbackResponse:
 		fallbackNode := b.fsm.GetNode(originalNode)
 
 		// A terminal node has a message but no transitions.
@@ -189,7 +199,8 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 			nextNode = b.fsm.GetStartNode()
 			responseText = b.generateResponse(nextNode, userState)
 		}
-	} else {
+
+	default:
 		// Handles both normal transitions and escalations.
 		logger.Debug("FSM determined next state", "to_node", nextNode, "action", action)
 
