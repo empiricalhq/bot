@@ -367,7 +367,7 @@
     "ADVANCED_MENU_THEMES": {
       "message": {
         "type": "text",
-        "content": "*FLORES Y DISEÑOS TEMÁTICOS*\n\nAprende a crear piezas inspiradas en la naturaleza y ocasiones especiales.\n\n*FLORES* → Flores para Mamá\n*MAMA* → Joyas para Mamá\n\n*VOLVER* → Ver otras categorías"
+        "content": "*FLORES Y DISEÑOS TEMÁTICOS*\n\nAprende a crear piezas inspiradas en la naturaleza y ocasiones especiales.\n\n*FLORES* → Curso de Diseños Florales\n*MAMA* → Curso de Joyas Temáticas (Especial Mamá)\n\n*VOLVER* → Ver otras categorías"
       },
       "include_transitions": "advanced_course_options",
       "transitions": [
@@ -896,6 +896,22 @@
           "target": "NEEDS_ASSISTANCE"
         },
         {
+          "condition": { "type": "media_type", "value": ["image"] },
+          "target": "PAYMENT_CONFIRMED_ACK_EXTRA"
+        },
+        {
+          "condition": { "type": "any_text" },
+          "target": "MAIN_MENU"
+        }
+      ]
+    },
+    "PAYMENT_CONFIRMED_ACK_EXTRA": {
+      "message": {
+        "type": "text",
+        "content": "¡Gracias! Ya recibí tu comprobante principal. Mis asesoras lo revisarán todo junto. 😊\n\n¿Puedo ayudarte con algo más?"
+      },
+      "transitions": [
+        {
           "condition": { "type": "any_text" },
           "target": "MAIN_MENU"
         }
@@ -914,6 +930,13 @@
             "value": ["urgente", "urge", "emergencia"]
           },
           "target": "URGENT_ASSISTANCE"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["menu", "volver", "inicio", "principal"]
+          },
+          "target": "MAIN_MENU"
         }
       ]
     },
