@@ -17,6 +17,8 @@ import (
 	"whatsbot/internal/nameparser"
 )
 
+var ErrInvalidName = errors.New("invalid name provided")
+
 type ActionHandler interface {
 	Execute(action string, state *domain.UserState, msg *message.Message, rawEvt interface{}, originatingNodeID string) error
 }
@@ -115,7 +117,7 @@ func (a *actionHandler) saveUserName(state *domain.UserState, msg *message.Messa
 	if nameparser.Parse(finalNameToSave) == "" {
 		a.logger.Warn("Invalid name input ignored during update attempt", "user", state.UserID, "input", finalNameToSave)
 
-		return nil
+		return ErrInvalidName
 	}
 
 	state.UserName = finalNameToSave

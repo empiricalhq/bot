@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -208,10 +209,17 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 			err := b.actions.Execute(action, userState, msg, rawEvt, originalNode)
 			if err != nil {
 				logger.Error("Action failed", "action", action, "error", err)
+
+				if errors.Is(err, ErrInvalidName) {
+					responseText = "No pude reconocer eso como un nombre. ¿Podrías intentarlo de nuevo, por favor?"
+					nextNode = originalNode // Stay in the current node to re-prompt
+				}
 			}
 		}
 
-		responseText = b.generateResponse(nextNode, userState)
+		if responseText == "" {
+			responseText = b.generateResponse(nextNode, userState)
+		}
 	}
 
 	// Update state.
