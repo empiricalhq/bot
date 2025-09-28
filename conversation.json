@@ -153,6 +153,7 @@
         "content": "¡Hola, {{name}}! 💕 Soy un asistente de la Escuela de Joyería Tejida del Perú ✨\n\n¡Felicitaciones por tu deseo de aprender y emprender con esta hermosa técnica!\n\nPermíteme comentarte algo importante:\n\n👉 Nosotros somos Escuela de Joyería Tejida Perú de la maestra *Magally Juro* y tenemos más de *15 años en el mercado*, formando *alumnas y marcas de joyería tejida* en toda América Latina 🌎\n\nY esto lo hacemos a través de Cursos Modalidad Online, Modalidad Presencial, Seminarios internacionales etc.\n\nTe invito a conocer más de la maestra Magally Juro, diseñadora de joyas:\n📹 https://youtu.be/U2E4qRlGMM8\n\nAhora cuéntame:\n\n¿Tú ya sabes joyería tejida o deseas empezar desde cero?\n\n*1* → Desde Cero\n*2* → Ya tengo experiencia\n\n_(Si prefieres que no use tu nombre, escribe 'sin nombre')_"
       },
       "action": "create_new_lead",
+      "include_transitions": "main_menu_options",
       "transitions": [
         {
           "condition": {
@@ -283,6 +284,13 @@
         {
           "condition": { "type": "keyword", "value": ["presencial"] },
           "target": "CONSULTED_PRESENCIAL"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["volver", "atras", "atrás"]
+          },
+          "target": "INTERESTED_IN_BEGINNER"
         }
       ]
     },
@@ -316,6 +324,13 @@
         {
           "condition": { "type": "keyword", "value": ["online"] },
           "target": "CONSULTED_ONLINE"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["volver", "atras", "atrás"]
+          },
+          "target": "INTERESTED_IN_BEGINNER"
         }
       ]
     },
@@ -383,6 +398,13 @@
             ]
           },
           "target": "CONSULTED_SCHEDULE"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["volver", "atras", "atrás"]
+          },
+          "target": "INTERESTED_IN_BEGINNER"
         }
       ]
     },
