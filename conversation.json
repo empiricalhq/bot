@@ -34,7 +34,15 @@
     {
       "condition": {
         "type": "keyword",
-        "value": ["menu", "volver", "inicio", "principal"]
+        "value": [
+          "menu",
+          "volver",
+          "inicio",
+          "principal",
+          "hola",
+          "buenos dias",
+          "buenas"
+        ]
       },
       "target": "MAIN_MENU"
     },
@@ -229,7 +237,7 @@
     "INTERESTED_IN_ADVANCED": {
       "message": {
         "type": "text",
-        "content": "¡Eso es genial, {{name}}! 🙌\n\nEn tu caso lo mejor son los *Cursos Avanzados*, tenemos más de *8 opciones* diseñadas para:\n\n💎 Cada clase ha sido diseñada por la maestra Magally Juro y te permitirá perfeccionar tu técnica\n💎 Innovar con nuevos diseños\n💎 Te actualizarás en lo último de la Joyería Tejida o Tecnología de Manufactura en Punto Peruano\n💎 Y contarás con el acompañamiento de la maestra Magally Juro para consultas vía WhatsApp\n\n📹 *VER RESUMEN DE CURSOS AVANZADOS:*\nhttps://www.youtube.com/watch?v=dOeCIBkbfqI\n\n*¿Cómo son las clases?*\n• Son de Acceso automático\n• Las clases ya están grabadas\n• Puedes ver las veces que desees\n\n¿Qué curso te interesa?\n\n*CORAZON* → Curso Joyas Modelo Corazón\n*ANILLOS* → Festival de Anillos\n*VIBRACIONES* → Joyas Tejidas Vibraciones\n*MAMA* → Joyas para Mamá\n*HELICOIDALES* → Joyas Helicoidales\n*FLORES* → Flores para Mamá\n*TIARAS* → Tiaras y Tocados\n*CATALOGO* → Ver todos los cursos\n*VOLVER* → Regresar al menú anterior"
+        "content": "¡Eso es genial, {{name}}! 🙌\n\nEn tu caso lo mejor son los *Cursos Avanzados*, tenemos más de *8 opciones* diseñadas para:\n\n💎 Cada clase ha sido diseñada por la maestra Magally Juro y te permitirá perfeccionar tu técnica\n💎 Innovar con nuevos diseños\n💎 Te actualizarás en lo último de la Joyería Tejida o Tecnología de Manufactura en Punto Peruano\n💎 Y contarás con el acompañamiento de la maestra Magally Juro para consultas vía WhatsApp\n\n📹 *VER RESUMEN DE CURSOS AVANZADOS:*\nhttps://www.youtube.com/watch?v=dOeCIBkbfqI\n\n*¿Cómo son las clases?*\n• Son de Acceso automático\n• Las clases ya están grabadas\n• Puedes ver las veces que desees\n\n¿Qué curso te interesa?\n\n*CORAZON* → Curso Joyas Modelo Corazón\n*ANILLOS* → Festival de Anillos\n*VIBRACIONES* → Joyas Tejidas Vibraciones\n*MAMA* → Joyas para Mamá\n*HELICOIDALES* → Joyas Helicoidales\n*FLORES* → Flores para Mamá\n*TIARAS* → Tiaras y Tocados\n*CATALOGO* → Ver todos los cursos\n*MENU* → Volver al menú principal"
       },
       "action": "update_lead_interest_advanced",
       "include_transitions": "advanced_course_options",
@@ -244,7 +252,7 @@
         {
           "condition": {
             "type": "keyword",
-            "value": ["volver", "atras", "atrás"]
+            "value": ["menu", "inicio", "principal"]
           },
           "target": "MAIN_MENU"
         }
@@ -717,12 +725,6 @@
       "message": {
         "type": "text",
         "content": "¡Ha sido un placer ayudarte! 😊\n\nRecuerda que estamos aquí cuando lo necesites.\nSolo escribe *HOLA* para volver a empezar.\n\n¡Que tengas un excelente día! ✨"
-      }
-    },
-    "QUICK_RESPONSES": {
-      "message": {
-        "type": "text",
-        "content": "¡Perfecto! 💕 Si necesitas algo más, aquí estoy para ayudarte."
       }
     }
   }
