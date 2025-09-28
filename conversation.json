@@ -68,7 +68,7 @@
           "type": "exact",
           "value": ["2", "avanzado", "experiencia", "intermedio"]
         },
-        "target": "INTERESTED_IN_ADVANCED_INTRO"
+        "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
       },
       {
         "condition": { "type": "keyword", "value": ["online"] },
@@ -174,7 +174,7 @@
             "type": "exact",
             "value": ["2", "avanzado", "experiencia", "intermedio"]
           },
-          "target": "INTERESTED_IN_ADVANCED_INTRO"
+          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
         }
       ]
     },
@@ -224,7 +224,7 @@
       "title": "CURSO INTEGRAL DE JOYERÍA TEJIDA",
       "message": {
         "type": "text",
-        "content": "Perfecto, {{name}} 🌸\n\nSi no tienes ningún conocimiento de la técnica de joyería tejida a crochet con hilos metálicos y deseas empezar desde cero, te sugiero el *Curso Integral de Joyería Tejida* 👑\n\nEste incluye los tres niveles: *básico, intermedio y avanzado*.\n\n✔️ Puedes llevarlo *online* o *presencial*\n✔️ No requieres experiencia previa\n✔️ Se te acompaña y guía paso a paso hasta crear tus propias piezas\n✔️ Logras joyas que te permiten recuperar tu inversión desde el primer nivel\n✔️ Recibes Charlas de gestión en Joyería Tejida\n✔️ Recibes E-Books o material de apoyo por clase\n✔️ Y formarás parte de la comunidad más grande de habla hispana que conoce y ama la joyería tejida\n\n¿Qué modalidad prefieres?\n\n*ONLINE* → Ver detalles del Curso Online\n*PRESENCIAL* → Ver detalles del Curso Presencial\n*PRECIO* → Ver precios y formas de pago\n*MENU* → Volver al inicio"
+        "content": "Perfecto, {{name}} 🌸\n\nPara quienes empiezan desde cero, nuestro curso principal es el *Curso Integral de Joyería Tejida* 👑\n\nEste incluye los tres niveles: *básico, intermedio y avanzado*.\n\n✔️ Puedes llevarlo *online* o *presencial*\n✔️ No requieres experiencia previa\n✔️ Se te acompaña y guía paso a paso hasta crear tus propias piezas\n✔️ Logras joyas que te permiten recuperar tu inversión desde el primer nivel\n✔️ Recibes Charlas de gestión en Joyería Tejida\n✔️ Recibes E-Books o material de apoyo por clase\n✔️ Y formarás parte de la comunidad más grande de habla hispana que conoce y ama la joyería tejida\n\n¿Qué modalidad prefieres?\n\n*ONLINE* → Ver detalles del Curso Online\n*PRESENCIAL* → Ver detalles del Curso Presencial\n*PRECIO* → Ver precios y formas de pago\n*MENU* → Volver al inicio"
       },
       "action": "update_lead_interest_beginner",
       "transitions": [
@@ -252,34 +252,12 @@
         }
       ]
     },
-    "INTERESTED_IN_ADVANCED_INTRO": {
-      "message": {
-        "type": "text",
-        "content": "¡Eso es genial, {{name}}! 🙌\n\nPara personas con experiencia como tú, tenemos más de *8 cursos avanzados* diseñados para perfeccionar tu técnica e innovar con nuevos diseños.\n\nTodas las clases son diseñadas por la maestra Magally Juro, son de acceso inmediato y puedes verlas las veces que desees.\n\n📹 *VER RESUMEN DE CURSOS AVANZADOS:*\nhttps://www.youtube.com/watch?v=dOeCIBkbfqI\n\nEscribe *VER CURSOS* para mostrarte el catálogo completo."
-      },
-      "action": "update_lead_interest_advanced",
-      "transitions": [
-        {
-          "condition": {
-            "type": "keyword",
-            "value": [
-              "ver cursos",
-              "cursos",
-              "catalogo",
-              "catálogo",
-              "ok",
-              "si"
-            ]
-          },
-          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
-        }
-      ]
-    },
     "INTERESTED_IN_ADVANCED_CATEGORIES": {
       "message": {
         "type": "text",
-        "content": "¡Perfecto! Nuestros cursos avanzados se agrupan en categorías para que encuentres justo lo que buscas.\n\n¿Qué te gustaría aprender a crear?\n\n*1* → TÉCNICAS ESPECIALES (Corazón, Vibraciones, Helicoidales)\n*2* → ANILLOS Y ACCESORIOS (Tiaras y Tocados)\n*3* → FLORES Y DISEÑOS TEMÁTICOS\n\n*CATALOGO* → Ver todos los cursos\n*MENU* → Volver al menú principal"
+        "content": "¡Perfecto! ✨ Nuestros cursos avanzados se agrupan por especialidad.\n\nElige una categoría para ver los talleres:\n\n*1* → Técnicas Especiales\n*2* → Anillos y Accesorios\n*3* → Flores y Diseños\n\n*TODOS* → Ver el catálogo completo\n*MENU* → Volver"
       },
+      "action": "update_lead_interest_advanced",
       "transitions": [
         {
           "condition": {
@@ -298,14 +276,14 @@
         {
           "condition": {
             "type": "exact",
-            "value": ["3", "flores", "tematicos"]
+            "value": ["3", "flores", "diseños", "tematicos"]
           },
           "target": "ADVANCED_MENU_THEMES"
         },
         {
           "condition": {
             "type": "keyword",
-            "value": ["catalogo", "catálogo", "todos"]
+            "value": ["catalogo", "catálogo", "todos", "completo"]
           },
           "target": "CONSULTED_CATALOG"
         },
@@ -540,7 +518,7 @@
             "type": "keyword",
             "value": ["volver", "atras", "atrás"]
           },
-          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
+          "target": "ADVANCED_MENU_TECHNIQUES"
         },
         {
           "condition": {
@@ -571,7 +549,7 @@
             "type": "keyword",
             "value": ["volver", "atras", "atrás"]
           },
-          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
+          "target": "ADVANCED_MENU_ACCESSORIES"
         },
         {
           "condition": {
@@ -602,7 +580,7 @@
             "type": "keyword",
             "value": ["volver", "atras", "atrás"]
           },
-          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
+          "target": "ADVANCED_MENU_TECHNIQUES"
         },
         {
           "condition": {
@@ -633,7 +611,7 @@
             "type": "keyword",
             "value": ["volver", "atras", "atrás"]
           },
-          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
+          "target": "ADVANCED_MENU_THEMES"
         },
         {
           "condition": {
@@ -664,7 +642,7 @@
             "type": "keyword",
             "value": ["volver", "atras", "atrás"]
           },
-          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
+          "target": "ADVANCED_MENU_TECHNIQUES"
         },
         {
           "condition": {
@@ -695,7 +673,7 @@
             "type": "keyword",
             "value": ["volver", "atras", "atrás"]
           },
-          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
+          "target": "ADVANCED_MENU_THEMES"
         },
         {
           "condition": {
@@ -726,7 +704,7 @@
             "type": "keyword",
             "value": ["volver", "atras", "atrás"]
           },
-          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
+          "target": "ADVANCED_MENU_ACCESSORIES"
         },
         {
           "condition": {
@@ -778,7 +756,7 @@
         },
         {
           "condition": { "type": "exact", "value": ["2"] },
-          "target": "INTERESTED_IN_ADVANCED_INTRO"
+          "target": "INTERESTED_IN_ADVANCED_CATEGORIES"
         },
         {
           "condition": {
@@ -887,7 +865,7 @@
         },
         {
           "condition": { "type": "any_text" },
-          "target": "CONVERSATION_CLOSED"
+          "target": "MAIN_MENU"
         }
       ]
     },
