@@ -161,8 +161,7 @@
             "value": ["2", "avanzado", "experiencia", "intermedio"]
           },
           "target": "INTERESTED_IN_ADVANCED"
-        },
-        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+        }
       ]
     },
     "NAME_REMOVED_CONFIRMATION": {
@@ -594,6 +593,29 @@
             "type": "keyword",
             "value": ["no", "cancelar", "volver", "atras", "atrás"]
           },
+          "target": "ENROLLMENT_CANCELLED"
+        }
+      ]
+    },
+    "ENROLLMENT_CANCELLED": {
+      "message": {
+        "type": "text",
+        "content": "Entendido. No hay problema.\n\n¿Deseas explorar otras opciones o volver al menú principal?\n\n*1* → Ver cursos desde cero\n*2* → Ver cursos avanzados\n*MENU* → Volver al inicio"
+      },
+      "transitions": [
+        {
+          "condition": { "type": "exact", "value": ["1"] },
+          "target": "INTERESTED_IN_BEGINNER"
+        },
+        {
+          "condition": { "type": "exact", "value": ["2"] },
+          "target": "INTERESTED_IN_ADVANCED"
+        },
+        {
+          "condition": {
+            "type": "keyword",
+            "value": ["menu", "inicio", "volver"]
+          },
           "target": "MAIN_MENU"
         }
       ]
@@ -686,7 +708,9 @@
         "type": "text",
         "content": "¡Ha sido un placer ayudarte! 😊\n\nRecuerda que estamos aquí cuando lo necesites.\nSolo escribe *HOLA* para volver a empezar.\n\n¡Que tengas un excelente día! ✨"
       },
-      "transitions": []
+      "transitions": [
+        { "condition": { "type": "any_text" }, "target": "MAIN_MENU" }
+      ]
     },
     "QUICK_RESPONSES": {
       "message": {
