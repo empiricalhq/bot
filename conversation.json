@@ -42,13 +42,6 @@
     {
       "condition": {
         "type": "keyword",
-        "value": ["gracias", "ok", "bien"]
-      },
-      "target": "QUICK_RESPONSES"
-    },
-    {
-      "condition": {
-        "type": "keyword",
         "value": ["adios", "bye", "hasta luego", "no gracias"]
       },
       "target": "CONVERSATION_CLOSED"
