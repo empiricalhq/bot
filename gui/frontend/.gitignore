@@ -6,8 +6,8 @@ node_modules
 .netlify
 .wrangler
 /.svelte-kit
-/build
-/frontend/build
+/src/lib/wailsjs
+*.md5
 
 # OS
 .DS_Store
