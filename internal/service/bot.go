@@ -30,14 +30,18 @@ const (
 
 var unsupportedMediaTypes = []string{"audio", "sticker", "video", "document"}
 
+// OnMessageFunc defines the callback signature for message events.
+type OnMessageFunc func(direction, userID, userName, text string)
+
 type Bot struct {
-	config   *config.Config
-	repo     repository.Repository
-	fsm      FSM
-	actions  ActionHandler
-	renderer template.Renderer
-	whatsapp WhatsAppClient
-	logger   *slog.Logger
+	config    *config.Config
+	repo      repository.Repository
+	fsm       FSM
+	actions   ActionHandler
+	renderer  template.Renderer
+	whatsapp  WhatsAppClient
+	logger    *slog.Logger
+	onMessage OnMessageFunc
 }
 
 type WhatsAppClient interface {
@@ -54,15 +58,17 @@ func NewBot(
 	renderer template.Renderer,
 	whatsapp WhatsAppClient,
 	logger *slog.Logger,
+	onMessage OnMessageFunc,
 ) *Bot {
 	return &Bot{
-		config:   config,
-		repo:     repo,
-		fsm:      fsm,
-		actions:  actions,
-		renderer: renderer,
-		whatsapp: whatsapp,
-		logger:   logger,
+		config:    config,
+		repo:      repo,
+		fsm:       fsm,
+		actions:   actions,
+		renderer:  renderer,
+		whatsapp:  whatsapp,
+		logger:    logger,
+		onMessage: onMessage,
 	}
 }
 
@@ -109,14 +115,14 @@ func (b *Bot) HandleEvent(evt interface{}) {
 	// Get user state. This step also handles onboarding new users.
 	userState, isNewUser, err := b.getOrCreateUserState(ctx, msg)
 	if err != nil {
-		b.logger.Error("Failed to get or create user state", "error", err, "user", msg.SenderID)
+		b.logger.Error("failed to get or create user state", "error", err, "user", msg.SenderID)
 
 		return
 	}
 
 	// If the user is new, their onboarding is complete. Stop here.
 	if isNewUser {
-		b.logger.Info("New user onboarded and greeted", "user", msg.SenderID)
+		b.logger.Info("new user onboarded and greeted", "user", msg.SenderID)
 
 		return
 	}
@@ -124,13 +130,18 @@ func (b *Bot) HandleEvent(evt interface{}) {
 	// If the user already exists, process their message through the FSM.
 	err = b.processExistingUserMessage(ctx, userState, msg, msgEvent)
 	if err != nil {
-		b.logger.Error("Message processing failed for existing user", "error", err, "user", msg.SenderID)
+		b.logger.Error("message processing failed for existing user", "error", err, "user", msg.SenderID)
 	}
 }
 
 func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.UserState, msg *message.Message, rawEvt interface{}) error {
 	logger := b.logger.With("user", msg.SenderID, "from_node", userState.CurrentNode)
 	logger.Debug("Processing message", "text", msg.Text, "has_media", msg.HasMedia)
+
+	// Invoke the message callback for inbound messages.
+	if b.onMessage != nil {
+		b.onMessage("inbound", msg.SenderID, msg.PushName, msg.Text)
+	}
 
 	// Early exit for unsupported media types, unless the current node is expecting them.
 	// This provides immediate, clear feedback to the user.
@@ -292,6 +303,11 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 	}
 
 	if responseText != "" {
+		// Invoke the message callback for outbound messages.
+		if b.onMessage != nil {
+			b.onMessage("outbound", msg.SenderID, "Bot", responseText)
+		}
+
 		err := b.whatsapp.SendText(ctx, msg.SenderID, responseText)
 		if err != nil {
 			logger.Error("Failed to send message", "error", err)
@@ -358,6 +374,11 @@ func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message) (s
 		}
 
 		if responseText != "" {
+			// Invoke the message callback for the initial outbound message.
+			if b.onMessage != nil {
+				b.onMessage("outbound", msg.SenderID, "Bot", responseText)
+			}
+
 			err := b.whatsapp.SendText(ctx, msg.SenderID, responseText)
 			if err != nil {
 				b.logger.Error("Failed to send welcome message to new user", "error", err)
