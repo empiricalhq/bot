@@ -6,10 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"time"
 
-	"github.com/mdp/qrterminal/v3"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/store/sqlstore"
@@ -84,7 +82,11 @@ func (c *Client) GetJID() types.JID {
 	return *c.Store.ID
 }
 
-func LoginWithQR(client *whatsmeow.Client, logger *slog.Logger) error {
+func LoginWithQR(client *whatsmeow.Client, logger *slog.Logger, onQRCode func(qrCode string)) error {
+	if onQRCode == nil {
+		return errors.New("onQRCode callback cannot be nil")
+	}
+
 	qrChan, err := client.GetQRChannel(context.Background())
 	if err != nil {
 		return err
@@ -98,7 +100,7 @@ func LoginWithQR(client *whatsmeow.Client, logger *slog.Logger) error {
 	for evt := range qrChan {
 		switch evt.Event {
 		case "code":
-			qrterminal.GenerateHalfBlock(evt.Code, qrterminal.L, os.Stdout)
+			onQRCode(evt.Code)
 		case "success":
 			logger.Info("QR login successful")
 
