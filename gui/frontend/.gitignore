@@ -1,4 +1,6 @@
 node_modules
+!build
+src/lib/wailsjs
 
 # Output
 .output
@@ -6,7 +8,6 @@ node_modules
 .netlify
 .wrangler
 /.svelte-kit
-/src/lib/wailsjs
 *.md5
 
 # OS
