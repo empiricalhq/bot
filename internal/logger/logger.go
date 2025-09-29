@@ -10,16 +10,16 @@ import (
 	"time"
 )
 
-// Dispatcher writes logs to a file and optionally to the console.
-// Console output can be disabled, and logs with "component=whatsmeow"
-// are excluded from console output.
+// Dispatcher fans out log records to multiple slog.Handlers (console, file, GUI, etc.).
 type Dispatcher struct {
-	consoleHandler slog.Handler
-	fileHandler    slog.Handler
-	disableConsole bool
+	handlers []slog.Handler
 }
 
-func New(level string) (*slog.Logger, io.Closer, error) {
+// New sets up a slog.Logger with console + file logging, plus any extra handlers.
+// - Console logs are time-trimmed (HH:MM:SS).
+// - File logs are written to "log/bot_<timestamp>.log".
+// - Additional handlers can be injected (e.g. GUI log handler).
+func New(level string, extraHandlers ...slog.Handler) (*slog.Logger, io.Closer, error) {
 	if err := os.MkdirAll("log", 0o755); err != nil {
 		return nil, nil, fmt.Errorf("could not create log directory: %w", err)
 	}
@@ -51,10 +51,18 @@ func New(level string) (*slog.Logger, io.Closer, error) {
 		Level: logLevel,
 	})
 
+	// base handlers are always console and file.
+	handlers := []slog.Handler{
+		// a custom handler to filter out whatsmeow from console
+		newConsoleFilter(consoleHandler),
+		fileHandler,
+	}
+
+	// add any extra handlers provided.
+	handlers = append(handlers, extraHandlers...)
+
 	dispatcher := &Dispatcher{
-		consoleHandler: consoleHandler,
-		fileHandler:    fileHandler,
-		disableConsole: false,
+		handlers: handlers,
 	}
 
 	logger := slog.New(dispatcher)
@@ -62,62 +70,80 @@ func New(level string) (*slog.Logger, io.Closer, error) {
 	return logger, logFile, nil
 }
 
-// Enabled returns true if the file handler allows the given log level.
-// Console handler is ignored here since it can be disabled.
+// Enabled returns true if any underlying handler is enabled for the given level.
 func (d *Dispatcher) Enabled(ctx context.Context, level slog.Level) bool {
-	return d.fileHandler.Enabled(ctx, level)
-}
-
-// Handle always writes the record to the file.
-// Console output is skipped if disableConsole is true.
-func (d *Dispatcher) Handle(ctx context.Context, r slog.Record) error {
-	err := d.fileHandler.Handle(ctx, r)
-	if err != nil {
-		return err
-	}
-
-	if !d.disableConsole {
-		return d.consoleHandler.Handle(ctx, r)
-	}
-
-	return nil
-}
-
-// WithAttrs returns a new Dispatcher with added attributes.
-// If the "component" is "whatsmeow", console output is disabled
-// for this handler and all derived ones.
-func (d *Dispatcher) WithAttrs(attrs []slog.Attr) slog.Handler {
-	isWhatsmeow := false
-
-	for _, a := range attrs {
-		if a.Key == "component" && a.Value.String() == "whatsmeow" {
-			isWhatsmeow = true
-
-			break
+	for _, h := range d.handlers {
+		if h.Enabled(ctx, level) {
+			return true
 		}
 	}
 
-	newDispatcher := &Dispatcher{
-		consoleHandler: d.consoleHandler.WithAttrs(attrs),
-		fileHandler:    d.fileHandler.WithAttrs(attrs),
-		disableConsole: d.disableConsole,
-	}
-
-	if isWhatsmeow {
-		newDispatcher.disableConsole = true
-	}
-
-	return newDispatcher
+	return false
 }
 
-// WithGroup returns a new Dispatcher with the group applied.
-// The disableConsole flag is carried over.
-func (d *Dispatcher) WithGroup(name string) slog.Handler {
-	return &Dispatcher{
-		consoleHandler: d.consoleHandler.WithGroup(name),
-		fileHandler:    d.fileHandler.WithGroup(name),
-		disableConsole: d.disableConsole,
+// Handle forwards a log record to all handlers, returning the first error (if any).
+func (d *Dispatcher) Handle(ctx context.Context, r slog.Record) error {
+	var firstErr error
+
+	for _, h := range d.handlers {
+		err := h.Handle(ctx, r)
+		if err != nil && firstErr == nil {
+			firstErr = err
+		}
 	}
+
+	return firstErr
+}
+
+// WithAttrs applies attrs to all handlers and returns a new Dispatcher.
+func (d *Dispatcher) WithAttrs(attrs []slog.Attr) slog.Handler {
+	newHandlers := make([]slog.Handler, len(d.handlers))
+	for i, h := range d.handlers {
+		newHandlers[i] = h.WithAttrs(attrs)
+	}
+
+	return &Dispatcher{handlers: newHandlers}
+}
+
+// WithGroup applies a group to all handlers and returns a new Dispatcher.
+func (d *Dispatcher) WithGroup(name string) slog.Handler {
+	newHandlers := make([]slog.Handler, len(d.handlers))
+	for i, h := range d.handlers {
+		newHandlers[i] = h.WithGroup(name)
+	}
+
+	return &Dispatcher{handlers: newHandlers}
+}
+
+// consoleFilter wraps a handler but suppresses logs with component=whatsmeow.
+// Used to keep WhatsApp logs out of console while still writing to file.
+type consoleFilter struct {
+	slog.Handler
+}
+
+func newConsoleFilter(handler slog.Handler) *consoleFilter {
+	return &consoleFilter{Handler: handler}
+}
+
+// Handle filters out "component=whatsmeow" before delegating to the inner handler.
+func (h *consoleFilter) Handle(ctx context.Context, r slog.Record) error {
+	isWhatsmeow := false
+
+	r.Attrs(func(a slog.Attr) bool {
+		if a.Key == "component" && a.Value.String() == "whatsmeow" {
+			isWhatsmeow = true
+
+			return false // stop iterating
+		}
+
+		return true
+	})
+
+	if isWhatsmeow {
+		return nil // skip this record
+	}
+
+	return h.Handler.Handle(ctx, r)
 }
 
 func parseLevel(levelStr string) slog.Level {

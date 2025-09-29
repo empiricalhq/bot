@@ -30,16 +30,28 @@ const (
 
 var unsupportedMediaTypes = []string{"audio", "sticker", "video", "document"}
 
+// OnMessageFunc defines the callback signature for message events.
+type OnMessageFunc func(direction, userID, userName, text string)
+
+// Bot orchestrates the WhatsBot runtime:
+// - Handles incoming WA events
+// - Manages user state (via FSM + repo)
+// - Executes actions
+// - Renders messages and sends responses
+// - Applies safeguards (timeouts, ignored users, fallbacks).
 type Bot struct {
-	config   *config.Config
-	repo     repository.Repository
-	fsm      FSM
-	actions  ActionHandler
-	renderer template.Renderer
-	whatsapp WhatsAppClient
-	logger   *slog.Logger
+	config    *config.Config
+	repo      repository.Repository
+	fsm       FSM
+	actions   ActionHandler
+	renderer  template.Renderer
+	whatsapp  WhatsAppClient
+	logger    *slog.Logger
+	onMessage OnMessageFunc
 }
 
+// WhatsAppClient abstracts the minimal WA client methods
+// so Bot can run against real or mocked implementations.
 type WhatsAppClient interface {
 	SendText(ctx context.Context, to, text string) error
 	GetJID() types.JID
@@ -54,18 +66,25 @@ func NewBot(
 	renderer template.Renderer,
 	whatsapp WhatsAppClient,
 	logger *slog.Logger,
+	onMessage OnMessageFunc,
 ) *Bot {
 	return &Bot{
-		config:   config,
-		repo:     repo,
-		fsm:      fsm,
-		actions:  actions,
-		renderer: renderer,
-		whatsapp: whatsapp,
-		logger:   logger,
+		config:    config,
+		repo:      repo,
+		fsm:       fsm,
+		actions:   actions,
+		renderer:  renderer,
+		whatsapp:  whatsapp,
+		logger:    logger,
+		onMessage: onMessage,
 	}
 }
 
+// HandleEvent is the entry point for all WhatsApp events.
+// - Filters out non-messages and self-messages
+// - Converts WA event => internal message
+// - Retrieves or initializes user state
+// - Routes existing users into FSM for processing.
 func (b *Bot) HandleEvent(evt interface{}) {
 	msgEvent, ok := evt.(*events.Message)
 	if !ok {
@@ -109,14 +128,14 @@ func (b *Bot) HandleEvent(evt interface{}) {
 	// Get user state. This step also handles onboarding new users.
 	userState, isNewUser, err := b.getOrCreateUserState(ctx, msg)
 	if err != nil {
-		b.logger.Error("Failed to get or create user state", "error", err, "user", msg.SenderID)
+		b.logger.Error("failed to get or create user state", "error", err, "user", msg.SenderID)
 
 		return
 	}
 
 	// If the user is new, their onboarding is complete. Stop here.
 	if isNewUser {
-		b.logger.Info("New user onboarded and greeted", "user", msg.SenderID)
+		b.logger.Info("new user onboarded and greeted", "user", msg.SenderID)
 
 		return
 	}
@@ -124,13 +143,25 @@ func (b *Bot) HandleEvent(evt interface{}) {
 	// If the user already exists, process their message through the FSM.
 	err = b.processExistingUserMessage(ctx, userState, msg, msgEvent)
 	if err != nil {
-		b.logger.Error("Message processing failed for existing user", "error", err, "user", msg.SenderID)
+		b.logger.Error("message processing failed for existing user", "error", err, "user", msg.SenderID)
 	}
 }
 
+// processExistingUserMessage runs the FSM for a returning user:
+// 1. Logs inbound message + invokes callback
+// 2. Checks unsupported media (and replies if needed)
+// 3. Determines next FSM node + action
+// 4. Handles fallbacks (generic / wrong media / terminal nodes)
+// 5. Executes actions (with error recovery + escalation)
+// 6. Generates response, saves state, sends outbound message.
 func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.UserState, msg *message.Message, rawEvt interface{}) error {
 	logger := b.logger.With("user", msg.SenderID, "from_node", userState.CurrentNode)
 	logger.Debug("Processing message", "text", msg.Text, "has_media", msg.HasMedia)
+
+	// Invoke the message callback for inbound messages.
+	if b.onMessage != nil {
+		b.onMessage("inbound", msg.SenderID, msg.PushName, msg.Text)
+	}
 
 	// Early exit for unsupported media types, unless the current node is expecting them.
 	// This provides immediate, clear feedback to the user.
@@ -157,7 +188,7 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 			if err != nil {
 				logger.Error("Failed to send unsupported media message", "error", err)
 			}
-			// We stop processing here to avoid running the FSM unnecessarily.
+
 			return nil
 		}
 	}
@@ -292,6 +323,11 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 	}
 
 	if responseText != "" {
+		// Invoke the message callback for outbound messages.
+		if b.onMessage != nil {
+			b.onMessage("outbound", msg.SenderID, "Bot", responseText)
+		}
+
 		err := b.whatsapp.SendText(ctx, msg.SenderID, responseText)
 		if err != nil {
 			logger.Error("Failed to send message", "error", err)
@@ -308,8 +344,10 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 	return nil
 }
 
-// getOrCreateUserState retrieves a user's state. If the user does not exist,
-// it creates a new state, sends the initial greeting, and returns isNew=true.
+// getOrCreateUserState ensures a user has a state in the repo:
+// - If found and stale (>24h), resets to start node
+// - If new, initializes state, sends greeting, persists
+// Returns state + a flag (isNewUser).
 func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message) (state *domain.UserState, isNew bool, err error) {
 	userState, err := b.repo.GetUserState(ctx, msg.SenderID)
 	if err != nil {
@@ -358,6 +396,11 @@ func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message) (s
 		}
 
 		if responseText != "" {
+			// Invoke the message callback for the initial outbound message.
+			if b.onMessage != nil {
+				b.onMessage("outbound", msg.SenderID, "Bot", responseText)
+			}
+
 			err := b.whatsapp.SendText(ctx, msg.SenderID, responseText)
 			if err != nil {
 				b.logger.Error("Failed to send welcome message to new user", "error", err)
@@ -370,6 +413,8 @@ func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message) (s
 	return userState, false, nil
 }
 
+// generateResponse fetches the FSM node's message content,
+// fills it with template data, and returns the rendered text.
 func (b *Bot) generateResponse(nodeID string, state *domain.UserState) string {
 	node := b.fsm.GetNode(nodeID)
 	if node == nil {
@@ -389,6 +434,10 @@ func (b *Bot) generateResponse(nodeID string, state *domain.UserState) string {
 	return b.renderer.Render(node.Message.Content, data)
 }
 
+// prepareTemplateData builds a data map for template rendering:
+// - Normalizes user's name via the nameparser
+// - Inserts dynamic greeting (welcome vs returning)
+// - Injects selected course name if available.
 func (b *Bot) prepareTemplateData(state *domain.UserState) map[string]string {
 	data := make(map[string]string)
 
@@ -429,6 +478,8 @@ func (b *Bot) prepareTemplateData(state *domain.UserState) map[string]string {
 	return data
 }
 
+// shouldIgnoreUser determines if a user should be ignored
+// (dev mode only, unless whitelisted via DEV_ALLOWED_USERS).
 func (b *Bot) shouldIgnoreUser(userID string) bool {
 	if b.config.Environment != "dev" {
 		return false

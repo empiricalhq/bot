@@ -21,13 +21,15 @@ import (
 
 const shutdownTimeout = 30 * time.Second
 
-// ControllerCallbacks provides a set of functions that the controller can invoke
-// to communicate events to its host (e.g., the GUI or a CLI).
+// ControllerCallbacks defines hooks the BotController can call
+// to notify the host (GUI, CLI, etc.) about events like QR codes or messages.
 type ControllerCallbacks struct {
-	OnQRCode func(qrCode string)
+	OnQRCode  func(qrCode string) // fired when a login QR code is generated
+	OnMessage OnMessageFunc       // fired for each inbound/outbound message
 }
 
-// BotController manages the entire lifecycle of the WhatsApp bot application.
+// BotController owns the full lifecycle of the WhatsApp bot:
+// config loading, logging, DB, WhatsApp client, FSM, actions, and shutdown.
 type BotController struct {
 	cfg        *config.Config
 	logger     *slog.Logger
@@ -37,13 +39,15 @@ type BotController struct {
 	shutdownCh chan struct{}
 }
 
-func NewController() (*BotController, error) {
+// NewController loads config, sets up logging, and returns a ready BotController.
+// Extra slog.Handlers (e.g. GUI handler) can be injected into the logger.
+func NewController(extraHandlers ...slog.Handler) (*BotController, error) {
 	cfg, err := config.Load()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 
-	logger, logFile, err := logger.New(cfg.LogLevel)
+	logger, logFile, err := logger.New(cfg.LogLevel, extraHandlers...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize logger: %w", err)
 	}
@@ -58,6 +62,14 @@ func NewController() (*BotController, error) {
 	}, nil
 }
 
+// Config exposes the loaded config for external use.
+func (c *BotController) Config() *config.Config {
+	return c.cfg
+}
+
+// Start initializes all components (DB, repo, FSM, actions, renderer, WA client),
+// logs in (via QR if needed), attaches event handlers, and blocks until shutdown signal.
+// Returns error if init fails at any step.
 func (c *BotController) Start(ctx context.Context, callbacks ControllerCallbacks) error {
 	c.logger.Info("Starting bot", "env", c.cfg.Environment)
 
@@ -92,7 +104,7 @@ func (c *BotController) Start(ctx context.Context, callbacks ControllerCallbacks
 	fsm := NewFSM(flow, c.logger)
 	actions := NewActionHandler(c.logger, waClient, c.cfg.VoucherPath)
 	renderer := template.NewRenderer(c.logger)
-	bot := NewBot(c.cfg, repo, fsm, actions, renderer, waClient, c.logger)
+	bot := NewBot(c.cfg, repo, fsm, actions, renderer, waClient, c.logger, callbacks.OnMessage)
 
 	if waClient.Store.ID == nil {
 		err = whatsapp.LoginWithQR(waClient.Client, c.logger, callbacks.OnQRCode)
@@ -108,7 +120,6 @@ func (c *BotController) Start(ctx context.Context, callbacks ControllerCallbacks
 
 	waClient.AddEventHandler(bot.HandleEvent)
 
-	// wait for shutdown signal
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
@@ -122,6 +133,11 @@ func (c *BotController) Start(ctx context.Context, callbacks ControllerCallbacks
 	return nil
 }
 
+// Shutdown attempts a graceful stop:
+// - signals Start loop to exit
+// - disconnects WhatsApp client (with timeout)
+// - closes DB and log file
+// - logs shutdown progress.
 func (c *BotController) Shutdown(ctx context.Context) {
 	c.logger.Info("Shutting down...")
 

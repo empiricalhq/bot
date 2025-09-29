@@ -3,42 +3,134 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"sort"
+	"strings"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+
+	"whatsbot/internal/service"
 )
 
-// App struct.
-type App struct {
+// GuiLogHandler forwards slog logs to the Wails frontend via events.
+type GuiLogHandler struct {
 	ctx context.Context
 }
 
-// NewApp creates a new App application struct.
+// Enabled always returns true, letting the log level be controlled by the logger itself.
+func (h *GuiLogHandler) Enabled(_ context.Context, _ slog.Level) bool {
+	return true
+}
+
+// Handle: formats a log record and emits it as "bot:new_log" to the GUI.
+func (h *GuiLogHandler) Handle(_ context.Context, r slog.Record) error {
+	var builder strings.Builder
+	builder.WriteString(r.Message)
+	r.Attrs(func(a slog.Attr) bool {
+		builder.WriteString(fmt.Sprintf(" %s=%v", a.Key, a.Value.Any()))
+
+		return true
+	})
+
+	logData := map[string]string{
+		"level":   r.Level.String(),
+		"message": builder.String(),
+	}
+
+	runtime.EventsEmit(h.ctx, "bot:new_log", logData)
+
+	return nil
+}
+
+func (h *GuiLogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return h
+}
+
+func (h *GuiLogHandler) WithGroup(name string) slog.Handler {
+	return h
+}
+
+// App wires the GUI (Wails) with the bot controller.
+type App struct {
+	ctx        context.Context
+	controller *service.BotController
+}
+
 func NewApp() *App {
 	return &App{}
 }
 
-// startup is called at application startup.
+// startup initializes the bot controller and GUI logger.
 func (a *App) startup(ctx context.Context) {
-	// Perform your setup here
 	a.ctx = ctx
+
+	guiLogger := &GuiLogHandler{ctx: ctx}
+
+	controller, err := service.NewController(guiLogger)
+	if err != nil {
+		slog.Error("Failed to initialize controller", "error", err)
+		panic(err)
+	}
+
+	a.controller = controller
 }
 
-// domReady is called after front-end resources have been loaded.
-func (a App) domReady(ctx context.Context) {
-	// Add your action here
-}
-
-// beforeClose is called when the application is about to quit,
-// either by clicking the window close button or calling runtime.Quit.
-// Returning true will cause the application to continue, false will continue shutdown as normal.
-func (a *App) beforeClose(ctx context.Context) (prevent bool) {
-	return false
-}
-
-// shutdown is called at application termination.
 func (a *App) shutdown(ctx context.Context) {
-	// Perform your teardown here
+	if a.controller != nil {
+		a.controller.Shutdown(ctx)
+	}
 }
 
-// Greet returns a greeting for the given name.
-func (a *App) Greet(name string) string {
-	return fmt.Sprintf("Hello %s, It's show time!", name)
+// StartBot launches the bot controller in a goroutine
+// and forwards QR codes + incoming/outgoing messages to the GUI.
+func (a *App) StartBot() {
+	go func() {
+		callbacks := service.ControllerCallbacks{
+			OnQRCode: func(qrCode string) {
+				runtime.EventsEmit(a.ctx, "bot:qr_code", qrCode)
+			},
+			OnMessage: func(direction, userID, userName, text string) {
+				messageData := map[string]string{
+					"direction": direction,
+					"userID":    userID,
+					"userName":  userName,
+					"text":      text,
+				}
+				runtime.EventsEmit(a.ctx, "bot:new_message", messageData)
+			},
+		}
+
+		slog.Info("GUI is starting the bot controller...")
+
+		err := a.controller.Start(context.Background(), callbacks)
+		if err != nil {
+			slog.Error("Bot controller failed to start", "error", err)
+			runtime.EventsEmit(a.ctx, "bot:start_failed", err.Error())
+		}
+	}()
+}
+
+// GetAllowedUsers returns sorted dev-only allowed users from config.
+func (a *App) GetAllowedUsers() []string {
+	usersMap := a.controller.Config().DevAllowedUsers
+
+	users := make([]string, 0, len(usersMap))
+	for user := range usersMap {
+		users = append(users, user)
+	}
+
+	sort.Strings(users)
+
+	return users
+}
+
+// AddAllowedUser adds a dev-only allowed user for this session.
+func (a *App) AddAllowedUser(user string) {
+	user = strings.TrimSpace(user)
+	if user == "" {
+		return
+	}
+
+	slog.Info("Adding allowed user for this session", "user", user)
+	a.controller.Config().DevAllowedUsers[user] = true
 }
