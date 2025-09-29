@@ -14,7 +14,9 @@ import (
 
 // GuiLogHandler forwards slog logs to the Wails frontend via events.
 type GuiLogHandler struct {
-	ctx context.Context
+	ctx   context.Context
+	attrs []slog.Attr
+	group string
 }
 
 // Enabled always returns true, letting the log level be controlled by the logger itself.
@@ -22,12 +24,24 @@ func (h *GuiLogHandler) Enabled(_ context.Context, _ slog.Level) bool {
 	return true
 }
 
-// Handle: formats a log record and emits it as "bot:new_log" to the GUI.
+// Handle formats a log record and emits it as "bot:new_log" to the GUI.
 func (h *GuiLogHandler) Handle(_ context.Context, r slog.Record) error {
 	var builder strings.Builder
 	builder.WriteString(r.Message)
+
+	// Add the handler's own attributes first
+	for _, attr := range h.attrs {
+		builder.WriteString(fmt.Sprintf(" %s=%v", attr.Key, attr.Value.Any()))
+	}
+
+	// Add the record's attributes
 	r.Attrs(func(a slog.Attr) bool {
-		builder.WriteString(fmt.Sprintf(" %s=%v", a.Key, a.Value.Any()))
+		key := a.Key
+		if h.group != "" {
+			key = h.group + "." + key
+		}
+
+		builder.WriteString(fmt.Sprintf(" %s=%v", key, a.Value.Any()))
 
 		return true
 	})
@@ -43,11 +57,21 @@ func (h *GuiLogHandler) Handle(_ context.Context, r slog.Record) error {
 }
 
 func (h *GuiLogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return h
+	newHandler := *h
+	newHandler.attrs = append(newHandler.attrs, attrs...)
+
+	return &newHandler
 }
 
 func (h *GuiLogHandler) WithGroup(name string) slog.Handler {
-	return h
+	newHandler := *h
+	if newHandler.group != "" {
+		newHandler.group += "."
+	}
+
+	newHandler.group += name
+
+	return &newHandler
 }
 
 // App wires the GUI (Wails) with the bot controller.
