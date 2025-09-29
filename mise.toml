@@ -1,7 +1,8 @@
 [tools]
-go = "1.25.1"
 air = "1.63.0"
-"aqua:golangci/golangci-lint" = "2.5.0"
+bun = "1.2.23"
+go = "1.25.1"
+golangci-lint = "2.5.0"
 
 [tasks.install]
 description = "Install dependencies"
