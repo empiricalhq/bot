@@ -50,7 +50,7 @@ func (f *fsm) DetermineNext(state *domain.UserState, msg *message.Message) (node
 
 	// 1. Check node-specific transitions first (context takes priority).
 	// If message has media, test media rules before text rules
-	// so a caption doesn’t accidentally match a keyword: (image with caption: "listo")
+	// so a caption doesn't accidentally match a keyword: (image with caption: "listo")
 	if msg.HasMedia {
 		mediaTransitions := []domain.Transition{}
 		otherTransitions := []domain.Transition{}
