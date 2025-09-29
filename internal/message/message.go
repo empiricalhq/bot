@@ -16,7 +16,7 @@ type Message struct {
 
 func FromEvent(evt *events.Message) *Message {
 	// Rule 1: Only listen to direct 1-on-1 messages.
-	if evt.Info.Chat.Server != "s.whatsapp.net" {
+	if evt.Info.Chat.Server != "s.whatsapp.net" && evt.Info.Chat.Server != "lid" {
 		return nil
 	}
 
