@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { botStore } from '$lib/stores/bot.store';
-  import { AddAllowedUser } from '$lib/wailsjs/go/main/App.js';
+  import { addAllowedUser } from '$lib/services/bot.service';
 
   let newUser = $state('');
   let isAddingUser = $state(false);
@@ -9,12 +8,9 @@
     e.preventDefault();
     if (!newUser.trim() || isAddingUser) return;
 
-    const formattedUser = newUser.includes('@') ? newUser : `${newUser}@s.whatsapp.net`;
     isAddingUser = true;
-
     try {
-      await AddAllowedUser(formattedUser);
-      botStore.addAllowedUser(formattedUser);
+      await addAllowedUser(newUser);
       newUser = '';
     } finally {
       isAddingUser = false;
