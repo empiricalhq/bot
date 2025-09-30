@@ -1,0 +1,40 @@
+<script lang="ts">
+  import { botStore, type LogEntry } from '$lib/stores/bot.store.svelte';
+
+  const { logs } = $derived(botStore);
+
+  function getLogColor(level: LogEntry['level']): string {
+    switch (level) {
+      case 'ERROR':
+        return 'text-red-500';
+      case 'WARN':
+        return 'text-yellow-500';
+      case 'INFO':
+        return 'text-blue-500';
+      default:
+        return 'text-slate-500';
+    }
+  }
+
+  function formatTime(date: Date): string {
+    return date.toLocaleTimeString('en-US', { hour12: false });
+  }
+</script>
+
+<div class="h-full overflow-y-auto bg-slate-900 p-4 font-mono text-xs">
+  {#if logs.length > 0}
+    <div class="space-y-1">
+      {#each logs as log (log.id)}
+        <div class="flex gap-3">
+          <span class="text-slate-600">{formatTime(log.timestamp)}</span>
+          <span class={getLogColor(log.level)}>[{log.level}]</span>
+          <span class="text-slate-300">{log.message}</span>
+        </div>
+      {/each}
+    </div>
+  {:else}
+    <div class="flex h-full items-center justify-center">
+      <p class="text-slate-600">Waiting for activity...</p>
+    </div>
+  {/if}
+</div>
