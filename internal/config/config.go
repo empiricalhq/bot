@@ -22,7 +22,8 @@ type Config struct {
 }
 
 // findEnvFile searches for .env in the current directory and parent directories
-// up to the filesystem root, returning the first found path.
+// up to the repository root (where .git exists), returning the first found path.
+// This prevents loading .env files from outside the repository for security.
 func findEnvFile() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -30,14 +31,23 @@ func findEnvFile() (string, error) {
 	}
 
 	for {
+		// Check if .env exists in current directory
 		envPath := filepath.Join(dir, ".env")
 		if _, err := os.Stat(envPath); err == nil {
 			return envPath, nil
 		}
 
+		// Check if we've reached the repository root (where .git exists)
+		gitPath := filepath.Join(dir, ".git")
+		if _, err := os.Stat(gitPath); err == nil {
+			// We're at the repository root but no .env found
+			break
+		}
+
+		// Move to parent directory
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			// Reached filesystem root
+			// Reached filesystem root without finding repository root
 			break
 		}
 		dir = parent

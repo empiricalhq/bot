@@ -11,9 +11,17 @@ import (
 func TestLoadFromSubdirectory(t *testing.T) {
 	// Create a temporary directory structure:
 	// tmpRoot/
+	//   .git/ (marks repository root)
 	//   .env (with test content)
 	//   subdir/
 	tmpRoot := t.TempDir()
+
+	// Create .git directory to mark this as repository root
+	gitDir := filepath.Join(tmpRoot, ".git")
+	if err := os.Mkdir(gitDir, 0755); err != nil {
+		t.Fatalf("Failed to create .git dir: %v", err)
+	}
+
 	subdir := filepath.Join(tmpRoot, "subdir")
 	if err := os.Mkdir(subdir, 0755); err != nil {
 		t.Fatalf("Failed to create subdir: %v", err)
