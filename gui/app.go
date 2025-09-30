@@ -113,6 +113,9 @@ func (a *App) StartBot() {
 			OnQRCode: func(qrCode string) {
 				runtime.EventsEmit(a.ctx, "bot:qr_code", qrCode)
 			},
+			OnConnected: func() {
+				runtime.EventsEmit(a.ctx, "bot:connected")
+			},
 			OnMessage: func(direction, userID, userName, text string) {
 				messageData := map[string]string{
 					"direction": direction,

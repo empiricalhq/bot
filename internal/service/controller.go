@@ -24,8 +24,9 @@ const shutdownTimeout = 30 * time.Second
 // ControllerCallbacks defines hooks the BotController can call
 // to notify the host (GUI, CLI, etc.) about events like QR codes or messages.
 type ControllerCallbacks struct {
-	OnQRCode  func(qrCode string) // fired when a login QR code is generated
-	OnMessage OnMessageFunc       // fired for each inbound/outbound message
+	OnQRCode    func(qrCode string) // fired when a login QR code is generated
+	OnConnected func()              // fired when the bot successfully connects to WhatsApp
+	OnMessage   OnMessageFunc       // fired for each inbound/outbound message
 }
 
 // BotController owns the full lifecycle of the WhatsApp bot:
@@ -111,10 +112,20 @@ func (c *BotController) Start(ctx context.Context, callbacks ControllerCallbacks
 		if err != nil {
 			return fmt.Errorf("QR login failed: %w", err)
 		}
+
+		if callbacks.OnConnected != nil {
+			callbacks.OnConnected()
+		}
 	} else {
 		err = waClient.Connect()
 		if err != nil {
 			return fmt.Errorf("connection failed: %w", err)
+		}
+
+		c.logger.Info("Connection successful")
+
+		if callbacks.OnConnected != nil {
+			callbacks.OnConnected()
 		}
 	}
 
