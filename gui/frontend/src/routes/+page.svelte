@@ -1,4 +1,6 @@
 <script lang="ts">
+  import '../app.css';
+
   import { onMount } from 'svelte';
   import { botStore, isConnected } from '$lib/stores/bot.store';
   import QRScreen from '$lib/components/screens/QRScreen.svelte';
