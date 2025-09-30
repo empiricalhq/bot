@@ -9,17 +9,14 @@ function setupEventListeners() {
     botStore.qrCode = qrCode;
   });
 
+  EventsOn('bot:connected', () => {
+    botStore.qrCode = '';
+    botStore.status = 'connected';
+  });
+
   EventsOn('bot:new_log', (log: { level: string; message: string }) => {
     const level = log.level.toUpperCase() as 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
     botStore.addLog({ level, message: log.message });
-
-    if (
-      log.message.includes('QR login successful') ||
-      log.message.includes('Connection successful')
-    ) {
-      botStore.qrCode = '';
-      botStore.status = 'connected';
-    }
   });
 
   EventsOn(
