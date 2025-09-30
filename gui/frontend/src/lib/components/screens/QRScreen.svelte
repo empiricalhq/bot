@@ -1,23 +1,17 @@
 <script lang="ts">
   import { botStore } from '$lib/stores/bot.store';
-  import { fade, scale } from 'svelte/transition';
-  import { cubicOut } from 'svelte/easing';
 
-  $: qrCode = $botStore.qrCode;
-  $: status = $botStore.status;
+  const { qrCode, status, error } = $derived($botStore);
 </script>
 
 <div
-  class="flex h-full items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950"
+  class="flex h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950"
 >
   <div class="w-full max-w-md px-6">
     {#if status === 'connecting'}
-      <div in:fade={{ duration: 200 }} class="text-center">
+      <div class="text-center">
         <div class="relative mx-auto mb-8 h-32 w-32">
           <div class="absolute inset-0 animate-ping rounded-full bg-primary/20"></div>
-          <div
-            class="animation-delay-200 absolute inset-0 animate-ping rounded-full bg-primary/20"
-          ></div>
           <div
             class="relative flex h-full items-center justify-center rounded-full bg-white shadow-xl dark:bg-slate-800"
           >
@@ -44,7 +38,7 @@
         <p class="text-slate-600 dark:text-slate-400">Please wait while we connect...</p>
       </div>
     {:else if qrCode}
-      <div in:scale={{ duration: 300, easing: cubicOut }} class="text-center">
+      <div class="text-center">
         <div class="mb-8">
           <div class="relative mx-auto h-24 w-24">
             <div class="absolute inset-0 animate-pulse rounded-2xl bg-green-500/20"></div>
@@ -93,7 +87,7 @@
         </div>
       </div>
     {:else if status === 'error'}
-      <div in:fade={{ duration: 200 }} class="text-center">
+      <div class="text-center">
         <div class="relative mx-auto mb-8 h-32 w-32">
           <div
             class="relative flex h-full items-center justify-center rounded-full bg-red-50 shadow-xl dark:bg-red-900/20"
@@ -117,15 +111,9 @@
           Connection failed
         </h2>
         <p class="mb-4 text-slate-600 dark:text-slate-400">
-          {$botStore.error || 'Something went wrong. Please try again.'}
+          {error || 'Something went wrong. Please try again.'}
         </p>
       </div>
     {/if}
   </div>
 </div>
-
-<style>
-  .animation-delay-200 {
-    animation-delay: 200ms;
-  }
-</style>

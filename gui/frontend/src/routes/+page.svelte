@@ -9,14 +9,11 @@
   let isInitialized = false;
 
   onMount(() => {
-    initializeEventListeners();
+    setupEventListeners();
     initializeBot();
-    return () => {
-      // Cleanup would go here if needed
-    };
   });
 
-  function initializeEventListeners() {
+  function setupEventListeners() {
     EventsOn('bot:qr_code', (qrCode: string) => {
       botStore.setQRCode(qrCode);
     });
@@ -60,7 +57,6 @@
     try {
       const users = await GetAllowedUsers();
       botStore.setAllowedUsers(users);
-
       await StartBot();
     } catch (error) {
       console.error('Failed to initialize bot:', error);
@@ -70,8 +66,7 @@
 </script>
 
 <svelte:head>
-  <title>WhatsBot</title>
-  <meta name="description" content="WhatsApp Bot Controller" />
+  <title>whatsbot</title>
 </svelte:head>
 
 <div class="h-screen overflow-hidden">

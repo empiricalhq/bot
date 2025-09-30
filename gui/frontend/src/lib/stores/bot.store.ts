@@ -3,14 +3,14 @@ import { writable, derived } from 'svelte/store';
 export type BotStatus = 'disconnected' | 'connecting' | 'awaiting-qr' | 'connected' | 'error';
 
 export interface LogEntry {
-  id: string;
+  id: number;
   timestamp: Date;
   level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
   message: string;
 }
 
 export interface Message {
-  id: string;
+  id: number;
   timestamp: Date;
   direction: 'incoming' | 'outgoing';
   userId: string;
@@ -26,6 +26,11 @@ interface BotState {
   logs: LogEntry[];
   messages: Message[];
 }
+
+const MAX_LOGS = 100;
+const MAX_MESSAGES = 50;
+let logIdCounter = 0;
+let messageIdCounter = 0;
 
 function createBotStore() {
   const { subscribe, set, update } = writable<BotState>({
@@ -44,40 +49,47 @@ function createBotStore() {
     clearQRCode: () => update((s) => ({ ...s, qrCode: '' })),
     setError: (error: string) => update((s) => ({ ...s, error, status: 'error' })),
     addAllowedUser: (user: string) =>
-      update((s) => ({
-        ...s,
-        allowedUsers: new Set([...s.allowedUsers, user])
-      })),
+      update((s) => {
+        const newUsers = new Set(s.allowedUsers);
+        newUsers.add(user);
+        return { ...s, allowedUsers: newUsers };
+      }),
     setAllowedUsers: (users: string[]) =>
       update((s) => ({
         ...s,
         allowedUsers: new Set(users)
       })),
     addLog: (log: Omit<LogEntry, 'id' | 'timestamp'>) =>
-      update((s) => ({
-        ...s,
-        logs: [
-          ...s.logs,
-          {
-            ...log,
-            id: crypto.randomUUID(),
-            timestamp: new Date()
-          }
-        ].slice(-100) // Keep last 100 logs
-      })),
+      update((s) => {
+        const newLog: LogEntry = {
+          ...log,
+          id: logIdCounter++,
+          timestamp: new Date()
+        };
+
+        const newLogs =
+          s.logs.length >= MAX_LOGS ? [...s.logs.slice(1), newLog] : [...s.logs, newLog];
+
+        return { ...s, logs: newLogs };
+      }),
     addMessage: (msg: Omit<Message, 'id' | 'timestamp'>) =>
-      update((s) => ({
-        ...s,
-        messages: [
-          ...s.messages,
-          {
-            ...msg,
-            id: crypto.randomUUID(),
-            timestamp: new Date()
-          }
-        ].slice(-50) // Keep last 50 messages
-      })),
-    reset: () =>
+      update((s) => {
+        const newMessage: Message = {
+          ...msg,
+          id: messageIdCounter++,
+          timestamp: new Date()
+        };
+
+        const newMessages =
+          s.messages.length >= MAX_MESSAGES
+            ? [...s.messages.slice(1), newMessage]
+            : [...s.messages, newMessage];
+
+        return { ...s, messages: newMessages };
+      }),
+    reset: () => {
+      logIdCounter = 0;
+      messageIdCounter = 0;
       set({
         status: 'disconnected',
         qrCode: '',
@@ -85,12 +97,10 @@ function createBotStore() {
         allowedUsers: new Set(),
         logs: [],
         messages: []
-      })
+      });
+    }
   };
 }
 
 export const botStore = createBotStore();
-
-export const botStatus = derived(botStore, ($store) => $store.status);
 export const isConnected = derived(botStore, ($store) => $store.status === 'connected');
-export const hasQRCode = derived(botStore, ($store) => !!$store.qrCode);
