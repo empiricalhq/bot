@@ -1,12 +1,12 @@
 import { EventsOn } from '$lib/wailsjs/runtime/runtime.js';
 import { StartBot, GetAllowedUsers, AddAllowedUser } from '$lib/wailsjs/go/main/App.js';
-import { botStore } from '$lib/stores/bot.store';
+import { botStore } from '$lib/stores/bot.store.svelte';
 
 let isInitialized = false;
 
 function setupEventListeners() {
   EventsOn('bot:qr_code', (qrCode: string) => {
-    botStore.setQRCode(qrCode);
+    botStore.qrCode = qrCode;
   });
 
   EventsOn('bot:new_log', (log: { level: string; message: string }) => {
@@ -17,8 +17,8 @@ function setupEventListeners() {
       log.message.includes('QR login successful') ||
       log.message.includes('Connection successful')
     ) {
-      botStore.clearQRCode();
-      botStore.setStatus('connected');
+      botStore.qrCode = '';
+      botStore.status = 'connected';
     }
   });
 
@@ -35,7 +35,8 @@ function setupEventListeners() {
   );
 
   EventsOn('bot:start_failed', (error: string) => {
-    botStore.setError(error);
+    botStore.error = error;
+    botStore.status = 'error';
   });
 }
 
@@ -45,7 +46,7 @@ export async function initialize() {
 
   setupEventListeners();
 
-  botStore.setStatus('connecting');
+  botStore.status = 'connecting';
 
   try {
     const users = await GetAllowedUsers();
@@ -53,7 +54,9 @@ export async function initialize() {
     await StartBot();
   } catch (error) {
     console.error('Failed to initialize bot:', error);
-    botStore.setError('Failed to initialize bot');
+    const errorMessage = error instanceof Error ? error.message : 'Failed to initialize bot';
+    botStore.error = errorMessage;
+    botStore.status = 'error';
   }
 }
 

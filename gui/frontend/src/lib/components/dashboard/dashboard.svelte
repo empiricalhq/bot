@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { botStore } from '$lib/stores/bot.store';
+  import { botStore } from '$lib/stores/bot.store.svelte';
   import AddUserForm from './add-user-form.svelte';
   import LogView from './log-view.svelte';
   import MessageView from './message-view.svelte';
@@ -7,7 +7,7 @@
 
   let activeTab = $state<'users' | 'messages' | 'logs'>('users');
 
-  const { messages, allowedUsers } = $derived($botStore);
+  const { messages, allowedUsers } = $derived(botStore);
 </script>
 
 <div class="flex h-screen flex-col bg-slate-50 dark:bg-slate-900">
@@ -22,7 +22,7 @@
       <span class="font-medium text-slate-900 dark:text-white">WhatsBot connected</span>
     </div>
     <div class="text-sm text-slate-600 dark:text-slate-400">
-      {allowedUsers.size} authorized user{allowedUsers.size !== 1 ? 's' : ''}
+      {allowedUsers.length} authorized user{allowedUsers.length !== 1 ? 's' : ''}
     </div>
   </div>
 

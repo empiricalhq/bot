@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { botStore, type LogEntry } from '$lib/stores/bot.store';
+  import { botStore, type LogEntry } from '$lib/stores/bot.store.svelte';
 
-  const { logs } = $derived($botStore);
+  const { logs } = $derived(botStore);
 
   function getLogColor(level: LogEntry['level']): string {
     switch (level) {

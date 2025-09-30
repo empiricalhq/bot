@@ -2,12 +2,14 @@
   import '../app.css';
 
   import { onMount } from 'svelte';
-  import { isConnected } from '$lib/stores/bot.store';
+  import { botStore } from '$lib/stores/bot.store.svelte';
   import ConnectionStatusScreen from '$lib/components/connection/connection-status.svelte';
   import DashboardScreen from '$lib/components/dashboard/dashboard.svelte';
   import { initialize } from '$lib/services/bot.service';
 
   onMount(initialize);
+
+  const { status } = $derived(botStore);
 </script>
 
 <svelte:head>
@@ -15,7 +17,7 @@
 </svelte:head>
 
 <div class="h-screen overflow-hidden">
-  {#if $isConnected}
+  {#if status === 'connected'}
     <DashboardScreen />
   {:else}
     <ConnectionStatusScreen />

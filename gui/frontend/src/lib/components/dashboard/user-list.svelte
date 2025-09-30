@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { botStore } from '$lib/stores/bot.store';
+  import { botStore } from '$lib/stores/bot.store.svelte';
 
-  const allowedUsers = $derived(Array.from($botStore.allowedUsers));
+  const { allowedUsers } = $derived(botStore);
 </script>
 
 <div class="rounded-xl bg-white shadow-sm dark:bg-slate-800">
