@@ -1,21 +1,21 @@
-# GOAL
+GOAL
 
 Enforce safe and testable fixes, maintain independence between `internal` and `gui`, require Svelte 5 documentation verification (if needed), and validate only via allowed commands.
 
-# RULES:
+RULES:
 
 - Fixes MUST include reproducible debugging steps, temporary logging, exact command outputs, and tests proving correctness. Follow the full DEBUGGING PROCESS.
 - `internal` pkg MUST NEVER import the `gui` pkg. The `gui` pkg MAY import `internal`.
 - PROHIBITED commands: `go run ./cmd/bot/main.go`, `wails dev`, `bun run dev`, `mise run dev-cli`, `mise run dev-gui`. REASON: These commands block indefinitely waiting for a QR code scan, which will halt and fail your execution environment.
 - Frontend code MUST use Svelte 5 runes (`$state`, `$derived`). Do NOT generate Svelte 3 or 4 code.
 
-# SVELTE DOCUMENTATION REQUIREMENTS
+SVELTE DOCUMENTATION REQUIREMENTS
 
 - You MUST consult the official Svelte 5 docs for ALL frontend changes. Your training data is outdated.
 - Primary docs URL: https://svelte.dev/docs/llms
 - For EACH frontend change, you MUST include the exact documentation pages consulted (URLs) and a one-line rationale linking the change to the doc section used.
 
-# TOOLING & VALIDATION COMMANDS:
+TOOLING & VALIDATION COMMANDS
 
 You must use `mise` for all root-level tasks. They're defined at `mise.toml`.
 
@@ -30,7 +30,7 @@ You must use `mise` for all root-level tasks. They're defined at `mise.toml`.
 
 Note: Wails tasks are defined in `gui/wails.json`. Before building the GUI application, `bun i` must be executed to install dependencies. The GUI is build in `gui`, not on `gui/frontend`.
 
-# DEBUGGING PROCESS
+DEBUGGING PROCESS
 
 Your process to fix bugs MUST follow these exact steps:
 
@@ -48,7 +48,7 @@ Your process to fix bugs MUST follow these exact steps:
 12. FORMAT. Run `mise run fmt`. Capture output.
 13. DOCUMENT. Assemble the final submission according to the SUBMISSION CONTENTS section. If the code is complex, add a comment in the code explaining the change.
 
-# SUBMISSION CONTENTS
+SUBMISSION CONTENTS
 
 Your PR description must contain the following sections with raw outputs in code blocks:
 
@@ -58,7 +58,7 @@ Your PR description must contain the following sections with raw outputs in code
 4. Passing test output: raw captured output.
 5. If applicable. Svelte docs references: list of URLs consulted and one-line rationale per URL.
 
-# ACCEPTANCE CRITERIA
+ACCEPTANCE CRITERIA
 
 - `mise run build-cli` and `mise run build-gui` succeed.
 - `mise run test` passes all tests.
@@ -67,7 +67,7 @@ Your PR description must contain the following sections with raw outputs in code
 - Submission includes all items listed in SUBMISSION CONTENTS.
 - No `internal` => `gui` dependency is introduced.
 
-# REPOSITORY STRUCTURE
+REPOSITORY STRUCTURE
 
 - cmd/bot/: CLI entry point.
 - gui/: Wails GUI application.
