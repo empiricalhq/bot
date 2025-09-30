@@ -3,8 +3,8 @@
 
   import { onMount } from 'svelte';
   import { botStore, isConnected } from '$lib/stores/bot.store';
-  import QRScreen from '$lib/components/screens/QRScreen.svelte';
-  import DashboardScreen from '$lib/components/screens/DashboardScreen.svelte';
+  import QRScreen from '$lib/components/qr-screen.svelte';
+  import DashboardScreen from '$lib/components/dashboard.svelte';
   import { EventsOn } from '$lib/wailsjs/runtime/runtime.js';
   import { StartBot, GetAllowedUsers } from '$lib/wailsjs/go/main/App.js';
 
