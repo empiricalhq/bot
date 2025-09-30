@@ -126,7 +126,7 @@ func (a *App) StartBot() {
 
 		slog.Info("GUI is starting the bot controller...")
 
-		err := a.controller.Start(context.Background(), callbacks)
+		err := a.controller.Start(a.ctx, callbacks)
 		if err != nil {
 			slog.Error("Bot controller failed to start", "error", err)
 			runtime.EventsEmit(a.ctx, "bot:start_failed", err.Error())
