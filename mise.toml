@@ -18,7 +18,7 @@ run = "cd gui && wails dev"
 
 [tasks.build-cli]
 description = "Build the CLI into an executable"
-run = "go build -o temp/main.exe cmd/bot/main.go"
+run = "go build -o tmp/main.exe cmd/bot/main.go"
 
 [tasks.build-gui]
 description = "Build the GUI using Wails"
