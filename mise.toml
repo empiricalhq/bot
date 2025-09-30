@@ -1,32 +1,37 @@
 [tools]
-air = "1.63.0"
-bun = "1.2.23"
+air = "1.63.0"          # backend: live-reloading
+bun = "1.2.23"          # frontend uses Svelte with Wails
 go = "1.25.1"
 golangci-lint = "2.5.0"
 
 [tasks.install]
-description = "Install dependencies"
-run = ["go mod tidy", "go mod vendor"]
+description = "Install all dependencies for Go and frontend"
+run = ["go mod tidy", "cd gui/frontend && bun install"]
 
-[tasks.dev]
-description = "Run the app locally with live-reloading"
+[tasks.dev-cli]
+description = "Start the CLI app locally with live reload (Go + Air)"
 run = "air"
 
-[tasks.build]
-description = "Build the app"
+[tasks.dev-gui]
+description = "Start the GUI app locally with live reload (Wails + Svelte 5)"
+run = "cd gui && wails dev"
+
+[tasks.build-cli]
+description = "Build the CLI into an executable"
 run = "go build -o temp/main.exe cmd/bot/main.go"
 
+[tasks.build-gui]
+description = "Build the GUI using Wails"
+run = "cd gui && wails build"
+
 [tasks.test]
-description = "Run tests"
+description = "Run all go tests"
 run = "go test ./..."
+
+[tasks.fmt]
+description = "Format code"
+run = ["go fmt ./...", "golangci-lint fmt", "cd gui/frontend && bun run format"]
 
 [tasks.lint]
 description = "Format & lint"
-run = ["golangci-lint fmt", "golangci-lint run --fix --fast-only"]
-
-# [tasks.lint-ps]
-# description = "Lint PowerShell scripts"
-# run = [
-#   "Invoke-ScriptAnalyzer -Path dev.ps1",
-#   "(Get-Content dev.ps1 -Raw | Invoke-Formatter) | Set-Content dev.ps1",
-# ]
+run = ["golangci-lint run --fix --fast-only"]
