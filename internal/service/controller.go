@@ -128,6 +128,8 @@ func (c *BotController) Start(ctx context.Context, callbacks ControllerCallbacks
 		c.logger.Info("Received interrupt signal")
 	case <-c.shutdownCh:
 		c.logger.Info("Received shutdown request")
+	case <-ctx.Done():
+		c.logger.Info("Context cancelled")
 	}
 
 	return nil
