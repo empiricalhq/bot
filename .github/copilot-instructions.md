@@ -17,7 +17,7 @@ SVELTE DOCUMENTATION REQUIREMENTS
 
 TOOLING & VALIDATION COMMANDS
 
-You must use "mise" for all root-level tasks. They're defined at "mise.toml".
+You MUST use mise for all root-level tasks, defined in mise.toml.
 
 - "mise run test": Run all Go tests.
 - "mise run build-cli": Build the command-line application.
@@ -27,8 +27,6 @@ You must use "mise" for all root-level tasks. They're defined at "mise.toml".
   - "bun install"
   - "bun run lint"
   - "bun run check"
-
-Note: Wails tasks are defined in "gui/wails.json". Before building the GUI application, "bun i" must be executed to install dependencies. The GUI is build in "gui", not on "gui/frontend".
 
 DEBUGGING PROCESS
 
@@ -44,9 +42,9 @@ Your process to fix bugs MUST follow these exact steps:
 8. UPDATE TESTS. Update the failing test or add new tests to assert the correct behavior.
 9. ASSERT PASS. Run "mise run test". Capture the complete passing output.
 10. BUILD. Run "mise run build-cli" and "mise run build-gui". Capture outputs.
-11. CLEANUP. remove temporary logging or mark it clearly (leave in only if required for ongoing debugging) and re-run tests and build to confirm no regressions.
+11. CLEANUP. Remove temporary logging or mark it clearly. Re-run tests and builds to confirm no regressions.
 12. FORMAT. Run "mise run fmt". Capture output.
-13. DOCUMENT. Assemble the final submission according to the SUBMISSION CONTENTS section. If the code is complex, add a comment in the code explaining the change.
+13. DOCUMENT. Assemble the final submission according to the SUBMISSION CONTENTS section. If code is complex, add a comment explaining the change.
 
 SUBMISSION CONTENTS
 
@@ -73,11 +71,10 @@ REPOSITORY STRUCTURE
 - gui/: Wails GUI application.
   - gui/main.go and gui/app.go: Go code that binds the backend logic to the frontend.
   - gui/frontend/: The Svelte 5 + TypeScript frontend source code.
-
 - internal/: All core backend logic, which should not have any dependency on the gui pkg.
   - internal/config: Configuration loading (.env).
   - internal/domain: Core data structures (e.g., Flow, UserState).
-  - internal/service: Business logic, including the FSM, actions, and the main BotController.
+  - internal/service: Business logic, FSM, actions, BotController.
   - internal/repository: Database interaction layer (SQLite).
   - internal/platform: Adapters for external services (WhatsApp client, database driver).
   - internal/logger: Custom slog setup.
