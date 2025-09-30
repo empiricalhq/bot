@@ -1,13 +1,13 @@
 GOAL
 
-Enforce safe and testable fixes, maintain independence between `internal` and `gui`, require Svelte 5 documentation verification (if needed), and validate only via allowed commands.
+Enforce safe and testable fixes, maintain independence between "internal" and "gui", require Svelte 5 documentation verification (if needed), and validate only via allowed commands.
 
-RULES:
+RULES
 
 - Fixes MUST include reproducible debugging steps, temporary logging, exact command outputs, and tests proving correctness. Follow the full DEBUGGING PROCESS.
-- `internal` pkg MUST NEVER import the `gui` pkg. The `gui` pkg MAY import `internal`.
-- PROHIBITED commands: `go run ./cmd/bot/main.go`, `wails dev`, `bun run dev`, `mise run dev-cli`, `mise run dev-gui`. REASON: These commands block indefinitely waiting for a QR code scan, which will halt and fail your execution environment.
-- Frontend code MUST use Svelte 5 runes (`$state`, `$derived`). Do NOT generate Svelte 3 or 4 code.
+- "internal" pkg MUST NEVER import the "gui" pkg. The "gui" pkg MAY import "internal".
+- PROHIBITED commands: "go run ./cmd/bot/main.go", "wails dev", "bun run dev", "mise run dev-cli", "mise run dev-gui". REASON: These commands block indefinitely waiting for a QR code scan, which will halt and fail your execution environment.
+- Frontend code MUST use Svelte 5 runes ($state, $derived). Do NOT generate Svelte 3 or 4 code.
 
 SVELTE DOCUMENTATION REQUIREMENTS
 
@@ -17,35 +17,35 @@ SVELTE DOCUMENTATION REQUIREMENTS
 
 TOOLING & VALIDATION COMMANDS
 
-You must use `mise` for all root-level tasks. They're defined at `mise.toml`.
+You must use "mise" for all root-level tasks. They're defined at "mise.toml".
 
-- `mise run test`: Run all Go tests.
-- `mise run build-cli`: Build the command-line application.
-- `mise run build-gui`: Build the GUI application.
-- `mise run fmt`: Format all Go and frontend code.
-- For frontend-specific tasks, `cd` into `gui/frontend` first:
-  - `bun install`
-  - `bun run lint`
-  - `bun run check`
+- "mise run test": Run all Go tests.
+- "mise run build-cli": Build the command-line application.
+- "mise run build-gui": Build the GUI application.
+- "mise run fmt": Format all Go and frontend code.
+- For frontend-specific tasks, "cd" into "gui/frontend" first:
+  - "bun install"
+  - "bun run lint"
+  - "bun run check"
 
-Note: Wails tasks are defined in `gui/wails.json`. Before building the GUI application, `bun i` must be executed to install dependencies. The GUI is build in `gui`, not on `gui/frontend`.
+Note: Wails tasks are defined in "gui/wails.json". Before building the GUI application, "bun i" must be executed to install dependencies. The GUI is build in "gui", not on "gui/frontend".
 
 DEBUGGING PROCESS
 
 Your process to fix bugs MUST follow these exact steps:
 
 1. REPRODUCE. Start by writing or documenting a minimal reproduction (unit test or integration test) that demonstrates the bug.
-2. ASSERT FAILURE. Add a failing test that reproduces the bug and run `mise run test` to capture failing output.
+2. ASSERT FAILURE. Add a failing test that reproduces the bug and run "mise run test" to capture failing output.
 3. ADD LOGGING. Add temporary structured logging using internal/logger slog
 4. CAPTURE LOGS. Run the failing test or the relevant test subset and capture logs and test output. Include raw output in submission.
 5. ANALIZE. Analyze logs to trace variable values and program flow. Document what was inspected and why.
 6. HYPOTHESIZE. State the minimal hypothesis for root cause based on logs and tests.
 7. IMPLEMENT. Make the smallest code change that addresses the hypothesis. Prefer changes in internal packages only and maintain package boundaries.
 8. UPDATE TESTS. Update the failing test or add new tests to assert the correct behavior.
-9. ASSERT PASS. Run `mise run test`. Capture the complete passing output.
-10. BUILD. Run `mise run build-cli` and `mise run build-gui`. Capture outputs.
+9. ASSERT PASS. Run "mise run test". Capture the complete passing output.
+10. BUILD. Run "mise run build-cli" and "mise run build-gui". Capture outputs.
 11. CLEANUP. remove temporary logging or mark it clearly (leave in only if required for ongoing debugging) and re-run tests and build to confirm no regressions.
-12. FORMAT. Run `mise run fmt`. Capture output.
+12. FORMAT. Run "mise run fmt". Capture output.
 13. DOCUMENT. Assemble the final submission according to the SUBMISSION CONTENTS section. If the code is complex, add a comment in the code explaining the change.
 
 SUBMISSION CONTENTS
@@ -60,12 +60,12 @@ Your PR description must contain the following sections with raw outputs in code
 
 ACCEPTANCE CRITERIA
 
-- `mise run build-cli` and `mise run build-gui` succeed.
-- `mise run test` passes all tests.
-- `cd gui/frontend && bun run lint` passes.
-- `cd gui/frontend && bun run check` passes.
+- "mise run build-cli" and "mise run build-gui" succeed.
+- "mise run test" passes all tests.
+- "cd gui/frontend && bun run lint" passes.
+- "cd gui/frontend && bun run check" passes.
 - Submission includes all items listed in SUBMISSION CONTENTS.
-- No `internal` => `gui` dependency is introduced.
+- No "internal" => "gui" dependency is introduced.
 
 REPOSITORY STRUCTURE
 
