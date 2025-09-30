@@ -1,5 +1,5 @@
 <script lang="ts">
-  import HeadlessQr from '$lib/components/component.svelte';
+  import HeadlessQr from '$lib/components/connection/qr-code.svelte';
   import { botStore } from '$lib/stores/bot.store';
 
   const { qrCode, status, error } = $derived($botStore);
