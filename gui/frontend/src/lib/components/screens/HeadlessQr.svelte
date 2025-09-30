@@ -15,8 +15,8 @@
     height={size}
     shape-rendering="crispEdges"
   >
-    {#each modules as row, y}
-      {#each row as cell, x}
+    {#each modules as row, y (y)}
+      {#each row as cell, x (x)}
         {#if cell}
           <rect {x} {y} width="1" height="1" fill="currentColor" />
         {/if}
