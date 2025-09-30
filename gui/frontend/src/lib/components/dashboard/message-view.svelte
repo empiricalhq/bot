@@ -1,11 +1,8 @@
 <script lang="ts">
   import { botStore } from '$lib/stores/bot.store.svelte';
+  import { formatTime } from '$lib/utils/formatters';
 
   const { messages } = $derived(botStore);
-
-  function formatTime(date: Date): string {
-    return date.toLocaleTimeString('en-US', { hour12: false });
-  }
 </script>
 
 <div class="flex h-full flex-col overflow-y-auto px-6 py-4">

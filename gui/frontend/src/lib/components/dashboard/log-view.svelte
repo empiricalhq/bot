@@ -1,24 +1,8 @@
 <script lang="ts">
-  import { botStore, type LogEntry } from '$lib/stores/bot.store.svelte';
+  import { botStore } from '$lib/stores/bot.store.svelte';
+  import { getLogColor, formatTime } from '$lib/utils/formatters';
 
   const { logs } = $derived(botStore);
-
-  function getLogColor(level: LogEntry['level']): string {
-    switch (level) {
-      case 'ERROR':
-        return 'text-red-500';
-      case 'WARN':
-        return 'text-yellow-500';
-      case 'INFO':
-        return 'text-blue-500';
-      default:
-        return 'text-slate-500';
-    }
-  }
-
-  function formatTime(date: Date): string {
-    return date.toLocaleTimeString('en-US', { hour12: false });
-  }
 </script>
 
 <div class="h-full overflow-y-auto bg-slate-900 p-4 font-mono text-xs">
