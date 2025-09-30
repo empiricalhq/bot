@@ -2,7 +2,6 @@ build
 log
 vendor
 tmp
-temp
 vouchers
 
 .env
