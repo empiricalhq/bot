@@ -36,7 +36,7 @@ Your process to fix bugs MUST follow these exact steps:
 2. ASSERT FAILURE. Add a failing test that reproduces the bug and run "mise run test" to capture failing output.
 3. ADD LOGGING. Add temporary structured logging using internal/logger slog
 4. CAPTURE LOGS. Run the failing test or the relevant test subset and capture logs and test output. Include raw output in submission.
-5. ANALIZE. Analyze logs to trace variable values and program flow. Document what was inspected and why.
+5. ANALYZE. Analyze logs to trace variable values and program flow. Document what was inspected and why.
 6. HYPOTHESIZE. State the minimal hypothesis for root cause based on logs and tests.
 7. IMPLEMENT. Make the smallest code change that addresses the hypothesis. Prefer changes in internal packages only and maintain package boundaries.
 8. UPDATE TESTS. Update the failing test or add new tests to assert the correct behavior.
