@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"slices"
+	"strconv"
 	"time"
 
 	"go.mau.fi/whatsmeow"
@@ -184,7 +186,7 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 
 			responseText := "Lo siento, no puedo procesar ese tipo de mensaje. Por favor, envíame un mensaje de texto. 😊"
 
-			err := b.whatsapp.SendText(ctx, msg.SenderID, responseText)
+			err := b.sendResponseWithDelay(ctx, msg.SenderID, responseText)
 			if err != nil {
 				logger.Error("Failed to send unsupported media message", "error", err)
 			}
@@ -328,7 +330,7 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 			b.onMessage("outbound", msg.SenderID, "Bot", responseText)
 		}
 
-		err := b.whatsapp.SendText(ctx, msg.SenderID, responseText)
+		err := b.sendResponseWithDelay(ctx, msg.SenderID, responseText)
 		if err != nil {
 			logger.Error("Failed to send message", "error", err)
 		}
@@ -401,7 +403,7 @@ func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message) (s
 				b.onMessage("outbound", msg.SenderID, "Bot", responseText)
 			}
 
-			err := b.whatsapp.SendText(ctx, msg.SenderID, responseText)
+			err := b.sendResponseWithDelay(ctx, msg.SenderID, responseText)
 			if err != nil {
 				b.logger.Error("Failed to send welcome message to new user", "error", err)
 			}
@@ -411,6 +413,21 @@ func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message) (s
 	}
 
 	return userState, false, nil
+}
+
+// sendResponseWithDelay applies a configurable typing delay and then sends a text message.
+// The delay is controlled by the TYPING_DELAY_MS environment variable.
+func (b *Bot) sendResponseWithDelay(ctx context.Context, to, text string) error {
+	delayStr := os.Getenv("TYPING_DELAY_MS")
+	if delayStr != "" {
+		delay, err := strconv.Atoi(delayStr)
+		if err == nil && delay > 0 {
+			b.logger.Debug("Applying typing delay", "duration_ms", delay)
+			time.Sleep(time.Duration(delay) * time.Millisecond)
+		}
+	}
+
+	return b.whatsapp.SendText(ctx, to, text)
 }
 
 // generateResponse fetches the FSM node's message content,
