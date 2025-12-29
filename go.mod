@@ -8,7 +8,7 @@ require (
 	github.com/wailsapp/wails/v2 v2.10.2
 	go.mau.fi/whatsmeow v0.0.0-20250922112717-258fd9454b95
 	google.golang.org/protobuf v1.36.9
-	modernc.org/sqlite v1.39.0
+	modernc.org/sqlite v1.42.2
 )
 
 require (
@@ -52,7 +52,7 @@ require (
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/term v0.35.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
-	modernc.org/libc v1.66.3 // indirect
+	modernc.org/libc v1.66.10 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 	rsc.io/qr v0.2.0 // indirect
