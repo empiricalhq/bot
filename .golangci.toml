@@ -8,8 +8,11 @@ disable = [
     "funlen",
     "nestif",
     "wsl",
+    "wsl_v5",
     "gochecknoinits",
     "exhaustruct",
+    "exhaustruct_v5",
+    "gomodguard",
     "nonamedreturns",
     "err113"
 ]
@@ -57,6 +60,9 @@ enable = [
     "gci",
 ]
 
+[formatters.settings.gofumpt]
+module-path = "whatsbot"
+
 [formatters.settings.gci]
 sections = [
     "standard",
@@ -70,12 +76,15 @@ concurrency = 4
 tests = true
 modules-download-mode = "readonly"
 allow-parallel-runners = true
-go = "1.25.1"
+go = "1.27.1"
 
 [issues]
 max-issues-per-linter = 0
 max-same-issues = 0
 fix = true
+
+[linters.exclusions]
+paths = ["gui/frontend/node_modules"]
 
 [severity]
 default = "error"
