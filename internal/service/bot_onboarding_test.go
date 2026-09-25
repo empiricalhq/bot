@@ -127,10 +127,10 @@ func TestNewUserIsGreeted(t *testing.T) {
 		storedMessage{"outbound", "GREETING_INTRO", want},
 	)
 
-	wantCalls := []callbackCall{{"outbound", testUserID, "Bot", want}}
-	if len(harn.calls.calls) != 1 || harn.calls.calls[0] != wantCalls[0] {
-		t.Errorf("callbacks = %+v, want %+v", harn.calls.calls, wantCalls)
-	}
+	harn.wantCallbacks(t,
+		callbackCall{"inbound", testUserID, testName, "hola"},
+		callbackCall{"outbound", testUserID, "Bot", want},
+	)
 }
 
 func TestNewUserFirstMessageThatAnswersTheMenuIsActedOn(t *testing.T) {
@@ -163,6 +163,11 @@ func TestNewUserFirstMessageThatAnswersTheMenuIsActedOn(t *testing.T) {
 				storedMessage{"inbound", "GREETING_INTRO", testCase.text},
 				storedMessage{"outbound", "GREETING_INTRO", greeting},
 				storedMessage{"outbound", testCase.node, answer},
+			)
+			harn.wantCallbacks(t,
+				callbackCall{"inbound", testUserID, testName, testCase.text},
+				callbackCall{"outbound", testUserID, "Bot", greeting},
+				callbackCall{"outbound", testUserID, "Bot", answer},
 			)
 		})
 	}
@@ -247,9 +252,7 @@ func TestNewUserOnAStartNodeWithoutMessage(t *testing.T) {
 	// Doubt: an empty outbound message is stored even though nothing is sent.
 	harn.wantTranscript(t, storedMessage{"inbound", "START", "hola"}, storedMessage{"outbound", "START", ""})
 
-	if len(harn.calls.calls) != 0 {
-		t.Errorf("callbacks = %+v, want none", harn.calls.calls)
-	}
+	harn.wantCallbacks(t, callbackCall{"inbound", testUserID, testName, "hola"})
 }
 
 func TestNewUserWithoutCallback(t *testing.T) {
@@ -316,8 +319,8 @@ func TestOnboardingFailures(t *testing.T) {
 		// greeting never arrived, and the next message is already treated as a menu answer.
 		harn.wantNode(t, "GREETING_INTRO")
 
-		if len(harn.wa.sent) != 1 || len(harn.calls.calls) != 1 {
-			t.Errorf("sent %d, callbacks %d; want the failed attempt and its callback", len(harn.wa.sent), len(harn.calls.calls))
+		if len(harn.wa.sent) != 1 || len(harn.calls.calls) != 2 {
+			t.Errorf("sent %d, callbacks %d; want the failed attempt and the callbacks of both messages", len(harn.wa.sent), len(harn.calls.calls))
 		}
 
 		harn.wa.sendErr = nil

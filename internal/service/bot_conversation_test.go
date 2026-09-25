@@ -128,7 +128,7 @@ func TestUnsupportedMedia(t *testing.T) {
 
 	kinds := []string{"audio", "sticker", "video", "document"}
 
-	for _, node := range []string{"MAIN_MENU", "ENROLLMENT_PROCESS"} {
+	for _, node := range []string{"MAIN_MENU", "CONFIRM_ENROLLMENT"} {
 		for _, kind := range kinds {
 			t.Run(node+" "+kind, func(t *testing.T) {
 				t.Parallel()
@@ -210,22 +210,43 @@ func TestMediaTheNodeAsksForIsAccepted(t *testing.T) {
 	harn.wantNode(t, "DONE")
 }
 
-func TestMediaConditionDoesNotLiftTheUnsupportedMediaCheck(t *testing.T) {
+func TestMediaConditionLiftsTheUnsupportedMediaCheck(t *testing.T) {
 	t.Parallel()
 
-	harn := newHarness(t, withFlow(mediaFlow()))
-	harn.seed("WANTS_ANY")
+	for _, kind := range []string{"audio", "sticker", "video", "document"} {
+		t.Run(kind, func(t *testing.T) {
+			t.Parallel()
 
-	harn.bot.HandleEvent(mediaEvent("sticker", ""))
+			harn := newHarness(t, withFlow(mediaFlow()))
+			harn.seed("WANTS_ANY")
 
-	// Doubt: only a media_type transition lets unsupported media through, so a node with a
-	// "media" (any media) transition never receives a sticker, audio, video or document.
-	harn.wantSent(t, unsupportedMedia)
-	harn.wantNode(t, "WANTS_ANY")
+			harn.bot.HandleEvent(mediaEvent(kind, ""))
 
-	harn.bot.HandleEvent(imageEvent(""))
+			harn.wantSent(t, "thanks")
+			harn.wantNode(t, "DONE")
+		})
+	}
+}
 
-	harn.wantNode(t, "DONE")
+func TestWrongMediaTypeIsNotAnsweredWithARequestForText(t *testing.T) {
+	t.Parallel()
+
+	harn := newHarness(t)
+	harn.seed("WAITING_FOR_VOUCHER")
+
+	harn.bot.HandleEvent(mediaEvent("video", ""))
+
+	reply := wrongMediaReply("una **imagen** (foto)")
+	harn.wantSent(t, reply)
+	harn.wantNode(t, "WAITING_FOR_VOUCHER")
+	harn.wantTranscript(t,
+		storedMessage{"inbound", "WAITING_FOR_VOUCHER", ""},
+		storedMessage{"outbound", "WAITING_FOR_VOUCHER", reply},
+	)
+
+	if got := harn.repo.state().RepromptCount; got != 1 {
+		t.Errorf("RepromptCount = %d, want the wrong file to count toward escalation", got)
+	}
 }
 
 func TestWrongMediaType(t *testing.T) {

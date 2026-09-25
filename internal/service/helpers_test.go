@@ -431,6 +431,14 @@ func (h *harness) wantSent(t *testing.T, want ...string) {
 	}
 }
 
+func (h *harness) wantCallbacks(t *testing.T, want ...callbackCall) {
+	t.Helper()
+
+	if !slices.Equal(h.calls.calls, want) {
+		t.Errorf("callbacks = %+v, want %+v", h.calls.calls, want)
+	}
+}
+
 func (h *harness) wantNode(t *testing.T, want string) {
 	t.Helper()
 

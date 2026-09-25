@@ -334,17 +334,20 @@ func (b *Bot) processMessage(ctx context.Context, userState *domain.UserState, m
 }
 
 // rejectUnsupportedMedia answers audio, stickers, videos and documents with a request for text,
-// unless the user's node expects that type. It reports whether it answered.
+// when the user's node accepts no media at all. A node that does accept media leaves the message to
+// the FSM, which takes an accepted type and answers a wrong one with the wrong-media reply.
+// It reports whether it answered.
 func (b *Bot) rejectUnsupportedMedia(ctx context.Context, userState *domain.UserState, msg *message.Message, logger *slog.Logger) bool {
 	if !msg.HasMedia || !slices.Contains(unsupportedMediaTypes, msg.MediaType) {
 		return false
 	}
 
+	// Transitions of included groups are already merged into the node by LoadFlow.
 	if currentNode := b.fsm.GetNode(userState.CurrentNode); currentNode != nil {
-		acceptsIt := slices.ContainsFunc(currentNode.Transitions, func(t domain.Transition) bool {
-			return t.Condition.Type == "media_type" && slices.Contains(t.Condition.Value, msg.MediaType)
+		acceptsMedia := slices.ContainsFunc(currentNode.Transitions, func(t domain.Transition) bool {
+			return isMediaCondition(t.Condition)
 		})
-		if acceptsIt {
+		if acceptsMedia {
 			return false
 		}
 	}
@@ -495,8 +498,12 @@ func (b *Bot) greetNewUser(ctx context.Context, userState *domain.UserState, msg
 		return fmt.Errorf("failed to save new user state: %w", err)
 	}
 
+	// The first message is called back here, as processMessage leaves it to this function.
+	if b.onMessage != nil {
+		b.onMessage("inbound", msg.SenderID, msg.PushName, msg.Text)
+	}
+
 	if responseText != "" {
-		// Invoke the message callback for the initial outbound message.
 		if b.onMessage != nil {
 			b.onMessage("outbound", msg.SenderID, "Bot", responseText)
 		}
