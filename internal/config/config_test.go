@@ -1,9 +1,11 @@
-package config
+package config_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"whatsbot/internal/config"
 )
 
 // TestLoadFromSubdirectory tests that config.Load() can find .env
@@ -18,31 +20,33 @@ func TestLoadFromSubdirectory(t *testing.T) {
 
 	// Create .git directory to mark this as repository root
 	gitDir := filepath.Join(tmpRoot, ".git")
-	if err := os.Mkdir(gitDir, 0755); err != nil {
+	if err := os.Mkdir(gitDir, 0o755); err != nil {
 		t.Fatalf("Failed to create .git dir: %v", err)
 	}
 
 	subdir := filepath.Join(tmpRoot, "subdir")
-	if err := os.Mkdir(subdir, 0755); err != nil {
+	if err := os.Mkdir(subdir, 0o755); err != nil {
 		t.Fatalf("Failed to create subdir: %v", err)
 	}
 
 	// Create a test .env in the root
 	envContent := "LOG_LEVEL=DEBUG\nENV=dev\n"
+
 	envPath := filepath.Join(tmpRoot, ".env")
-	if err := os.WriteFile(envPath, []byte(envContent), 0644); err != nil {
+	if err := os.WriteFile(envPath, []byte(envContent), 0o644); err != nil {
 		t.Fatalf("Failed to write .env: %v", err)
 	}
 
 	// Create a test conversation.json file
 	flowPath := filepath.Join(tmpRoot, "conversation.json")
-	if err := os.WriteFile(flowPath, []byte(`{"nodes": []}`), 0644); err != nil {
+	if err := os.WriteFile(flowPath, []byte(`{"nodes": []}`), 0o644); err != nil {
 		t.Fatalf("Failed to write conversation.json: %v", err)
 	}
 
 	// Set environment variables for paths
 	os.Setenv("FLOW_FILE_PATH", flowPath)
 	os.Setenv("SQLITE_DB_PATH", filepath.Join(tmpRoot, "store.db"))
+
 	defer func() {
 		os.Unsetenv("FLOW_FILE_PATH")
 		os.Unsetenv("SQLITE_DB_PATH")
@@ -62,7 +66,7 @@ func TestLoadFromSubdirectory(t *testing.T) {
 	}
 
 	// Now load config - it should find .env in parent directory
-	cfg, err := Load()
+	cfg, err := config.Load()
 	if err != nil {
 		t.Fatalf("Load() failed: %v", err)
 	}

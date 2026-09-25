@@ -1,35 +1,38 @@
-package config
+package config_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"whatsbot/internal/config"
 )
 
-// TestFindEnvFile tests the findEnvFile function
+// TestFindEnvFile tests the findEnvFile function.
 func TestFindEnvFile(t *testing.T) {
 	// Create a temporary directory structure with .git to mark repo root
 	tmpRoot := t.TempDir()
 
 	// Create .git directory to mark this as repository root
 	gitDir := filepath.Join(tmpRoot, ".git")
-	if err := os.Mkdir(gitDir, 0755); err != nil {
+	if err := os.Mkdir(gitDir, 0o755); err != nil {
 		t.Fatalf("Failed to create .git dir: %v", err)
 	}
 
 	subdir := filepath.Join(tmpRoot, "subdir")
 	subsubdir := filepath.Join(subdir, "subsubdir")
 
-	if err := os.Mkdir(subdir, 0755); err != nil {
+	if err := os.Mkdir(subdir, 0o755); err != nil {
 		t.Fatalf("Failed to create subdir: %v", err)
 	}
-	if err := os.Mkdir(subsubdir, 0755); err != nil {
+
+	if err := os.Mkdir(subsubdir, 0o755); err != nil {
 		t.Fatalf("Failed to create subsubdir: %v", err)
 	}
 
 	// Create .env in root
 	envPath := filepath.Join(tmpRoot, ".env")
-	if err := os.WriteFile(envPath, []byte("TEST=value"), 0644); err != nil {
+	if err := os.WriteFile(envPath, []byte("TEST=value"), 0o644); err != nil {
 		t.Fatalf("Failed to write .env: %v", err)
 	}
 
@@ -40,50 +43,40 @@ func TestFindEnvFile(t *testing.T) {
 	}
 	defer os.Chdir(originalDir)
 
-	// Test from root
-	if err := os.Chdir(tmpRoot); err != nil {
-		t.Fatalf("Failed to change to tmpRoot: %v", err)
-	}
-	found, err := findEnvFile()
-	if err != nil {
-		t.Errorf("Expected to find .env from root, got error: %v", err)
-	}
-	if found != envPath {
-		t.Errorf("Expected path %s, got %s", envPath, found)
+	tests := []struct {
+		name string
+		dir  string
+	}{
+		{"from root", tmpRoot},
+		{"from subdir", subdir},
+		{"from subsubdir", subsubdir},
 	}
 
-	// Test from subdir
-	if err := os.Chdir(subdir); err != nil {
-		t.Fatalf("Failed to change to subdir: %v", err)
-	}
-	found, err = findEnvFile()
-	if err != nil {
-		t.Errorf("Expected to find .env from subdir, got error: %v", err)
-	}
-	if found != envPath {
-		t.Errorf("Expected path %s, got %s", envPath, found)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := os.Chdir(tt.dir); err != nil {
+				t.Fatalf("Failed to change to %s: %v", tt.dir, err)
+			}
 
-	// Test from subsubdir
-	if err := os.Chdir(subsubdir); err != nil {
-		t.Fatalf("Failed to change to subsubdir: %v", err)
-	}
-	found, err = findEnvFile()
-	if err != nil {
-		t.Errorf("Expected to find .env from subsubdir, got error: %v", err)
-	}
-	if found != envPath {
-		t.Errorf("Expected path %s, got %s", envPath, found)
+			found, err := config.FindEnvFile()
+			if err != nil {
+				t.Errorf("Expected to find .env, got error: %v", err)
+			}
+
+			if found != envPath {
+				t.Errorf("Expected path %s, got %s", envPath, found)
+			}
+		})
 	}
 }
 
-// TestFindEnvFileNotFound tests that findEnvFile returns error when .env doesn't exist
+// TestFindEnvFileNotFound tests that findEnvFile returns error when .env doesn't exist.
 func TestFindEnvFileNotFound(t *testing.T) {
 	tmpRoot := t.TempDir()
 
 	// Create .git directory to mark this as repository root
 	gitDir := filepath.Join(tmpRoot, ".git")
-	if err := os.Mkdir(gitDir, 0755); err != nil {
+	if err := os.Mkdir(gitDir, 0o755); err != nil {
 		t.Fatalf("Failed to create .git dir: %v", err)
 	}
 
@@ -97,10 +90,11 @@ func TestFindEnvFileNotFound(t *testing.T) {
 		t.Fatalf("Failed to change to tmpRoot: %v", err)
 	}
 
-	_, err = findEnvFile()
+	_, err = config.FindEnvFile()
 	if err == nil {
 		t.Error("Expected error when .env not found, got nil")
 	}
+
 	if !os.IsNotExist(err) {
 		t.Errorf("Expected os.ErrNotExist, got: %v", err)
 	}
@@ -111,24 +105,25 @@ func TestFindEnvFileNotFound(t *testing.T) {
 func TestFindEnvFileStopsAtRepoRoot(t *testing.T) {
 	// Create outer directory with .env (outside repo)
 	outerRoot := t.TempDir()
+
 	outerEnv := filepath.Join(outerRoot, ".env")
-	if err := os.WriteFile(outerEnv, []byte("OUTER=true"), 0644); err != nil {
+	if err := os.WriteFile(outerEnv, []byte("OUTER=true"), 0o644); err != nil {
 		t.Fatalf("Failed to write outer .env: %v", err)
 	}
 
 	// Create inner "repository" with .git but no .env
 	repoRoot := filepath.Join(outerRoot, "repo")
-	if err := os.Mkdir(repoRoot, 0755); err != nil {
+	if err := os.Mkdir(repoRoot, 0o755); err != nil {
 		t.Fatalf("Failed to create repo dir: %v", err)
 	}
 
 	gitDir := filepath.Join(repoRoot, ".git")
-	if err := os.Mkdir(gitDir, 0755); err != nil {
+	if err := os.Mkdir(gitDir, 0o755); err != nil {
 		t.Fatalf("Failed to create .git dir: %v", err)
 	}
 
 	subdir := filepath.Join(repoRoot, "subdir")
-	if err := os.Mkdir(subdir, 0755); err != nil {
+	if err := os.Mkdir(subdir, 0o755); err != nil {
 		t.Fatalf("Failed to create subdir: %v", err)
 	}
 
@@ -145,11 +140,67 @@ func TestFindEnvFileStopsAtRepoRoot(t *testing.T) {
 	}
 
 	// Should not find the outer .env file (security boundary)
-	_, err = findEnvFile()
+	_, err = config.FindEnvFile()
 	if err == nil {
 		t.Error("Expected error when .env not found in repo, but found one (security violation)")
 	}
+
 	if !os.IsNotExist(err) {
 		t.Errorf("Expected os.ErrNotExist, got: %v", err)
+	}
+}
+
+// TestFindEnvFileNoRepoRoot tests that findEnvFile only checks the current
+// directory when no repository or module root (.git or go.mod) exists in
+// any parent directory, instead of searching all the way to the filesystem
+// root (security feature).
+func TestFindEnvFileNoRepoRoot(t *testing.T) {
+	// Create an outer directory with .env but no .git or go.mod anywhere.
+	outerRoot := t.TempDir()
+
+	outerEnv := filepath.Join(outerRoot, ".env")
+	if err := os.WriteFile(outerEnv, []byte("OUTER=true"), 0o644); err != nil {
+		t.Fatalf("Failed to write outer .env: %v", err)
+	}
+
+	subdir := filepath.Join(outerRoot, "subdir")
+	if err := os.Mkdir(subdir, 0o755); err != nil {
+		t.Fatalf("Failed to create subdir: %v", err)
+	}
+
+	originalDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Failed to get current directory: %v", err)
+	}
+	defer os.Chdir(originalDir)
+
+	if err := os.Chdir(subdir); err != nil {
+		t.Fatalf("Failed to change to subdir: %v", err)
+	}
+
+	// Without a repository/module root, the search must not climb up to
+	// outerRoot and pick up its .env.
+	_, err = config.FindEnvFile()
+	if err == nil {
+		t.Error("Expected error when no repo root exists, but found a .env (security violation)")
+	}
+
+	if !os.IsNotExist(err) {
+		t.Errorf("Expected os.ErrNotExist, got: %v", err)
+	}
+
+	// The current directory itself should still be checked.
+	envPath := filepath.Join(subdir, ".env")
+	if err := os.WriteFile(envPath, []byte("LOCAL=true"), 0o644); err != nil {
+		t.Fatalf("Failed to write .env: %v", err)
+	}
+
+	found, err := config.FindEnvFile()
+	if err != nil {
+		t.Fatalf("Expected to find .env in current directory, got error: %v", err)
+	}
+
+	if found != envPath {
+		t.Errorf("Expected path %s, got %s", envPath, found)
 	}
 }
