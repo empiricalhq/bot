@@ -56,12 +56,12 @@ func TestDetermineNextRealFlow(t *testing.T) {
 		t.Parallel()
 
 		runRoutes(t, fsm, []route{
-			{"digit 1", "GREETING_INTRO", textMsg("1"), "INTERESTED_IN_BEGINNER", "create_new_lead"},
-			{"digit 2", "GREETING_INTRO", textMsg("2"), "INTERESTED_IN_ADVANCED_CATEGORIES", "create_new_lead"},
-			{"keyword with typo", "GREETING_INTRO", textMsg("principiantee"), "INTERESTED_IN_BEGINNER", "create_new_lead"},
-			{"input is trimmed and lowercased", "GREETING_INTRO", textMsg("  PRINCIPIANTE \n"), "INTERESTED_IN_BEGINNER", "create_new_lead"},
-			// Doubt: keywords match as substrings, so any message containing the digit "1" picks the beginner course.
-			{"digit inside a longer sentence", "GREETING_INTRO", textMsg("tengo 21 años"), "INTERESTED_IN_BEGINNER", "create_new_lead"},
+			{"digit 1", "GREETING_INTRO", textMsg("1"), "INTERESTED_IN_BEGINNER", ""},
+			{"digit 2", "GREETING_INTRO", textMsg("2"), "INTERESTED_IN_ADVANCED_CATEGORIES", ""},
+			{"keyword with typo", "GREETING_INTRO", textMsg("principiantee"), "INTERESTED_IN_BEGINNER", ""},
+			{"input is trimmed and lowercased", "GREETING_INTRO", textMsg("  PRINCIPIANTE \n"), "INTERESTED_IN_BEGINNER", ""},
+			{"digit as a word of a sentence", "GREETING_INTRO", textMsg("opcion 1 por favor"), "INTERESTED_IN_BEGINNER", ""},
+			{"digit inside a longer number", "GREETING_INTRO", textMsg("tengo 21 años"), "GREETING_INTRO", fallbackResponse},
 			{"short keywords need an exact word", "GREETING_INTRO", textMsg("ok"), "GREETING_INTRO", fallbackResponse},
 			{"global keyword", "GREETING_INTRO", textMsg("menu"), "MAIN_MENU", ""},
 			{"gibberish", "GREETING_INTRO", textMsg("asdfgh"), "GREETING_INTRO", fallbackResponse},
@@ -82,8 +82,8 @@ func TestDetermineNextRealFlow(t *testing.T) {
 			{"schedule", "MAIN_MENU", textMsg("horarios"), "CONSULTED_SCHEDULE", ""},
 			{"enrollment", "MAIN_MENU", textMsg("quiero inscribirme"), "CLARIFY_ENROLLMENT_COURSE", ""},
 			{"first listed transition wins", "MAIN_MENU", textMsg("cuanto cuesta la matricula"), "CONSULTED_PRICE", ""},
-			// Doubt: "hola" is one edit away from the keyword "hora", so a plain greeting opens the schedule.
-			{"greeting is fuzzy-matched to schedule", "MAIN_MENU", textMsg("hola"), "CONSULTED_SCHEDULE", ""},
+			{"a greeting selects no option", "MAIN_MENU", textMsg("hola"), "MAIN_MENU", fallbackResponse},
+			{"menu keyword with its accent", "CONSULTED_PRICE", textMsg("menú"), "MAIN_MENU", ""},
 			{"global help", "MAIN_MENU", textMsg("necesito ayuda"), "NEEDS_ASSISTANCE", ""},
 			{"global goodbye", "MAIN_MENU", textMsg("adios"), "CONVERSATION_CLOSED", ""},
 			{"gibberish", "MAIN_MENU", textMsg("zzzzzz"), "MAIN_MENU", fallbackResponse},
@@ -105,21 +105,20 @@ func TestDetermineNextRealFlow(t *testing.T) {
 		})
 	})
 
-	t.Run("node action runs when leaving the node", func(t *testing.T) {
+	// A node's own action runs when the bot enters the node, so a transition only reports its own action.
+	t.Run("leaving a node does not run its action", func(t *testing.T) {
 		t.Parallel()
 
-		// Doubt: Node.Action is used as the default action of every transition that leaves the
-		// node, and is never used for global transitions. Entering a node does not run its action.
 		runRoutes(t, fsm, []route{
-			{"leaving the beginner node records interest", "INTERESTED_IN_BEGINNER", textMsg("precio"), "CONSULTED_PRICE", "update_lead_interest_beginner"},
-			{"common navigation inherits it too", "INTERESTED_IN_BEGINNER", textMsg("menu"), "MAIN_MENU", "update_lead_interest_beginner"},
-			{"a global transition skips it", "INTERESTED_IN_BEGINNER", textMsg("adios"), "CONVERSATION_CLOSED", ""},
-			{"leaving the advanced node", "INTERESTED_IN_ADVANCED_CATEGORIES", textMsg("catalogo"), "CONSULTED_CATALOG", "update_lead_interest_advanced"},
-			{"leaving the price node", "CONSULTED_PRICE", textMsg("horario"), "CONSULTED_SCHEDULE", "update_lead_consulted_price"},
-			{"help does not escalate on entry", "MAIN_MENU", textMsg("ayuda"), "NEEDS_ASSISTANCE", ""},
-			{"escalation runs when leaving the help node", "NEEDS_ASSISTANCE", textMsg("urgente"), "URGENT_ASSISTANCE", "escalate_to_human_agent"},
-			{"asking for help again while in the help node", "NEEDS_ASSISTANCE", textMsg("ayuda"), "NEEDS_ASSISTANCE", "escalate_to_human_agent"},
-			{"transition action overrides node action", "CONFIRM_ENROLLMENT_BEGINNER", textMsg("si"), "ENROLLMENT_PROCESS", "set_selected_course"},
+			{"leaving the beginner node", "INTERESTED_IN_BEGINNER", textMsg("precio"), "CONSULTED_PRICE", ""},
+			{"common navigation", "INTERESTED_IN_BEGINNER", textMsg("menu"), "MAIN_MENU", ""},
+			{"a global transition", "INTERESTED_IN_BEGINNER", textMsg("adios"), "CONVERSATION_CLOSED", ""},
+			{"leaving the advanced node", "INTERESTED_IN_ADVANCED_CATEGORIES", textMsg("catalogo"), "CONSULTED_CATALOG", ""},
+			{"leaving the price node", "CONSULTED_PRICE", textMsg("horario"), "CONSULTED_SCHEDULE", ""},
+			{"help", "MAIN_MENU", textMsg("ayuda"), "NEEDS_ASSISTANCE", ""},
+			{"leaving the help node", "NEEDS_ASSISTANCE", textMsg("urgente"), "URGENT_ASSISTANCE", ""},
+			{"asking for help again while in the help node", "NEEDS_ASSISTANCE", textMsg("ayuda"), "NEEDS_ASSISTANCE", ""},
+			{"leaving the confirmation node", "CONFIRM_ENROLLMENT_BEGINNER", textMsg("si"), "ENROLLMENT_PROCESS", ""},
 		})
 	})
 
@@ -127,9 +126,9 @@ func TestDetermineNextRealFlow(t *testing.T) {
 		t.Parallel()
 
 		runRoutes(t, fsm, []route{
-			{"technique category", "INTERESTED_IN_ADVANCED_CATEGORIES", textMsg("1"), "ADVANCED_MENU_TECHNIQUES", "update_lead_interest_advanced"},
-			{"accessories category", "INTERESTED_IN_ADVANCED_CATEGORIES", textMsg("accesorios"), "ADVANCED_MENU_ACCESSORIES", "update_lead_interest_advanced"},
-			{"themes category", "INTERESTED_IN_ADVANCED_CATEGORIES", textMsg("3"), "ADVANCED_MENU_THEMES", "update_lead_interest_advanced"},
+			{"technique category", "INTERESTED_IN_ADVANCED_CATEGORIES", textMsg("1"), "ADVANCED_MENU_TECHNIQUES", ""},
+			{"accessories category", "INTERESTED_IN_ADVANCED_CATEGORIES", textMsg("accesorios"), "ADVANCED_MENU_ACCESSORIES", ""},
+			{"themes category", "INTERESTED_IN_ADVANCED_CATEGORIES", textMsg("3"), "ADVANCED_MENU_THEMES", ""},
 			{"course from a category menu", "ADVANCED_MENU_TECHNIQUES", textMsg("corazón"), "COURSE_CORAZON", ""},
 			{"back from a category menu", "ADVANCED_MENU_TECHNIQUES", textMsg("volver"), "INTERESTED_IN_ADVANCED_CATEGORIES", ""},
 			{"course from the catalog", "CONSULTED_CATALOG", textMsg("tiaras"), "COURSE_TIARAS", ""},
@@ -146,9 +145,9 @@ func TestDetermineNextRealFlow(t *testing.T) {
 		runRoutes(t, fsm, []route{
 			{"confirm", "CONFIRM_ENROLLMENT", textMsg("si"), "ENROLLMENT_PROCESS", ""},
 			{"cancel", "CONFIRM_ENROLLMENT", textMsg("cancelar"), "ENROLLMENT_CANCELLED", ""},
-			// Doubt: "si" and "no" are substrings, so "asi no" (no accent) confirms and "conozco" cancels.
-			{"a refusal containing si confirms", "CONFIRM_ENROLLMENT", textMsg("asi no quiero"), "ENROLLMENT_PROCESS", ""},
-			{"an answer containing no cancels", "CONFIRM_ENROLLMENT", textMsg("ya conozco el curso"), "ENROLLMENT_CANCELLED", ""},
+			{"si is not found inside asi", "CONFIRM_ENROLLMENT", textMsg("asi no quiero"), "ENROLLMENT_CANCELLED", ""},
+			{"no is not found inside conozco", "CONFIRM_ENROLLMENT", textMsg("ya conozco el curso"), "CONFIRM_ENROLLMENT", fallbackResponse},
+			{"si with punctuation", "CONFIRM_ENROLLMENT", textMsg("¡Sí, claro!"), "ENROLLMENT_PROCESS", ""},
 			{"global goodbye is allowed here", "CONFIRM_ENROLLMENT", textMsg("adios"), "CONVERSATION_CLOSED", ""},
 			{"cancelled to beginner", "ENROLLMENT_CANCELLED", textMsg("1"), "INTERESTED_IN_BEGINNER", ""},
 			{"cancelled common navigation", "ENROLLMENT_CANCELLED", textMsg("menu"), "MAIN_MENU", ""},
@@ -174,8 +173,8 @@ func TestDetermineNextRealFlow(t *testing.T) {
 			{"wrong media type", "ENROLLMENT_PROCESS", mediaMsg("video", ""), "ENROLLMENT_PROCESS", fallbackWrongMedia},
 			{"wrong media type with a caption that matches a node keyword", "ENROLLMENT_PROCESS", mediaMsg("video", "ayuda"), "NEEDS_ASSISTANCE", ""},
 			{"wrong media type with a global help caption", "WAITING_FOR_VOUCHER", mediaMsg("document", "necesito una asesora"), "NEEDS_ASSISTANCE", ""},
-			// Doubt: the voucher node has no action, so a second image is acknowledged but never saved.
-			{"second image", "PAYMENT_CONFIRMED", mediaMsg("image", ""), "PAYMENT_CONFIRMED_ACK_EXTRA", ""},
+			{"second image", "PAYMENT_CONFIRMED", mediaMsg("image", ""), "PAYMENT_CONFIRMED_ACK_EXTRA", "save_payment_voucher"},
+			{"third image", "PAYMENT_CONFIRMED_ACK_EXTRA", mediaMsg("image", ""), "PAYMENT_CONFIRMED_ACK_EXTRA", "save_payment_voucher"},
 			{"text after payment", "PAYMENT_CONFIRMED", textMsg("gracias"), "PAYMENT_CONFIRMED", fallbackResponse},
 			{"menu after payment", "PAYMENT_CONFIRMED_ACK_EXTRA", textMsg("menu"), "MAIN_MENU", ""},
 		})
@@ -231,7 +230,7 @@ func TestDetermineNextInlineFlows(t *testing.T) {
 
 		runRoutes(t, newTestFSM(flowOf("A", nodes)), []route{
 			{"first match wins and uses its action", "A", textMsg("first"), "B", "own_action"},
-			{"empty action falls back to the node action", "A", textMsg("second"), "C", "node_action"},
+			{"a transition without an action reports none", "A", textMsg("second"), "C", ""},
 			{"media conditions never match text", "A", textMsg("third"), "A", fallbackResponse},
 		})
 	})
@@ -263,12 +262,12 @@ func TestDetermineNextInlineFlows(t *testing.T) {
 		fsm := newTestFSM(flowOf("A", nodes))
 
 		runRoutes(t, fsm, []route{
-			{"media transition without an action uses the node action", "A", mediaMsg("image", ""), "IMAGE", "node_action"},
+			{"media transition without an action", "A", mediaMsg("image", ""), "IMAGE", ""},
 			{"media transition with its own action", "A", mediaMsg("video", ""), "VIDEO", "video_action"},
-			{"media transitions are tried before earlier caption transitions", "A", mediaMsg("image", "caption"), "IMAGE", "node_action"},
-			{"caption transition without an action uses the node action", "A", mediaMsg("audio", "a caption"), "TEXT", "node_action"},
+			{"media transitions are tried before earlier caption transitions", "A", mediaMsg("image", "caption"), "IMAGE", ""},
+			{"caption transition without an action", "A", mediaMsg("audio", "a caption"), "TEXT", ""},
 			{"caption transition with its own action", "A", mediaMsg("audio", "explicit"), "TEXT_EXPLICIT", "caption_action"},
-			{"the media condition matches any media", "ANY", mediaMsg("sticker", ""), "IMAGE", "any_action"},
+			{"the media condition matches any media", "ANY", mediaMsg("sticker", ""), "IMAGE", ""},
 			{"no caption and no matching media type", "A", mediaMsg("audio", ""), "A", fallbackWrongMedia},
 		})
 	})
@@ -292,8 +291,8 @@ func TestDetermineNextInlineFlows(t *testing.T) {
 		fsm := newTestFSM(flowOf("OPEN", nodes, globals...))
 
 		runRoutes(t, fsm, []route{
-			{"node transitions beat globals", "OPEN", textMsg("local"), "LOCAL", "node_action"},
-			{"first global wins and the node action is not used", "OPEN", textMsg("both"), "GLOBAL", "first_global"},
+			{"node transitions beat globals", "OPEN", textMsg("local"), "LOCAL", ""},
+			{"first global wins", "OPEN", textMsg("both"), "GLOBAL", "first_global"},
 			{"help global on an open node", "OPEN", textMsg("help"), "NEEDS_ASSISTANCE", "help_action"},
 			{"closed node skips non-help globals", "CLOSED", textMsg("both"), "CLOSED", fallbackResponse},
 			{"closed node still allows the help global", "CLOSED", textMsg("help"), "NEEDS_ASSISTANCE", "help_action"},
@@ -379,19 +378,23 @@ func TestConditionExact(t *testing.T) {
 	})
 }
 
-func TestConditionKeywordSubstring(t *testing.T) {
+func TestConditionKeywordWholeWords(t *testing.T) {
 	t.Parallel()
 
 	runConditions(t, []conditionCase{
-		{"substring of a sentence", keyword("help"), textMsg("i need help please"), true},
+		{"word of a sentence", keyword("help"), textMsg("i need help please"), true},
+		{"word followed by punctuation", keyword("help"), textMsg("please, HELP!"), true},
+		{"accents are ignored", keyword("menu"), textMsg("volver al menú"), true},
 		{"keyword case is ignored", keyword("HELP"), textMsg("help"), true},
 		{"second keyword", keyword("nothing", "help"), textMsg("help"), true},
 		{"multi-word keyword", keyword("hasta luego"), textMsg("bueno, hasta luego amigo"), true},
 		{"no keyword present", keyword("help"), textMsg("all fine"), false},
 		{"no keywords", keyword(), textMsg("help"), false},
 		{"empty text", keyword("x"), textMsg(""), false},
-		// Doubt: a keyword found inside another word matches, e.g. "no" in "conozco" or "si" in "presion".
-		{"inside another word", keyword("si"), textMsg("presion"), true},
+		{"not inside another word", keyword("si"), textMsg("presion"), false},
+		{"not at the end of another word", keyword("no"), textMsg("conozco el curso"), false},
+		{"not inside a longer number", keyword("1"), textMsg("tengo 21"), false},
+		{"multi-word keyword is not split across words", keyword("hasta luego"), textMsg("hasta pronto luego"), false},
 		// Doubt: an empty keyword is a substring of everything, including an empty message.
 		{"empty keyword matches anything", keyword(""), textMsg("whatever"), true},
 		{"empty keyword matches empty text", keyword(""), textMsg(""), true},
@@ -412,22 +415,23 @@ func TestConditionKeywordFuzzy(t *testing.T) {
 		{"equal length five-letter words", keyword("costo"), textMsg("cxxto"), true},
 		{"three edits, five-letter words", keyword("costo"), textMsg("cxxxo"), false},
 
-		// A word or keyword of 3-4 characters allows one edit.
-		{"one edit, short keyword", keyword("hora"), textMsg("hola"), true},
+		// A word or keyword of 4 letters or fewer must match exactly: one edit turns "hora" into "hola".
+		{"a greeting is not a typo of a short keyword", keyword("hora"), textMsg("hola"), false},
 		{"two edits, short keyword", keyword("hora"), textMsg("hxxa"), false},
-		{"short word against a long keyword", keyword("costo"), textMsg("cost"), true},
+		{"short word against a long keyword", keyword("costo"), textMsg("cost"), false},
 		{"two edits against a long keyword", keyword("costo"), textMsg("cos"), false},
-		{"short keyword, longer word", keyword("gato"), textMsg("gatxo"), true},
+		{"short keyword, longer word", keyword("gato"), textMsg("gatxo"), false},
 		{"short keyword, longer word, two edits", keyword("gato"), textMsg("gatxx"), false},
+		{"short keyword, exact word", keyword("hora"), textMsg("a que hora?"), true},
 
 		// A word or keyword of 1-2 characters must match exactly.
 		{"two-letter word never fuzzy-matches", keyword("abc"), textMsg("ab"), false},
 		{"two-letter keyword never fuzzy-matches", keyword("ok"), textMsg("oik"), false},
 		{"one-letter keyword", keyword("1"), textMsg("l"), false},
 
-		{"multi-word keywords are only matched as substrings", keyword("hasta luego"), textMsg("hasta lugo"), false},
-		// Doubt: the length thresholds count bytes, so the two-letter word "ñó" (4 bytes) gets one edit.
-		{"thresholds count bytes, not letters", keyword("ñóx"), textMsg("ñó"), true},
+		{"multi-word keywords are not fuzzy-matched", keyword("hasta luego"), textMsg("hasta lugo"), false},
+		{"a two-letter word with accents is still two letters", keyword("ñóx"), textMsg("ñó"), false},
+		{"a four-letter word with accents is still four letters", keyword("ñoña"), textMsg("ñoño"), false},
 	})
 }
 
@@ -439,8 +443,8 @@ func TestConditionRegex(t *testing.T) {
 		{"no match", regex(`^\d{3}$`), textMsg("12a"), false},
 		{"unanchored", regex(`ord(en|er)`), textMsg("mi orden llego"), true},
 		{"input is lowercased first", regex(`^hola$`), textMsg("HOLA"), true},
-		// Doubt: the input is lowercased but the pattern is not, so a pattern with capitals never matches.
-		{"pattern with capitals never matches", regex(`^Hola$`), textMsg("Hola"), false},
+		{"pattern with capitals", regex(`^Hola$`), textMsg("Hola"), true},
+		{"pattern with capitals against lowercase text", regex(`^Hola$`), textMsg("hola"), true},
 		{"empty pattern", regex(""), textMsg("anything"), false},
 		{"invalid pattern", regex("("), textMsg("("), false},
 		{"regex ignores the value list", domain.Condition{Type: "regex", Value: []string{"hola"}, Regex: "chau"}, textMsg("hola"), false},

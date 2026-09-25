@@ -122,8 +122,10 @@ func TestNewUserIsGreeted(t *testing.T) {
 		t.Errorf("LastUpdated = %v, want now", state.LastUpdated)
 	}
 
-	// Doubt: the new user's own first message is not stored, only the greeting.
-	harn.wantTranscript(t, storedMessage{"outbound", "GREETING_INTRO", want})
+	harn.wantTranscript(t,
+		storedMessage{"inbound", "GREETING_INTRO", "hola"},
+		storedMessage{"outbound", "GREETING_INTRO", want},
+	)
 
 	wantCalls := []callbackCall{{"outbound", testUserID, "Bot", want}}
 	if len(harn.calls.calls) != 1 || harn.calls.calls[0] != wantCalls[0] {
@@ -131,18 +133,85 @@ func TestNewUserIsGreeted(t *testing.T) {
 	}
 }
 
-func TestNewUserFirstMessageIsNotInterpreted(t *testing.T) {
+func TestNewUserFirstMessageThatAnswersTheMenuIsActedOn(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		text string
+		node string
+	}{
+		{"1", "INTERESTED_IN_BEGINNER"},
+		{"quiero empezar desde cero", "INTERESTED_IN_BEGINNER"},
+		{"2", "INTERESTED_IN_ADVANCED_CATEGORIES"},
+		{"necesito ayuda", "NEEDS_ASSISTANCE"},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.text, func(t *testing.T) {
+			t.Parallel()
+
+			harn := newHarness(t)
+
+			harn.send(testCase.text)
+
+			greeting := harn.nodeText("GREETING_INTRO", templateData("Ana", welcomeGreeting))
+			answer := harn.nodeText(testCase.node, templateData("Ana", welcomeGreeting))
+
+			harn.wantSent(t, greeting, answer)
+			harn.wantNode(t, testCase.node)
+			harn.wantTranscript(t,
+				storedMessage{"inbound", "GREETING_INTRO", testCase.text},
+				storedMessage{"outbound", "GREETING_INTRO", greeting},
+				storedMessage{"outbound", testCase.node, answer},
+			)
+		})
+	}
+}
+
+func TestNewUserFirstMessageRunsTheActionsOfTheNodeItReaches(t *testing.T) {
 	t.Parallel()
 
 	harn := newHarness(t)
 
-	// Doubt: a first message that already answers the menu is dropped; the user must repeat it.
 	harn.send("1")
 
-	harn.wantNode(t, "GREETING_INTRO")
+	if got := harn.repo.state().CourseInterest; got != "beginner" {
+		t.Errorf("CourseInterest = %q, want beginner", got)
+	}
+}
 
-	if got := len(harn.wa.sent); got != 1 {
-		t.Errorf("sent %d messages, want only the greeting", got)
+func TestNewUserFirstMessageThatDoesNotAnswerTheMenuIsOnlyStored(t *testing.T) {
+	t.Parallel()
+
+	harn := newHarness(t)
+
+	harn.send("buenas tardes, tengo 21 años")
+
+	greeting := harn.nodeText("GREETING_INTRO", templateData("Ana", welcomeGreeting))
+	harn.wantSent(t, greeting)
+	harn.wantNode(t, "GREETING_INTRO")
+	harn.wantTranscript(t,
+		storedMessage{"inbound", "GREETING_INTRO", "buenas tardes, tengo 21 años"},
+		storedMessage{"outbound", "GREETING_INTRO", greeting},
+	)
+
+	if got := harn.repo.state().RepromptCount; got != 0 {
+		t.Errorf("RepromptCount = %d, want the unanswered first message not to count as a fallback", got)
+	}
+}
+
+func TestNewUserEntersTheStartNodeAndRunsItsAction(t *testing.T) {
+	t.Parallel()
+
+	flow := flowOf("START", map[string]domain.Node{
+		"START": {Message: domain.MessageContent{Content: "welcome"}, Action: "escalate_to_human_agent"},
+	})
+	harn := newHarness(t, withFlow(flow))
+
+	harn.send("hola")
+
+	if !harn.repo.state().RequiresHumanAgent {
+		t.Error("the start node action did not run when the new user entered it")
 	}
 }
 
@@ -176,7 +245,7 @@ func TestNewUserOnAStartNodeWithoutMessage(t *testing.T) {
 	harn.wantNode(t, "START")
 
 	// Doubt: an empty outbound message is stored even though nothing is sent.
-	harn.wantTranscript(t, storedMessage{"outbound", "START", ""})
+	harn.wantTranscript(t, storedMessage{"inbound", "START", "hola"}, storedMessage{"outbound", "START", ""})
 
 	if len(harn.calls.calls) != 0 {
 		t.Errorf("callbacks = %+v, want none", harn.calls.calls)

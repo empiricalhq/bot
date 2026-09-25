@@ -8,6 +8,7 @@ import (
 	"os"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.mau.fi/whatsmeow"
@@ -31,6 +32,15 @@ const (
 )
 
 var unsupportedMediaTypes = []string{"audio", "sticker", "video", "document"}
+
+// mediaTypeNames says each media type the way the wrong-media reply asks for it.
+var mediaTypeNames = map[string]string{
+	"image":    "una **imagen** (foto)",
+	"video":    "un **video**",
+	"audio":    "un **audio**",
+	"document": "un **documento**",
+	"sticker":  "un **sticker**",
+}
 
 // OnMessageFunc defines the callback signature for message events.
 type OnMessageFunc func(direction, userID, userName, text string)
@@ -128,71 +138,48 @@ func (b *Bot) HandleEvent(evt interface{}) {
 	defer cancel()
 
 	// Get user state. This step also handles onboarding new users.
-	userState, isNewUser, err := b.getOrCreateUserState(ctx, msg)
+	userState, isNewUser, err := b.getOrCreateUserState(ctx, msg, msgEvent)
 	if err != nil {
 		b.logger.Error("failed to get or create user state", "error", err, "user", msg.SenderID)
 
 		return
 	}
 
-	// If the user is new, their onboarding is complete. Stop here.
 	if isNewUser {
 		b.logger.Info("new user onboarded and greeted", "user", msg.SenderID)
-
-		return
 	}
 
-	// If the user already exists, process their message through the FSM.
-	err = b.processExistingUserMessage(ctx, userState, msg, msgEvent)
+	// Run the message through the FSM. For a new user this is the first message, which
+	// is acted on only if it answers the start node.
+	err = b.processMessage(ctx, userState, msg, msgEvent, isNewUser)
 	if err != nil {
-		b.logger.Error("message processing failed for existing user", "error", err, "user", msg.SenderID)
+		b.logger.Error("message processing failed", "error", err, "user", msg.SenderID)
 	}
 }
 
-// processExistingUserMessage runs the FSM for a returning user:
+// processMessage runs the FSM for a user:
 // 1. Logs inbound message + invokes callback
 // 2. Checks unsupported media (and replies if needed)
 // 3. Determines next FSM node + action
 // 4. Handles fallbacks (generic / wrong media / terminal nodes)
 // 5. Executes actions (with error recovery + escalation)
 // 6. Generates response, saves state, sends outbound message.
-func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.UserState, msg *message.Message, rawEvt interface{}) error {
+//
+// With firstMessage set, the message was already stored with the greeting: it is not stored or
+// called back again, and unless it answers the start node it is left unanswered and uncounted.
+func (b *Bot) processMessage(ctx context.Context, userState *domain.UserState, msg *message.Message, rawEvt interface{}, firstMessage bool) error {
 	logger := b.logger.With("user", msg.SenderID, "from_node", userState.CurrentNode)
 	logger.Debug("Processing message", "text", msg.Text, "has_media", msg.HasMedia)
 
 	// Invoke the message callback for inbound messages.
-	if b.onMessage != nil {
+	if b.onMessage != nil && !firstMessage {
 		b.onMessage("inbound", msg.SenderID, msg.PushName, msg.Text)
 	}
 
 	// Early exit for unsupported media types, unless the current node is expecting them.
 	// This provides immediate, clear feedback to the user.
-	if msg.HasMedia && slices.Contains(unsupportedMediaTypes, msg.MediaType) {
-		currentNode := b.fsm.GetNode(userState.CurrentNode)
-		canHandleMedia := false
-
-		if currentNode != nil {
-			for _, transition := range currentNode.Transitions {
-				if transition.Condition.Type == "media_type" && slices.Contains(transition.Condition.Value, msg.MediaType) {
-					canHandleMedia = true
-
-					break
-				}
-			}
-		}
-
-		if !canHandleMedia {
-			logger.Info("User sent an unsupported media type. Sending feedback.", "media_type", msg.MediaType)
-
-			responseText := "Lo siento, no puedo procesar ese tipo de mensaje. Por favor, envíame un mensaje de texto. 😊"
-
-			err := b.sendResponseWithDelay(ctx, msg.SenderID, responseText)
-			if err != nil {
-				logger.Error("Failed to send unsupported media message", "error", err)
-			}
-
-			return nil
-		}
+	if !firstMessage && b.rejectUnsupportedMedia(ctx, userState, msg, logger) {
+		return nil
 	}
 
 	originalNode := userState.CurrentNode
@@ -202,17 +189,21 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 	// 1: FSM decides the next node and action.
 	nextNode, action := b.fsm.DetermineNext(userState, msg)
 
-	isGenericFallback := (action == actionTriggerFallbackResponse)
+	isFallback := action == actionTriggerFallbackResponse || action == actionTriggerFallbackWrongMedia
 
-	if !isGenericFallback {
-		// Reset fallback counter when user makes valid progress or gets specific guidance.
+	if firstMessage && isFallback {
+		return nil
+	}
+
+	if !isFallback {
+		// Reset fallback counter when user makes valid progress.
 		userState.RepromptCount = 0
 	} else {
 		userState.RepromptCount++
-		logger.Debug("Generic fallback triggered", "count", userState.RepromptCount)
+		logger.Debug("Fallback triggered", "action", action, "count", userState.RepromptCount)
 
 		if userState.RepromptCount >= fallbackEscalationThreshold {
-			// Example: user keeps typing nonsense (e.g. '???') => escalate to human.
+			// Example: user keeps typing nonsense (e.g. '???') or the wrong file => escalate to human.
 			logger.Warn("User stuck in fallback loop. Escalating to human agent.", "node", originalNode, "reprompt_count", userState.RepromptCount)
 
 			nextNode = "NEEDS_ASSISTANCE"
@@ -225,7 +216,8 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 	case actionTriggerFallbackWrongMedia:
 		logger.Debug("Handling specific fallback for wrong media type", "node", originalNode)
 
-		responseText = "Parece que enviaste un tipo de archivo incorrecto. Por favor, asegúrate de enviar una **imagen** (foto) para que pueda procesarlo. Gracias 😊"
+		responseText = "Parece que enviaste un tipo de archivo incorrecto. Por favor, asegúrate de enviar " +
+			b.expectedMediaDescription(originalNode) + " para que pueda procesarlo. Gracias 😊"
 
 	case actionTriggerFallbackResponse:
 		fallbackNode := b.fsm.GetNode(originalNode)
@@ -271,23 +263,21 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 		// Handles both normal transitions and escalations.
 		logger.Debug("FSM determined next state", "to_node", nextNode, "action", action)
 
-		if action != "" {
-			err := b.actions.Execute(action, userState, msg, rawEvt, originalNode)
-			if err != nil {
-				logger.Error("Action failed", "action", action, "error", err)
+		err := b.runActions(action, nextNode, userState, msg, rawEvt, originalNode)
+		if err != nil {
+			logger.Error("Action failed", "action", action, "error", err)
 
-				if errors.Is(err, ErrInvalidName) {
-					responseText = "No pude reconocer eso como un nombre. ¿Podrías intentarlo de nuevo, por favor?"
-					nextNode = originalNode // Stay in the current node to re-prompt
-				} else {
-					logger.Error("Critical action failure, escalating to human agent", "action", action, "error", err)
+			if errors.Is(err, ErrInvalidName) {
+				responseText = "No pude reconocer eso como un nombre. ¿Podrías intentarlo de nuevo, por favor?"
+				nextNode = originalNode // Stay in the current node to re-prompt
+			} else {
+				logger.Error("Critical action failure, escalating to human agent", "action", action, "error", err)
 
-					responseText = "Hubo un problema al procesar tu comprobante. Por favor, contacta a una asesora para completar tu matrícula. Disculpa las molestias."
-					nextNode = "NEEDS_ASSISTANCE"
+				responseText = "Hubo un problema al procesar tu comprobante. Por favor, contacta a una asesora para completar tu matrícula. Disculpa las molestias."
+				nextNode = "NEEDS_ASSISTANCE"
 
-					// Ensure the escalation action is executed to update state before saving.
-					_ = b.actions.Execute("escalate_to_human_agent", userState, msg, rawEvt, originalNode)
-				}
+				// Ensure the escalation action is executed to update state before saving.
+				_ = b.actions.Execute("escalate_to_human_agent", userState, msg, rawEvt, originalNode)
 			}
 		}
 
@@ -300,12 +290,9 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 	userState.CurrentNode = nextNode
 	userState.LastUpdated = time.Now()
 
-	inMsg := &domain.ConversationMessage{
-		UserID:         msg.SenderID,
-		Timestamp:      time.Now(),
-		Direction:      "inbound",
-		MessageContent: msg.Text,
-		NodeID:         originalNode,
+	var inMsg *domain.ConversationMessage
+	if !firstMessage {
+		inMsg = newInboundMessage(msg, originalNode)
 	}
 
 	var outMsg *domain.ConversationMessage
@@ -346,11 +333,103 @@ func (b *Bot) processExistingUserMessage(ctx context.Context, userState *domain.
 	return nil
 }
 
+// rejectUnsupportedMedia answers audio, stickers, videos and documents with a request for text,
+// unless the user's node expects that type. It reports whether it answered.
+func (b *Bot) rejectUnsupportedMedia(ctx context.Context, userState *domain.UserState, msg *message.Message, logger *slog.Logger) bool {
+	if !msg.HasMedia || !slices.Contains(unsupportedMediaTypes, msg.MediaType) {
+		return false
+	}
+
+	if currentNode := b.fsm.GetNode(userState.CurrentNode); currentNode != nil {
+		acceptsIt := slices.ContainsFunc(currentNode.Transitions, func(t domain.Transition) bool {
+			return t.Condition.Type == "media_type" && slices.Contains(t.Condition.Value, msg.MediaType)
+		})
+		if acceptsIt {
+			return false
+		}
+	}
+
+	logger.Info("User sent an unsupported media type. Sending feedback.", "media_type", msg.MediaType)
+
+	responseText := "Lo siento, no puedo procesar ese tipo de mensaje. Por favor, envíame un mensaje de texto. 😊"
+
+	err := b.sendResponseWithDelay(ctx, msg.SenderID, responseText)
+	if err != nil {
+		logger.Error("Failed to send unsupported media message", "error", err)
+	}
+
+	return true
+}
+
+func newInboundMessage(msg *message.Message, nodeID string) *domain.ConversationMessage {
+	return &domain.ConversationMessage{
+		UserID:         msg.SenderID,
+		Timestamp:      time.Now(),
+		Direction:      "inbound",
+		MessageContent: msg.Text,
+		NodeID:         nodeID,
+	}
+}
+
+// runActions executes the action of the transition taken, then the action of the node being
+// entered, unless that is the same action.
+func (b *Bot) runActions(transitionAction, toNode string, state *domain.UserState, msg *message.Message, rawEvt interface{}, fromNode string) error {
+	err := b.actions.Execute(transitionAction, state, msg, rawEvt, fromNode)
+	if err != nil {
+		return err
+	}
+
+	return b.enterNode(toNode, transitionAction, state, msg, rawEvt)
+}
+
+// enterNode executes the action of a node the user has just arrived at, unless skip already ran.
+func (b *Bot) enterNode(nodeID, skip string, state *domain.UserState, msg *message.Message, rawEvt interface{}) error {
+	node := b.fsm.GetNode(nodeID)
+	if node == nil || node.Action == skip {
+		return nil
+	}
+
+	return b.actions.Execute(node.Action, state, msg, rawEvt, nodeID)
+}
+
+// expectedMediaDescription tells the user which kinds of file the node accepts.
+func (b *Bot) expectedMediaDescription(nodeID string) string {
+	node := b.fsm.GetNode(nodeID)
+	if node == nil {
+		return "el archivo que te pedí"
+	}
+
+	var names []string
+
+	for _, transition := range node.Transitions {
+		if transition.Condition.Type != "media_type" {
+			continue
+		}
+
+		for _, mediaType := range transition.Condition.Value {
+			name := mediaTypeNames[mediaType]
+			if name == "" {
+				name = "un **" + mediaType + "**"
+			}
+
+			if !slices.Contains(names, name) {
+				names = append(names, name)
+			}
+		}
+	}
+
+	if len(names) == 0 {
+		return "el archivo que te pedí"
+	}
+
+	return strings.Join(names, " o ")
+}
+
 // getOrCreateUserState ensures a user has a state in the repo:
 // - If found and stale (>24h), resets to start node
-// - If new, initializes state, sends greeting, persists
+// - If new, initializes state, enters the start node, stores the first message, sends greeting, persists
 // Returns state + a flag (isNewUser).
-func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message) (state *domain.UserState, isNew bool, err error) {
+func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message, rawEvt interface{}) (state *domain.UserState, isNew bool, err error) {
 	userState, err := b.repo.GetUserState(ctx, msg.SenderID)
 	if err != nil {
 		return nil, false, fmt.Errorf("could not get user state from repository: %w", err)
@@ -373,46 +452,62 @@ func (b *Bot) getOrCreateUserState(ctx context.Context, msg *message.Message) (s
 
 	// If CurrentNode is empty (new user) or was reset (stale user), initialize them.
 	if userState.CurrentNode == "" {
-		b.logger.Info("New user initialized", "user", msg.SenderID, "node", b.fsm.GetStartNode(), "push_name", msg.PushName)
-
-		userState.CurrentNode = b.fsm.GetStartNode()
-		userState.UserName = msg.PushName
-		userState.LastUpdated = time.Now()
-
-		responseText := b.generateResponse(userState.CurrentNode, userState)
-		if responseText == "" {
-			b.logger.Warn("Start node has no message content, new user will not be greeted", "node", userState.CurrentNode)
-		}
-
-		outMsg := &domain.ConversationMessage{
-			UserID:         msg.SenderID,
-			Timestamp:      time.Now(),
-			Direction:      "outbound",
-			MessageContent: responseText,
-			NodeID:         userState.CurrentNode,
-		}
-
-		err = b.repo.SaveStateAndMessages(ctx, userState, nil, outMsg)
+		err = b.greetNewUser(ctx, userState, msg, rawEvt)
 		if err != nil {
-			return nil, false, fmt.Errorf("failed to save new user state: %w", err)
-		}
-
-		if responseText != "" {
-			// Invoke the message callback for the initial outbound message.
-			if b.onMessage != nil {
-				b.onMessage("outbound", msg.SenderID, "Bot", responseText)
-			}
-
-			err := b.sendResponseWithDelay(ctx, msg.SenderID, responseText)
-			if err != nil {
-				b.logger.Error("Failed to send welcome message to new user", "error", err)
-			}
+			return nil, false, err
 		}
 
 		return userState, true, nil
 	}
 
 	return userState, false, nil
+}
+
+// greetNewUser puts the user on the start node, stores their first message together with the
+// greeting, and sends the greeting.
+func (b *Bot) greetNewUser(ctx context.Context, userState *domain.UserState, msg *message.Message, rawEvt interface{}) error {
+	b.logger.Info("New user initialized", "user", msg.SenderID, "node", b.fsm.GetStartNode(), "push_name", msg.PushName)
+
+	userState.CurrentNode = b.fsm.GetStartNode()
+	userState.UserName = msg.PushName
+	userState.LastUpdated = time.Now()
+
+	err := b.enterNode(userState.CurrentNode, "", userState, msg, rawEvt)
+	if err != nil {
+		b.logger.Error("Action of the start node failed", "error", err, "node", userState.CurrentNode)
+	}
+
+	responseText := b.generateResponse(userState.CurrentNode, userState)
+	if responseText == "" {
+		b.logger.Warn("Start node has no message content, new user will not be greeted", "node", userState.CurrentNode)
+	}
+
+	outMsg := &domain.ConversationMessage{
+		UserID:         msg.SenderID,
+		Timestamp:      time.Now(),
+		Direction:      "outbound",
+		MessageContent: responseText,
+		NodeID:         userState.CurrentNode,
+	}
+
+	err = b.repo.SaveStateAndMessages(ctx, userState, newInboundMessage(msg, userState.CurrentNode), outMsg)
+	if err != nil {
+		return fmt.Errorf("failed to save new user state: %w", err)
+	}
+
+	if responseText != "" {
+		// Invoke the message callback for the initial outbound message.
+		if b.onMessage != nil {
+			b.onMessage("outbound", msg.SenderID, "Bot", responseText)
+		}
+
+		err := b.sendResponseWithDelay(ctx, msg.SenderID, responseText)
+		if err != nil {
+			b.logger.Error("Failed to send welcome message to new user", "error", err)
+		}
+	}
+
+	return nil
 }
 
 // sendResponseWithDelay applies a configurable typing delay and then sends a text message.

@@ -193,6 +193,8 @@ func mediaFlow() *domain.Flow {
 		"WANTS_VIDEO": textNode("send a video", goTo(mediaType("video"), "DONE", "")),
 		"WANTS_ANY":   textNode("send anything", goTo(anyMedia(), "DONE", "")),
 		"DONE":        textNode("thanks"),
+
+		"NEEDS_ASSISTANCE": textNode("a person will help you"),
 	})
 }
 
@@ -230,26 +232,70 @@ func TestWrongMediaType(t *testing.T) {
 	t.Parallel()
 
 	harn := newHarness(t, withFlow(mediaFlow()))
-	harn.repo.seed(domain.UserState{UserID: testUserID, CurrentNode: "WANTS_VIDEO", UserName: "Ana", RepromptCount: 2, LastUpdated: time.Now()})
+	harn.seed("WANTS_VIDEO")
 
 	harn.bot.HandleEvent(imageEvent(""))
 
-	// Doubt: the reply always says "image", whatever the node expects (here a video).
-	harn.wantSent(t, wrongMediaText)
+	reply := wrongMediaReply("un **video**")
+	harn.wantSent(t, reply)
 	harn.wantTranscript(t,
 		storedMessage{"inbound", "WANTS_VIDEO", ""},
-		storedMessage{"outbound", "WANTS_VIDEO", wrongMediaText},
+		storedMessage{"outbound", "WANTS_VIDEO", reply},
 	)
 
-	// Doubt: this fallback resets the reprompt counter instead of counting, so repeated wrong
-	// files never escalate to a human the way repeated wrong text does.
-	for range 5 {
-		harn.bot.HandleEvent(imageEvent(""))
-	}
+	// Wrong files count like wrong text: the third one hands the user to a human.
+	harn.bot.HandleEvent(imageEvent(""))
 
 	state := harn.repo.state()
-	if state.CurrentNode != "WANTS_VIDEO" || state.RepromptCount != 0 || state.RequiresHumanAgent {
-		t.Errorf("state = %+v, want the user still waiting, never escalated", state)
+	if state.CurrentNode != "WANTS_VIDEO" || state.RepromptCount != 2 || state.RequiresHumanAgent {
+		t.Errorf("state after two wrong files = %+v, want the user still waiting with reprompt count 2", state)
+	}
+
+	harn.bot.HandleEvent(imageEvent(""))
+
+	state = harn.repo.state()
+	if state.CurrentNode != "NEEDS_ASSISTANCE" || !state.RequiresHumanAgent || state.RepromptCount != 0 {
+		t.Errorf("state after three wrong files = %+v, want escalation with the count reset", state)
+	}
+
+	if got := harn.lastSent(t); got != "a person will help you" {
+		t.Errorf("last message = %q, want the assistance node", got)
+	}
+}
+
+func TestWrongMediaReplyNamesEveryExpectedType(t *testing.T) {
+	t.Parallel()
+
+	flow := flowOf("START", map[string]domain.Node{
+		"START":          textNode("start"),
+		"WANTS_DOCUMENT": textNode("send a file", goTo(mediaType("document"), "START", "")),
+		"WANTS_EITHER":   textNode("send a video or a file", goTo(mediaType("video", "document"), "START", "")),
+		"WANTS_AUDIO":    textNode("send a voice note", goTo(mediaType("audio"), "START", "")),
+		"WANTS_STICKER":  textNode("send a sticker", goTo(mediaType("sticker"), "START", "")),
+	})
+
+	cases := []struct {
+		node string
+		want string
+	}{
+		{"WANTS_DOCUMENT", "un **documento**"},
+		{"WANTS_EITHER", "un **video** o un **documento**"},
+		{"WANTS_AUDIO", "un **audio**"},
+		{"WANTS_STICKER", "un **sticker**"},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.node, func(t *testing.T) {
+			t.Parallel()
+
+			harn := newHarness(t, withFlow(flow))
+			harn.seed(testCase.node)
+
+			// An image is the one file type that reaches the flow of a node that asks for something else.
+			harn.bot.HandleEvent(imageEvent(""))
+
+			harn.wantSent(t, wrongMediaReply(testCase.want))
+		})
 	}
 }
 
@@ -282,7 +328,7 @@ func TestGlobalKeywords(t *testing.T) {
 	}
 }
 
-func TestHelpDoesNotEscalateUntilTheNextMessage(t *testing.T) {
+func TestHelpEscalatesOnEntry(t *testing.T) {
 	t.Parallel()
 
 	harn := newHarness(t)
@@ -290,23 +336,14 @@ func TestHelpDoesNotEscalateUntilTheNextMessage(t *testing.T) {
 
 	harn.send("ayuda")
 
-	// Doubt: the escalation is the help node's action, which runs when leaving it, not on entering it.
 	harn.wantNode(t, "NEEDS_ASSISTANCE")
 
-	if harn.repo.state().RequiresHumanAgent {
-		t.Error("RequiresHumanAgent is set on entering the help node")
-	}
-
-	harn.send("urgente")
-
-	harn.wantNode(t, "URGENT_ASSISTANCE")
-
 	if !harn.repo.state().RequiresHumanAgent {
-		t.Error("RequiresHumanAgent is not set after leaving the help node")
+		t.Error("RequiresHumanAgent is not set on entering the help node")
 	}
 }
 
-func TestLeadFieldsAreRecordedWhenLeavingTheNode(t *testing.T) {
+func TestLeadFieldsAreRecordedOnEnteringTheNode(t *testing.T) {
 	t.Parallel()
 
 	harn := newHarness(t)
@@ -315,37 +352,65 @@ func TestLeadFieldsAreRecordedWhenLeavingTheNode(t *testing.T) {
 	harn.send("1")
 	harn.wantNode(t, "INTERESTED_IN_BEGINNER")
 
-	// Doubt: entering the beginner node does not record the interest.
-	if got := harn.repo.state().CourseInterest; got != "" {
-		t.Errorf("CourseInterest = %q after entering the node, want none yet", got)
+	if got := harn.repo.state().CourseInterest; got != "beginner" {
+		t.Errorf("CourseInterest = %q after entering the node, want beginner", got)
 	}
+
+	// Leaving by a global keyword must not matter: the interest was recorded when the node was entered.
+	harn.send("adios")
+	harn.wantNode(t, "CONVERSATION_CLOSED")
+
+	if got := harn.repo.state().CourseInterest; got != "beginner" {
+		t.Errorf("CourseInterest = %q after a global exit, want beginner", got)
+	}
+
+	harn.repo.seed(domain.UserState{UserID: testUserID, CurrentNode: "MAIN_MENU", LastUpdated: time.Now()})
 
 	harn.send("precio")
 	harn.wantNode(t, "CONSULTED_PRICE")
 
-	if got := harn.repo.state().CourseInterest; got != "beginner" {
-		t.Errorf("CourseInterest = %q after leaving the node, want beginner", got)
-	}
-
-	// Doubt: leaving by a global keyword skips the node action.
-	harn.repo.seed(domain.UserState{UserID: testUserID, CurrentNode: "INTERESTED_IN_ADVANCED_CATEGORIES", LastUpdated: time.Now()})
-	harn.send("adios")
-
-	if got := harn.repo.state().CourseInterest; got != "" {
-		t.Errorf("CourseInterest = %q after a global exit, want none", got)
+	if !harn.repo.state().ConsultedPrice {
+		t.Error("ConsultedPrice is not set on entering the price node")
 	}
 }
 
-func TestGreetingIsFuzzyMatchedToTheScheduleMenuOption(t *testing.T) {
+func TestNodeActionRunsAfterTheTransitionAction(t *testing.T) {
+	t.Parallel()
+
+	harn := newHarness(t)
+	harn.seed("COURSE_CORAZON")
+
+	harn.send("quiero inscribirme")
+
+	// The transition records the course being left; the entered node has no action of its own.
+	harn.wantNode(t, "CONFIRM_ENROLLMENT")
+
+	if got := harn.repo.state().SelectedCourseID; got != "COURSE_CORAZON" {
+		t.Errorf("SelectedCourseID = %q, want COURSE_CORAZON", got)
+	}
+
+	// The confirmation node selects itself as the course when entered.
+	harn.seed("CONSULTED_PRICE")
+
+	harn.send("matricula")
+
+	harn.wantNode(t, "CONFIRM_ENROLLMENT_BEGINNER")
+
+	if got := harn.repo.state().SelectedCourseID; got != "CONFIRM_ENROLLMENT_BEGINNER" {
+		t.Errorf("SelectedCourseID = %q, want CONFIRM_ENROLLMENT_BEGINNER", got)
+	}
+}
+
+func TestGreetingDoesNotSelectAMenuOption(t *testing.T) {
 	t.Parallel()
 
 	harn := newHarness(t)
 	harn.seed("MAIN_MENU")
 
-	// Doubt: "hola" is one letter away from the "hora" keyword.
 	harn.send("hola")
 
-	harn.wantNode(t, "CONSULTED_SCHEDULE")
+	harn.wantNode(t, "MAIN_MENU")
+	harn.wantSent(t, harn.render(menuFallbackPrefix+harn.flow.Nodes["MAIN_MENU"].Message.Content, templateData("Ana", welcomeGreeting)))
 }
 
 func TestNameChanges(t *testing.T) {
@@ -838,17 +903,38 @@ func TestEnrollmentJourney(t *testing.T) {
 		t.Fatalf("voucher %q = %q, %v; want the downloaded bytes", voucher, saved, err)
 	}
 
-	// Doubt: a second image is acknowledged as received but is not downloaded or saved.
+	// Every further image is saved as well, next to the first one.
+	harn.wa.data = []byte("second-jpeg")
 	harn.bot.HandleEvent(imageEvent(""))
 
 	harn.wantNode(t, "PAYMENT_CONFIRMED_ACK_EXTRA")
 
-	if harn.wa.downloads != 1 || harn.repo.state().VoucherPath != voucher {
-		t.Errorf("downloads = %d, VoucherPath = %q; want the first voucher only", harn.wa.downloads, harn.repo.state().VoucherPath)
+	second := harn.repo.state().VoucherPath
+	if harn.wa.downloads != 2 || second == voucher {
+		t.Errorf("downloads = %d, VoucherPath = %q; want a second file besides %q", harn.wa.downloads, second, voucher)
 	}
+
+	harn.wa.data = []byte("third-jpeg")
+	harn.bot.HandleEvent(imageEvent(""))
+
+	harn.wantNode(t, "PAYMENT_CONFIRMED_ACK_EXTRA")
+
+	wantFiles(t, map[string]string{voucher: "jpeg-bytes", second: "second-jpeg", harn.repo.state().VoucherPath: "third-jpeg"})
 
 	harn.send("menu")
 	harn.wantNode(t, "MAIN_MENU")
+}
+
+// wantFiles checks that each path holds exactly the given content.
+func wantFiles(t *testing.T, files map[string]string) {
+	t.Helper()
+
+	for path, want := range files {
+		got, err := os.ReadFile(filepath.Clean(path))
+		if err != nil || string(got) != want {
+			t.Errorf("file %q = %q, %v; want %q", path, got, err, want)
+		}
+	}
 }
 
 func TestGreetingCountsOnlyStoredMessages(t *testing.T) {
@@ -856,8 +942,8 @@ func TestGreetingCountsOnlyStoredMessages(t *testing.T) {
 
 	harn := newHarness(t)
 
-	// The reply text is rendered before its own exchange is stored: one message exists when the first
-	// reply is rendered and three when the second is, so only the second says "welcome back".
+	// The reply text is rendered before its own exchange is stored: two messages exist when the first
+	// menu reply is rendered and four when the second is, so only the second says "welcome back".
 	harn.send("hola")
 	harn.send("menu")
 	harn.send("menu")

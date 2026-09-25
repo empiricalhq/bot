@@ -866,7 +866,8 @@
       "transitions": [
         {
           "condition": { "type": "media_type", "value": ["image"] },
-          "target": "PAYMENT_CONFIRMED_ACK_EXTRA"
+          "target": "PAYMENT_CONFIRMED_ACK_EXTRA",
+          "action": "save_payment_voucher"
         }
       ]
     },
@@ -876,7 +877,13 @@
         "content": "¡Gracias! Ya recibí tu comprobante principal. Mis asesoras lo revisarán todo junto. 😊\n\nEscribe *MENU* para volver al inicio."
       },
       "include_transitions": "common_navigation",
-      "transitions": []
+      "transitions": [
+        {
+          "condition": { "type": "media_type", "value": ["image"] },
+          "target": "PAYMENT_CONFIRMED_ACK_EXTRA",
+          "action": "save_payment_voucher"
+        }
+      ]
     },
     "NEEDS_ASSISTANCE": {
       "message": {

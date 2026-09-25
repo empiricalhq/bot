@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -152,9 +153,8 @@ func TestSaveVoucherStoresTheDownloadedImage(t *testing.T) {
 		t.Errorf("VoucherPath = %q, want a file in %q", state.VoucherPath, dir)
 	}
 
-	// Doubt: the name is ASCII-only ("María José" loses its accented letters) and the
-	// timestamp has one-second resolution, so two vouchers from one user in a second overwrite each other.
-	if !regexp.MustCompile(`^51999000111_Ana_Prez_\d{10}\.jpeg$`).MatchString(filepath.Base(state.VoucherPath)) {
+	// Doubt: the name is ASCII-only ("María José" loses its accented letters).
+	if !regexp.MustCompile(`^51999000111_Ana_Prez_\d{10}_\d+\.jpeg$`).MatchString(filepath.Base(state.VoucherPath)) {
 		t.Errorf("voucher file name = %q", filepath.Base(state.VoucherPath))
 	}
 
@@ -166,6 +166,34 @@ func TestSaveVoucherStoresTheDownloadedImage(t *testing.T) {
 	if env.wa.downloads != 1 {
 		t.Errorf("downloads = %d, want 1", env.wa.downloads)
 	}
+}
+
+func TestSaveVoucherKeepsEveryVoucherOfOneUser(t *testing.T) {
+	t.Parallel()
+
+	const vouchers = 25
+
+	env := newActionEnv(filepath.Join(t.TempDir(), "vouchers"))
+	paths := make(map[string]string, vouchers)
+
+	for i := range vouchers {
+		want := "voucher-" + strconv.Itoa(i)
+		env.wa.data = []byte(want)
+		state := &domain.UserState{UserID: testUserID}
+
+		err := env.handler.Execute("save_payment_voucher", state, &message.Message{PushName: "Ana"}, imageEvent(""), "N")
+		if err != nil {
+			t.Fatalf("voucher %d: Execute error = %v", i, err)
+		}
+
+		if previous, taken := paths[state.VoucherPath]; taken {
+			t.Fatalf("voucher %d was saved over %s at %s", i, previous, state.VoucherPath)
+		}
+
+		paths[state.VoucherPath] = want
+	}
+
+	wantFiles(t, paths)
 }
 
 func TestSaveVoucherFileName(t *testing.T) {

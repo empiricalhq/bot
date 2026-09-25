@@ -373,11 +373,15 @@ const (
 	welcomeGreeting    = "¡Bienvenidx! Es un placer ayudarte a empezar."
 	returningGreeting  = "Qué gusto verte de nuevo."
 	unsupportedMedia   = "Lo siento, no puedo procesar ese tipo de mensaje. Por favor, envíame un mensaje de texto. 😊"
-	wrongMediaText     = "Parece que enviaste un tipo de archivo incorrecto. Por favor, asegúrate de enviar una **imagen** (foto) para que pueda procesarlo. Gracias 😊"
 	invalidNameText    = "No pude reconocer eso como un nombre. ¿Podrías intentarlo de nuevo, por favor?"
 	voucherFailureText = "Hubo un problema al procesar tu comprobante. Por favor, contacta a una asesora para completar tu matrícula. Disculpa las molestias."
 	menuFallbackPrefix = "No entendí tu respuesta 😊 Por favor, revisa las opciones:\n\n"
 )
+
+// wrongMediaReply is the answer to a file of the wrong type; expected names what the node asks for.
+func wrongMediaReply(expected string) string {
+	return "Parece que enviaste un tipo de archivo incorrecto. Por favor, asegúrate de enviar " + expected + " para que pueda procesarlo. Gracias 😊"
+}
 
 func templateData(name, greeting string) map[string]string {
 	return map[string]string{"name": name, "greeting": greeting}

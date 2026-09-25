@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -153,13 +152,9 @@ func (a *actionHandler) savePaymentVoucher(state *domain.UserState, msg *message
 		return fmt.Errorf("could not create voucher directory: %w", err)
 	}
 
-	// save the image
-	filename := generateVoucherFilename(state.UserID, msg.PushName)
-	filePath := filepath.Join(a.voucherPath, filename)
-
-	err = os.WriteFile(filePath, data, 0o644)
+	filePath, err := writeVoucher(a.voucherPath, voucherFilenamePattern(state.UserID, msg.PushName), data)
 	if err != nil {
-		a.logger.Error("Failed to save voucher file", "error", err, "path", filePath)
+		a.logger.Error("Failed to save voucher file", "error", err, "path", a.voucherPath)
 
 		return fmt.Errorf("could not save voucher file: %w", err)
 	}
@@ -171,8 +166,32 @@ func (a *actionHandler) savePaymentVoucher(state *domain.UserState, msg *message
 	return nil
 }
 
-// Format: {phone_number}_{sanitized_push_name}_{timestamp}.jpeg.
-func generateVoucherFilename(userID, pushName string) string {
+// writeVoucher stores data in a new file in dir named after pattern (see os.CreateTemp).
+// The file is created exclusively, so a voucher never overwrites another one.
+func writeVoucher(dir, pattern string, data []byte) (string, error) {
+	file, err := os.CreateTemp(dir, pattern)
+	if err != nil {
+		return "", fmt.Errorf("create: %w", err)
+	}
+
+	_, err = file.Write(data)
+
+	closeErr := file.Close()
+	if err == nil {
+		err = closeErr
+	}
+
+	if err != nil {
+		_ = os.Remove(file.Name())
+
+		return "", fmt.Errorf("write: %w", err)
+	}
+
+	return file.Name(), nil
+}
+
+// Format: {phone_number}_{sanitized_push_name}_{unix_seconds}_*.jpeg, where * becomes a random number.
+func voucherFilenamePattern(userID, pushName string) string {
 	phone := userID
 	if i := strings.Index(userID, "@"); i != -1 {
 		phone = userID[:i]
@@ -188,5 +207,5 @@ func generateVoucherFilename(userID, pushName string) string {
 
 	timestamp := time.Now().Unix()
 
-	return fmt.Sprintf("%s_%s_%d.jpeg", phone, sanitizedName, timestamp)
+	return fmt.Sprintf("%s_%s_%d_*.jpeg", phone, sanitizedName, timestamp)
 }
