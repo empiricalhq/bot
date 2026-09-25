@@ -1,8 +1,9 @@
 [tools]
-air = "1.63.0"          # backend: live-reloading
-bun = "1.2.23"          # frontend uses Svelte with Wails
-go = "1.25.1"
-golangci-lint = "2.5.0"
+air = "1.67.4"          # backend: live-reloading
+bun = "1.4.2"          # frontend uses Svelte with Wails
+go = "1.27.1"
+"go:github.com/wailsapp/wails/v2/cmd/wails" = "2.16.0"  # must match wails/v2 in go.mod
+golangci-lint = "2.14.0"
 
 [tasks.install]
 description = "Install all dependencies for Go and frontend"
@@ -14,7 +15,8 @@ run = "air"
 
 [tasks.dev-gui]
 description = "Start the GUI app locally with live reload (Wails + Svelte 5)"
-run = "cd gui && wails dev"
+# -tags webkit2_41: Ubuntu 24.04+ only ships webkit2gtk-4.1, not the 4.0 wails links against by default.
+run = "cd gui && wails dev -tags webkit2_41"
 
 [tasks.build-cli]
 description = "Build the CLI into an executable"
@@ -22,7 +24,8 @@ run = "go build -o tmp/main.exe cmd/bot/main.go"
 
 [tasks.build-gui]
 description = "Build the GUI using Wails"
-run = "cd gui && wails build"
+# -tags webkit2_41: Ubuntu 24.04+ only ships webkit2gtk-4.1, not the 4.0 wails links against by default.
+run = "cd gui && wails build -tags webkit2_41"
 
 [tasks.test]
 description = "Run all go tests"
