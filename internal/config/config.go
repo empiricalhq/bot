@@ -21,36 +21,59 @@ type Config struct {
 	DevAllowedUsers map[string]bool
 }
 
-// findEnvFile searches for .env in the current directory and parent directories
-// up to the repository root (where .git exists), returning the first found path.
-// This prevents loading .env files from outside the repository for security.
+// isRepoRoot reports whether dir marks a repository or module root.
+func isRepoRoot(dir string) bool {
+	for _, marker := range []string{".git", "go.mod"} {
+		if _, err := os.Stat(filepath.Join(dir, marker)); err == nil {
+			return true
+		}
+	}
+
+	return false
+}
+
+// findRepoRoot walks up from dir looking for a repository or module root
+// (marked by .git or go.mod). It returns false if none is found before
+// reaching the filesystem root.
+func findRepoRoot(dir string) (string, bool) {
+	for {
+		if isRepoRoot(dir) {
+			return dir, true
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", false
+		}
+
+		dir = parent
+	}
+}
+
+// findEnvFile searches for .env in the current directory and its parents,
+// stopping at the repository or module root (marked by .git or go.mod). If
+// no such root exists, only the current directory is checked, so a .env
+// outside the repository is never read.
 func findEnvFile() (string, error) {
-	dir, err := os.Getwd()
+	start, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
 
-	for {
-		// Check if .env exists in current directory
+	root, ok := findRepoRoot(start)
+	if !ok {
+		root = start
+	}
+
+	for dir := start; ; dir = filepath.Dir(dir) {
 		envPath := filepath.Join(dir, ".env")
 		if _, err := os.Stat(envPath); err == nil {
 			return envPath, nil
 		}
 
-		// Check if we've reached the repository root (where .git exists)
-		gitPath := filepath.Join(dir, ".git")
-		if _, err := os.Stat(gitPath); err == nil {
-			// We're at the repository root but no .env found
+		if dir == root {
 			break
 		}
-
-		// Move to parent directory
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			// Reached filesystem root without finding repository root
-			break
-		}
-		dir = parent
 	}
 
 	return "", os.ErrNotExist
