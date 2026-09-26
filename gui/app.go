@@ -29,12 +29,10 @@ func (h *GuiLogHandler) Handle(_ context.Context, r slog.Record) error {
 	var builder strings.Builder
 	builder.WriteString(r.Message)
 
-	// Add the handler's own attributes first
 	for _, attr := range h.attrs {
 		builder.WriteString(fmt.Sprintf(" %s=%v", attr.Key, attr.Value.Any()))
 	}
 
-	// Add the record's attributes
 	r.Attrs(func(a slog.Attr) bool {
 		key := a.Key
 		if h.group != "" {
@@ -84,29 +82,7 @@ func NewApp() *App {
 	return &App{}
 }
 
-// startup initializes the bot controller and GUI logger.
-func (a *App) startup(ctx context.Context) {
-	a.ctx = ctx
-
-	guiLogger := &GuiLogHandler{ctx: ctx}
-
-	controller, err := service.NewController(guiLogger)
-	if err != nil {
-		slog.Error("Failed to initialize controller", "error", err)
-		panic(err)
-	}
-
-	a.controller = controller
-}
-
-func (a *App) shutdown(ctx context.Context) {
-	if a.controller != nil {
-		a.controller.Shutdown(ctx)
-	}
-}
-
-// StartBot launches the bot controller in a goroutine
-// and forwards QR codes + incoming/outgoing messages to the GUI.
+// StartBot launches the bot controller in a goroutine and forwards QR codes + incoming/outgoing messages to the GUI.
 func (a *App) StartBot() {
 	go func() {
 		callbacks := service.ControllerCallbacks{
@@ -160,4 +136,25 @@ func (a *App) AddAllowedUser(user string) {
 
 	slog.Info("Adding allowed user for this session", "user", user)
 	a.controller.Config().DevAllowedUsers[user] = true
+}
+
+// startup initializes the bot controller and GUI logger.
+func (a *App) startup(ctx context.Context) {
+	a.ctx = ctx
+
+	guiLogger := &GuiLogHandler{ctx: ctx}
+
+	controller, err := service.NewController(guiLogger)
+	if err != nil {
+		slog.Error("Failed to initialize controller", "error", err)
+		panic(err)
+	}
+
+	a.controller = controller
+}
+
+func (a *App) shutdown(ctx context.Context) {
+	if a.controller != nil {
+		a.controller.Shutdown(ctx)
+	}
 }
