@@ -7,6 +7,7 @@ require (
 	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/wailsapp/wails/v2 v2.16.0
 	go.mau.fi/whatsmeow v0.0.0-20260921121126-35ae40906e74
+	golang.org/x/sys v0.48.0
 	google.golang.org/protobuf v1.36.12
 	modernc.org/sqlite v1.59.0
 )
@@ -52,7 +53,6 @@ require (
 	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba // indirect
 	golang.org/x/net v0.59.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/term v0.46.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	modernc.org/libc v1.77.1 // indirect
