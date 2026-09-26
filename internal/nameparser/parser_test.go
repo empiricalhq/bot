@@ -1,6 +1,10 @@
-package nameparser
+package nameparser_test
 
-import "testing"
+import (
+	"testing"
+
+	"whatsbot/internal/nameparser"
+)
 
 func TestParse(t *testing.T) {
 	testCases := []struct {
@@ -8,7 +12,6 @@ func TestParse(t *testing.T) {
 		input    string
 		expected string
 	}{
-		// Basic cases
 		{"Simple Name", "John", "John"},
 		{"Lowercase", "john", "John"},
 		{"Mixed Case", "jOhN", "John"},
@@ -16,7 +19,6 @@ func TestParse(t *testing.T) {
 		{"Four words", "John Michael F. Doe", "John"},
 		{"Five words", "John Michael Fitzgerald Doe Smith", ""},
 
-		// Handpicked examples
 		{"Cambridge Uni", "Maybe 🇬🇧CAMBRIDGE UNIVERSITY🇬🇧", "Maybe"},
 		{"El Rafa", "🔥El Rafa🔥", "Rafa"},
 		{"AG Cotrina", "AG’ Cotrina", "Cotrina"},
@@ -51,7 +53,7 @@ func TestParse(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := Parse(tc.input)
+			got := nameparser.Parse(tc.input)
 			if got != tc.expected {
 				t.Errorf("Parse(%q) = %q; want %q", tc.input, got, tc.expected)
 			}

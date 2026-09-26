@@ -107,41 +107,14 @@ func (c *BotController) Start(ctx context.Context, callbacks ControllerCallbacks
 	renderer := template.NewRenderer(c.logger)
 	bot := NewBot(c.cfg, repo, fsm, actions, renderer, waClient, c.logger, callbacks.OnMessage)
 
-	if waClient.Store.ID == nil {
-		err = whatsapp.LoginWithQR(waClient.Client, c.logger, callbacks.OnQRCode)
-		if err != nil {
-			return fmt.Errorf("QR login failed: %w", err)
-		}
-
-		if callbacks.OnConnected != nil {
-			callbacks.OnConnected()
-		}
-	} else {
-		err = waClient.Connect()
-		if err != nil {
-			return fmt.Errorf("connection failed: %w", err)
-		}
-
-		c.logger.Info("Connection successful")
-
-		if callbacks.OnConnected != nil {
-			callbacks.OnConnected()
-		}
+	err = c.connect(waClient, callbacks)
+	if err != nil {
+		return err
 	}
 
 	waClient.AddEventHandler(bot.HandleEvent)
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-
-	select {
-	case <-sigChan:
-		c.logger.Info("Received interrupt signal")
-	case <-c.shutdownCh:
-		c.logger.Info("Received shutdown request")
-	case <-ctx.Done():
-		c.logger.Info("Context cancelled")
-	}
+	c.waitForShutdown(ctx)
 
 	return nil
 }
@@ -191,4 +164,43 @@ func (c *BotController) Shutdown(ctx context.Context) {
 	}
 
 	c.logger.Info("Shutdown completed")
+}
+
+// connect logs in with a QR code when the device is not paired yet, and otherwise reconnects.
+// It calls OnConnected once connected.
+func (c *BotController) connect(waClient *whatsapp.Client, callbacks ControllerCallbacks) error {
+	if waClient.Store.ID == nil {
+		err := whatsapp.LoginWithQR(waClient.Client, c.logger, callbacks.OnQRCode)
+		if err != nil {
+			return fmt.Errorf("QR login failed: %w", err)
+		}
+	} else {
+		err := waClient.Connect()
+		if err != nil {
+			return fmt.Errorf("connection failed: %w", err)
+		}
+
+		c.logger.Info("Connection successful")
+	}
+
+	if callbacks.OnConnected != nil {
+		callbacks.OnConnected()
+	}
+
+	return nil
+}
+
+// waitForShutdown blocks until an interrupt signal, a Shutdown call or ctx is cancelled.
+func (c *BotController) waitForShutdown(ctx context.Context) {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	select {
+	case <-sigChan:
+		c.logger.Info("Received interrupt signal")
+	case <-c.shutdownCh:
+		c.logger.Info("Received shutdown request")
+	case <-ctx.Done():
+		c.logger.Info("Context cancelled")
+	}
 }

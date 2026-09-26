@@ -12,6 +12,17 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 )
 
+// Window bounds in pixels. The window opens at its minimum size and may grow to the maximum.
+const (
+	minWindowWidth  = 1024
+	minWindowHeight = 768
+	maxWindowWidth  = 1280
+	maxWindowHeight = 800
+)
+
+// maxChannel is the full value of an 8-bit colour channel.
+const maxChannel = 255
+
 //go:embed all:frontend/build
 var assets embed.FS
 
@@ -19,24 +30,22 @@ var assets embed.FS
 var icon []byte
 
 func main() {
-	// Create an instance of the app structure
 	app := NewApp()
 
-	// Create application with options
 	err := wails.Run(&options.App{
 		Title:             "gui",
-		Width:             1024,
-		Height:            768,
-		MinWidth:          1024,
-		MinHeight:         768,
-		MaxWidth:          1280,
-		MaxHeight:         800,
+		Width:             minWindowWidth,
+		Height:            minWindowHeight,
+		MinWidth:          minWindowWidth,
+		MinHeight:         minWindowHeight,
+		MaxWidth:          maxWindowWidth,
+		MaxHeight:         maxWindowHeight,
 		DisableResize:     false,
 		Fullscreen:        false,
 		Frameless:         false,
 		StartHidden:       false,
 		HideWindowOnClose: false,
-		BackgroundColour:  &options.RGBA{R: 255, G: 255, B: 255, A: 255},
+		BackgroundColour:  &options.RGBA{R: maxChannel, G: maxChannel, B: maxChannel, A: maxChannel},
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

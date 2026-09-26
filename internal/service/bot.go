@@ -26,6 +26,7 @@ import (
 const (
 	messageTimeout                  = 30 * time.Second
 	fallbackEscalationThreshold     = 3
+	newUserMaxMessages              = 2 // a user with at most this many stored messages still gets the welcome greeting
 	conversationTimeout             = 24 * time.Hour
 	actionTriggerFallbackResponse   = "trigger_fallback_response"
 	actionTriggerFallbackWrongMedia = "trigger_fallback_wrong_media"
@@ -45,12 +46,7 @@ var mediaTypeNames = map[string]string{
 // OnMessageFunc defines the callback signature for message events.
 type OnMessageFunc func(direction, userID, userName, text string)
 
-// Bot orchestrates the WhatsBot runtime:
-// - Handles incoming WA events
-// - Manages user state (via FSM + repo)
-// - Executes actions
-// - Renders messages and sends responses
-// - Applies safeguards (timeouts, ignored users, fallbacks).
+// Bot orchestrates the WhatsBot runtime: handles incoming WA events, manages user state via FSM + repo, executes actions, renders and sends responses, and applies safeguards.
 type Bot struct {
 	config    *config.Config
 	repo      repository.Repository
@@ -62,8 +58,7 @@ type Bot struct {
 	onMessage OnMessageFunc
 }
 
-// WhatsAppClient abstracts the minimal WA client methods
-// so Bot can run against real or mocked implementations.
+// WhatsAppClient abstracts WA client methods so Bot runs against real or mocked implementations.
 type WhatsAppClient interface {
 	SendText(ctx context.Context, to, text string) error
 	GetJID() types.JID
@@ -92,11 +87,7 @@ func NewBot(
 	}
 }
 
-// HandleEvent is the entry point for all WhatsApp events.
-// - Filters out non-messages and self-messages
-// - Converts WA event => internal message
-// - Retrieves or initializes user state
-// - Routes existing users into FSM for processing.
+// HandleEvent is the entry point for all WhatsApp events: filters non-messages and self-messages, converts WA events to internal messages, retrieves or initializes user state, and routes existing users to the FSM.
 func (b *Bot) HandleEvent(evt interface{}) {
 	msgEvent, ok := evt.(*events.Message)
 	if !ok {
@@ -167,7 +158,7 @@ func (b *Bot) HandleEvent(evt interface{}) {
 //
 // With firstMessage set, the message was already stored with the greeting: it is not stored or
 // called back again, and unless it answers the start node it is left unanswered and uncounted.
-func (b *Bot) processMessage(ctx context.Context, userState *domain.UserState, msg *message.Message, rawEvt interface{}, firstMessage bool) error {
+func (b *Bot) processMessage(ctx context.Context, userState *domain.UserState, msg *message.Message, rawEvt any, firstMessage bool) error {
 	logger := b.logger.With("user", msg.SenderID, "from_node", userState.CurrentNode)
 	logger.Debug("Processing message", "text", msg.Text, "has_media", msg.HasMedia)
 
@@ -184,109 +175,17 @@ func (b *Bot) processMessage(ctx context.Context, userState *domain.UserState, m
 
 	originalNode := userState.CurrentNode
 
-	var responseText string
-
 	// 1: FSM decides the next node and action.
 	nextNode, action := b.fsm.DetermineNext(userState, msg)
 
-	isFallback := action == actionTriggerFallbackResponse || action == actionTriggerFallbackWrongMedia
-
-	if firstMessage && isFallback {
+	if firstMessage && isFallbackAction(action) {
 		return nil
 	}
 
-	if !isFallback {
-		// Reset fallback counter when user makes valid progress.
-		userState.RepromptCount = 0
-	} else {
-		userState.RepromptCount++
-		logger.Debug("Fallback triggered", "action", action, "count", userState.RepromptCount)
+	nextNode, action = b.trackFallbacks(logger, userState, originalNode, nextNode, action)
 
-		if userState.RepromptCount >= fallbackEscalationThreshold {
-			// Example: user keeps typing nonsense (e.g. '???') or the wrong file => escalate to human.
-			logger.Warn("User stuck in fallback loop. Escalating to human agent.", "node", originalNode, "reprompt_count", userState.RepromptCount)
+	nextNode, responseText := b.reply(logger, userState, msg, rawEvt, originalNode, nextNode, action)
 
-			nextNode = "NEEDS_ASSISTANCE"
-			action = "escalate_to_human_agent"
-			userState.RepromptCount = 0
-		}
-	}
-
-	switch action {
-	case actionTriggerFallbackWrongMedia:
-		logger.Debug("Handling specific fallback for wrong media type", "node", originalNode)
-
-		responseText = "Parece que enviaste un tipo de archivo incorrecto. Por favor, asegúrate de enviar " +
-			b.expectedMediaDescription(originalNode) + " para que pueda procesarlo. Gracias 😊"
-
-	case actionTriggerFallbackResponse:
-		fallbackNode := b.fsm.GetNode(originalNode)
-
-		// A terminal node has a message but no transitions.
-		// Example: "¡Ha sido un placer ayudarte!" => nothing else to offer.
-		isTerminalNode := fallbackNode != nil && len(fallbackNode.Transitions) == 0 && fallbackNode.IncludeTransitions == ""
-
-		if isTerminalNode {
-			// On terminal nodes, a fallback means the conversation has likely ended (e.g., user says "thanks").
-			// We remain silent to allow a natural pause. The user can re-engage with a global keyword.
-			logger.Debug("Fallback on terminal node. No response sent.", "node", originalNode)
-
-			responseText = ""
-		} else if fallbackNode != nil {
-			data := b.prepareTemplateData(userState)
-
-			// Use custom fallback message if available.
-			if fallbackNode.FallbackMessage != "" {
-				logger.Debug("Fallback with custom message.", "node", originalNode)
-
-				responseText = b.renderer.Render(fallbackNode.FallbackMessage, data)
-			} else if fallbackNode.Message.Content != "" {
-				// Otherwise, use the generic re-prompt for menu-like nodes.
-				logger.Debug("Fallback on menu node. Re-prompting user.", "node", originalNode)
-
-				fallbackPrefix := "No entendí tu respuesta 😊 Por favor, revisa las opciones:\n\n"
-				responseText = b.renderer.Render(fallbackPrefix+fallbackNode.Message.Content, data)
-			} else {
-				logger.Warn("Fallback in a node with no message. Resetting to start.", "node", originalNode)
-
-				nextNode = b.fsm.GetStartNode()
-				responseText = b.generateResponse(nextNode, userState)
-			}
-		} else {
-			logger.Warn("Fallback in a node with no message. Resetting to start.", "node", originalNode)
-
-			nextNode = b.fsm.GetStartNode()
-			responseText = b.generateResponse(nextNode, userState)
-		}
-
-	default:
-		// Handles both normal transitions and escalations.
-		logger.Debug("FSM determined next state", "to_node", nextNode, "action", action)
-
-		err := b.runActions(action, nextNode, userState, msg, rawEvt, originalNode)
-		if err != nil {
-			logger.Error("Action failed", "action", action, "error", err)
-
-			if errors.Is(err, ErrInvalidName) {
-				responseText = "No pude reconocer eso como un nombre. ¿Podrías intentarlo de nuevo, por favor?"
-				nextNode = originalNode // Stay in the current node to re-prompt
-			} else {
-				logger.Error("Critical action failure, escalating to human agent", "action", action, "error", err)
-
-				responseText = "Hubo un problema al procesar tu comprobante. Por favor, contacta a una asesora para completar tu matrícula. Disculpa las molestias."
-				nextNode = "NEEDS_ASSISTANCE"
-
-				// Ensure the escalation action is executed to update state before saving.
-				_ = b.actions.Execute("escalate_to_human_agent", userState, msg, rawEvt, originalNode)
-			}
-		}
-
-		if responseText == "" {
-			responseText = b.generateResponse(nextNode, userState)
-		}
-	}
-
-	// Update state.
 	userState.CurrentNode = nextNode
 	userState.LastUpdated = time.Now()
 
@@ -295,10 +194,151 @@ func (b *Bot) processMessage(ctx context.Context, userState *domain.UserState, m
 		inMsg = newInboundMessage(msg, originalNode)
 	}
 
+	err := b.saveAndReply(ctx, logger, userState, inMsg, msg.SenderID, nextNode, responseText)
+	if err != nil {
+		return err
+	}
+
+	logger.Info("Message processed",
+		"inbound_text", msg.Text,
+		"outbound_text", responseText,
+		"to_node", nextNode,
+		"action", action,
+	)
+
+	return nil
+}
+
+func isFallbackAction(action string) bool {
+	return action == actionTriggerFallbackResponse || action == actionTriggerFallbackWrongMedia
+}
+
+// trackFallbacks counts consecutive fallbacks in the user's state and resets the count on valid progress.
+// A user stuck in a fallback loop is escalated: it returns the escalation node and action in place of the FSM's.
+func (b *Bot) trackFallbacks(logger *slog.Logger, userState *domain.UserState, originalNode, nextNode, action string) (node, act string) {
+	if !isFallbackAction(action) {
+		// Reset fallback counter when user makes valid progress.
+		userState.RepromptCount = 0
+
+		return nextNode, action
+	}
+
+	userState.RepromptCount++
+	logger.Debug("Fallback triggered", "action", action, "count", userState.RepromptCount)
+
+	if userState.RepromptCount < fallbackEscalationThreshold {
+		return nextNode, action
+	}
+
+	// Example: user keeps typing nonsense (e.g. '???') or the wrong file => escalate to human.
+	logger.Warn("User stuck in fallback loop. Escalating to human agent.", "node", originalNode, "reprompt_count", userState.RepromptCount)
+
+	userState.RepromptCount = 0
+
+	return "NEEDS_ASSISTANCE", "escalate_to_human_agent"
+}
+
+// reply carries out the FSM's action for a message received at originalNode.
+// It returns the node the user ends up in and the reply, which is empty when the bot stays silent.
+func (b *Bot) reply(logger *slog.Logger, userState *domain.UserState, msg *message.Message, rawEvt any, originalNode, nextNode, action string) (node, text string) {
+	switch action {
+	case actionTriggerFallbackWrongMedia:
+		logger.Debug("Handling specific fallback for wrong media type", "node", originalNode)
+
+		return nextNode, "Parece que enviaste un tipo de archivo incorrecto. Por favor, asegúrate de enviar " +
+			b.expectedMediaDescription(originalNode) + " para que pueda procesarlo. Gracias 😊"
+
+	case actionTriggerFallbackResponse:
+		return b.fallbackReply(logger, userState, originalNode, nextNode)
+
+	default:
+		// Handles both normal transitions and escalations.
+		logger.Debug("FSM determined next state", "to_node", nextNode, "action", action)
+
+		return b.actionReply(logger, userState, msg, rawEvt, originalNode, nextNode, action)
+	}
+}
+
+// fallbackReply answers a message the FSM could not match at originalNode.
+// It returns the node the user ends up in and the reply, which is empty when the bot stays silent.
+func (b *Bot) fallbackReply(logger *slog.Logger, userState *domain.UserState, originalNode, nextNode string) (node, text string) {
+	fallbackNode := b.fsm.GetNode(originalNode)
+
+	if fallbackNode != nil {
+		// A terminal node has a message but no transitions.
+		// Example: "¡Ha sido un placer ayudarte!" => nothing else to offer.
+		isTerminalNode := len(fallbackNode.Transitions) == 0 && fallbackNode.IncludeTransitions == ""
+		if isTerminalNode {
+			// On terminal nodes, a fallback means the conversation has likely ended (e.g., user says "thanks").
+			// We remain silent to allow a natural pause. The user can re-engage with a global keyword.
+			logger.Debug("Fallback on terminal node. No response sent.", "node", originalNode)
+
+			return nextNode, ""
+		}
+
+		data := b.prepareTemplateData(userState)
+
+		// Use custom fallback message if available.
+		if fallbackNode.FallbackMessage != "" {
+			logger.Debug("Fallback with custom message.", "node", originalNode)
+
+			return nextNode, b.renderer.Render(fallbackNode.FallbackMessage, data)
+		}
+
+		// Otherwise, use the generic re-prompt for menu-like nodes.
+		if fallbackNode.Message.Content != "" {
+			logger.Debug("Fallback on menu node. Re-prompting user.", "node", originalNode)
+
+			fallbackPrefix := "No entendí tu respuesta 😊 Por favor, revisa las opciones:\n\n"
+
+			return nextNode, b.renderer.Render(fallbackPrefix+fallbackNode.Message.Content, data)
+		}
+	}
+
+	logger.Warn("Fallback in a node with no message. Resetting to start.", "node", originalNode)
+
+	startNode := b.fsm.GetStartNode()
+
+	return startNode, b.generateResponse(startNode, userState)
+}
+
+// actionReply runs the FSM's action and returns the node the user ends up in and the reply.
+// An action that fails keeps the user at originalNode when the name was invalid, and escalates otherwise.
+func (b *Bot) actionReply(logger *slog.Logger, userState *domain.UserState, msg *message.Message, rawEvt any, originalNode, nextNode, action string) (node, text string) {
+	var responseText string
+
+	err := b.runActions(action, nextNode, userState, msg, rawEvt, originalNode)
+	if err != nil {
+		logger.Error("Action failed", "action", action, "error", err)
+
+		if errors.Is(err, ErrInvalidName) {
+			responseText = "No pude reconocer eso como un nombre. ¿Podrías intentarlo de nuevo, por favor?"
+			nextNode = originalNode // Stay in the current node to re-prompt
+		} else {
+			logger.Error("Critical action failure, escalating to human agent", "action", action, "error", err)
+
+			responseText = "Hubo un problema al procesar tu comprobante. Por favor, contacta a una asesora para completar tu matrícula. Disculpa las molestias."
+			nextNode = "NEEDS_ASSISTANCE"
+
+			// Ensure the escalation action is executed to update state before saving.
+			_ = b.actions.Execute("escalate_to_human_agent", userState, msg, rawEvt, originalNode)
+		}
+	}
+
+	if responseText == "" {
+		responseText = b.generateResponse(nextNode, userState)
+	}
+
+	return nextNode, responseText
+}
+
+// saveAndReply stores the state with the inbound message (when there is one) and the reply (when not empty),
+// then sends the reply. A failed send is logged, not returned: the state is already saved.
+func (b *Bot) saveAndReply(ctx context.Context, logger *slog.Logger, userState *domain.UserState, inMsg *domain.ConversationMessage, userID, nextNode, responseText string) error {
 	var outMsg *domain.ConversationMessage
 	if responseText != "" {
 		outMsg = &domain.ConversationMessage{
-			UserID:         msg.SenderID,
+			UserID:         userID,
 			Timestamp:      time.Now(),
 			Direction:      "outbound",
 			MessageContent: responseText,
@@ -311,24 +351,19 @@ func (b *Bot) processMessage(ctx context.Context, userState *domain.UserState, m
 		return fmt.Errorf("failed to save state and messages: %w", err)
 	}
 
-	if responseText != "" {
-		// Invoke the message callback for outbound messages.
-		if b.onMessage != nil {
-			b.onMessage("outbound", msg.SenderID, "Bot", responseText)
-		}
-
-		err := b.sendResponseWithDelay(ctx, msg.SenderID, responseText)
-		if err != nil {
-			logger.Error("Failed to send message", "error", err)
-		}
+	if responseText == "" {
+		return nil
 	}
 
-	logger.Info("Message processed",
-		"inbound_text", msg.Text,
-		"outbound_text", responseText,
-		"to_node", nextNode,
-		"action", action,
-	)
+	// Invoke the message callback for outbound messages.
+	if b.onMessage != nil {
+		b.onMessage("outbound", userID, "Bot", responseText)
+	}
+
+	err = b.sendResponseWithDelay(ctx, userID, responseText)
+	if err != nil {
+		logger.Error("Failed to send message", "error", err)
+	}
 
 	return nil
 }
@@ -577,7 +612,7 @@ func (b *Bot) prepareTemplateData(state *domain.UserState) map[string]string {
 		b.logger.Error("Failed to get user message count for dynamic greeting", "error", err, "user", state.UserID)
 		// Fallback: assume returning user.
 		data["greeting"] = "Qué gusto verte de nuevo."
-	} else if msgCount <= 2 {
+	} else if msgCount <= newUserMaxMessages {
 		data["greeting"] = "¡Bienvenidx! Es un placer ayudarte a empezar."
 	} else {
 		data["greeting"] = "Qué gusto verte de nuevo."
