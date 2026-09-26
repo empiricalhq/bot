@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"whatsbot/pkg/utils"
 )
 
 // Dispatcher fans out log records to multiple slog.Handlers (console, file, GUI, etc.).
@@ -20,13 +22,14 @@ type Dispatcher struct {
 // - File logs are written to "log/bot_<timestamp>.log".
 // - Additional handlers can be injected (e.g. GUI log handler).
 func New(level string, extraHandlers ...slog.Handler) (*slog.Logger, io.Closer, error) {
-	if err := os.MkdirAll("log", 0o755); err != nil {
+	err := os.MkdirAll("log", utils.DirMode)
+	if err != nil {
 		return nil, nil, fmt.Errorf("could not create log directory: %w", err)
 	}
 
 	fileName := fmt.Sprintf("log/bot_%s.log", time.Now().Format("2006-01-02T15-04-05"))
 
-	logFile, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	logFile, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, utils.FileMode)
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not open log file: %w", err)
 	}
@@ -51,14 +54,12 @@ func New(level string, extraHandlers ...slog.Handler) (*slog.Logger, io.Closer, 
 		Level: logLevel,
 	})
 
-	// base handlers are always console and file.
 	handlers := []slog.Handler{
 		// a custom handler to filter out whatsmeow from console
 		newConsoleFilter(consoleHandler),
 		fileHandler,
 	}
 
-	// add any extra handlers provided.
 	handlers = append(handlers, extraHandlers...)
 
 	dispatcher := &Dispatcher{
@@ -125,7 +126,6 @@ func newConsoleFilter(handler slog.Handler) *consoleFilter {
 	return &consoleFilter{Handler: handler}
 }
 
-// Handle filters out "component=whatsmeow" before delegating to the inner handler.
 func (h *consoleFilter) Handle(ctx context.Context, r slog.Record) error {
 	isWhatsmeow := false
 
@@ -133,14 +133,14 @@ func (h *consoleFilter) Handle(ctx context.Context, r slog.Record) error {
 		if a.Key == "component" && a.Value.String() == "whatsmeow" {
 			isWhatsmeow = true
 
-			return false // stop iterating
+			return false
 		}
 
 		return true
 	})
 
 	if isWhatsmeow {
-		return nil // skip this record
+		return nil
 	}
 
 	return h.Handler.Handle(ctx, r)

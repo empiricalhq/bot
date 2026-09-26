@@ -14,6 +14,7 @@ import (
 	"whatsbot/internal/domain"
 	"whatsbot/internal/message"
 	"whatsbot/internal/nameparser"
+	"whatsbot/pkg/utils"
 )
 
 var ErrInvalidName = errors.New("invalid name provided")
@@ -36,7 +37,7 @@ func NewActionHandler(logger *slog.Logger, waClient WhatsAppClient, voucherPath 
 	}
 }
 
-func (a *actionHandler) Execute(action string, state *domain.UserState, msg *message.Message, rawEvt interface{}, originatingNodeID string) error {
+func (a *actionHandler) Execute(action string, state *domain.UserState, msg *message.Message, rawEvt any, originatingNodeID string) error {
 	if action == "" {
 		return nil
 	}
@@ -50,6 +51,23 @@ func (a *actionHandler) Execute(action string, state *domain.UserState, msg *mes
 		return a.clearUserName(state)
 	case "set_selected_course":
 		return a.setSelectedCourse(state, originatingNodeID)
+	case "save_payment_voucher":
+		return a.savePaymentVoucher(state, msg, rawEvt)
+	default:
+		if !a.applyLeadAction(action, state) {
+			a.logger.Warn("Unknown action", "action", action)
+
+			return errors.New("unknown action: " + action)
+		}
+	}
+
+	return nil
+}
+
+// applyLeadAction records lead progress and escalation on the state.
+// It reports whether action is one of them.
+func (a *actionHandler) applyLeadAction(action string, state *domain.UserState) bool {
+	switch action {
 	case "create_new_lead":
 		a.logger.Info("New lead created", "user", state.UserID, "name", state.UserName)
 	case "update_lead_interest_beginner":
@@ -61,19 +79,14 @@ func (a *actionHandler) Execute(action string, state *domain.UserState, msg *mes
 	case "escalate_to_human_agent":
 		state.RequiresHumanAgent = true
 		a.logger.Warn("Escalated to human", "user", state.UserID, "name", state.UserName)
-	case "save_payment_voucher":
-		return a.savePaymentVoucher(state, msg, rawEvt)
 	default:
-		a.logger.Warn("Unknown action", "action", action)
-
-		return errors.New("unknown action: " + action)
+		return false
 	}
 
-	return nil
+	return true
 }
 
-// clearUserName deactivates name personalization by clearing the stored name
-// with no stored name, the renderer falls back to the default.
+// clearUserName deactivates name personalization. With no stored name, the renderer falls back to the default.
 func (a *actionHandler) clearUserName(state *domain.UserState) error {
 	state.UserName = ""
 	a.logger.Info("User name cleared by user request", "user", state.UserID)
@@ -146,7 +159,8 @@ func (a *actionHandler) savePaymentVoucher(state *domain.UserState, msg *message
 		return fmt.Errorf("could not download voucher: %w", err)
 	}
 
-	if err := os.MkdirAll(a.voucherPath, 0o755); err != nil {
+	err = os.MkdirAll(a.voucherPath, utils.DirMode)
+	if err != nil {
 		a.logger.Error("Failed to create voucher directory", "error", err, "path", a.voucherPath)
 
 		return fmt.Errorf("could not create voucher directory: %w", err)
@@ -159,7 +173,6 @@ func (a *actionHandler) savePaymentVoucher(state *domain.UserState, msg *message
 		return fmt.Errorf("could not save voucher file: %w", err)
 	}
 
-	// update state with the path
 	state.VoucherPath = filePath
 	a.logger.Info("Payment voucher saved successfully", "user", state.UserID, "path", filePath)
 
