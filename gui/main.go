@@ -10,6 +10,8 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
+
+	_ "whatsbot/gui/devroot"
 )
 
 // Window bounds in pixels. The window opens at its minimum size and may grow to the maximum.
