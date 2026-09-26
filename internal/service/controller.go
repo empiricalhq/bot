@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"whatsbot"
 	"whatsbot/internal/config"
 	"whatsbot/internal/logger"
 	"whatsbot/internal/platform/database"
@@ -97,7 +98,7 @@ func (c *BotController) Start(ctx context.Context, callbacks ControllerCallbacks
 
 	c.waClient = waClient
 
-	flow, err := LoadFlow(c.cfg.FlowFilePath)
+	flow, err := LoadFlowOrBuiltin(c.cfg.FlowFilePath, whatsbot.DefaultFlow, c.logger)
 	if err != nil {
 		return fmt.Errorf("flow load failed: %w", err)
 	}

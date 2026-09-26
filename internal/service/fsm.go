@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"regexp"
@@ -268,9 +269,26 @@ func LoadFlow(path string) (*domain.Flow, error) {
 		return nil, fmt.Errorf("failed to read flow file: %w", err)
 	}
 
+	return parseFlow(data)
+}
+
+// LoadFlowOrBuiltin loads the flow at path, or builtin when no file exists there.
+// A file that exists but cannot be read or parsed is an error, never a reason to fall back.
+func LoadFlowOrBuiltin(path string, builtin []byte, logger *slog.Logger) (*domain.Flow, error) {
+	flow, err := LoadFlow(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		logger.Info("Flow file not found, using the flow built into this binary", "path", path)
+
+		return parseFlow(builtin)
+	}
+
+	return flow, err
+}
+
+func parseFlow(data []byte) (*domain.Flow, error) {
 	var flow domain.Flow
 
-	err = json.Unmarshal(data, &flow)
+	err := json.Unmarshal(data, &flow)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse flow file: %w", err)
 	}
