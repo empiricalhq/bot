@@ -2,12 +2,17 @@
 package service_test
 
 import (
+	"errors"
+	"fmt"
+	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 
+	"whatsbot"
 	"whatsbot/internal/domain"
 	"whatsbot/internal/message"
 	"whatsbot/internal/service"
@@ -613,6 +618,97 @@ func TestLoadFlowMissingFile(t *testing.T) {
 	_, err := service.LoadFlow(filepath.Join(t.TempDir(), "absent.json"))
 	if err == nil || !strings.Contains(err.Error(), "failed to read flow file") {
 		t.Errorf("LoadFlow error = %v, want a read failure", err)
+	}
+}
+
+const singleNodeFlow = `{"start_node": "%s", "nodes": {"%s": {"message": {"type": "text", "content": "hi"}}}}`
+
+func TestLoadFlowOrBuiltinMissingFileUsesBuiltin(t *testing.T) {
+	t.Parallel()
+
+	missing := filepath.Join(t.TempDir(), "absent.json")
+
+	var logs strings.Builder
+
+	logger := slog.New(slog.NewTextHandler(&logs, nil))
+
+	flow, err := service.LoadFlowOrBuiltin(missing, whatsbot.DefaultFlow, logger)
+	if err != nil {
+		t.Fatalf("LoadFlowOrBuiltin: %v", err)
+	}
+
+	want := loadRealFlow(t)
+	if flow.StartNode != want.StartNode || len(flow.Nodes) != len(want.Nodes) {
+		t.Errorf("flow = %q with %d nodes, want the shipped flow %q with %d", flow.StartNode, len(flow.Nodes), want.StartNode, len(want.Nodes))
+	}
+
+	for _, part := range []string{"level=INFO", "built into this binary", missing} {
+		if !strings.Contains(logs.String(), part) {
+			t.Errorf("log %q does not contain %q", logs.String(), part)
+		}
+	}
+
+	_, err = os.Stat(missing)
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("the built-in flow was written to disk: stat err = %v", err)
+	}
+}
+
+func TestLoadFlowOrBuiltinExistingFileWins(t *testing.T) {
+	t.Parallel()
+
+	path := writeFlowFile(t, fmt.Sprintf(singleNodeFlow, "FROM_FILE", "FROM_FILE"))
+	builtin := []byte(fmt.Sprintf(singleNodeFlow, "BUILTIN", "BUILTIN"))
+
+	var logs strings.Builder
+
+	flow, err := service.LoadFlowOrBuiltin(path, builtin, slog.New(slog.NewTextHandler(&logs, nil)))
+	if err != nil {
+		t.Fatalf("LoadFlowOrBuiltin: %v", err)
+	}
+
+	if flow.StartNode != "FROM_FILE" {
+		t.Errorf("start node = %q, want the file's flow", flow.StartNode)
+	}
+
+	if logs.Len() != 0 {
+		t.Errorf("unexpected log for an existing file: %q", logs.String())
+	}
+}
+
+func TestLoadFlowOrBuiltinExistingBadFileIsError(t *testing.T) {
+	t.Parallel()
+
+	builtin := []byte(fmt.Sprintf(singleNodeFlow, "BUILTIN", "BUILTIN"))
+
+	t.Run("invalid content", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := service.LoadFlowOrBuiltin(writeFlowFile(t, `{`), builtin, discardLogger())
+		if err == nil || !strings.Contains(err.Error(), "failed to parse flow file") {
+			t.Errorf("error = %v, want a parse failure", err)
+		}
+	})
+
+	t.Run("unreadable", func(t *testing.T) {
+		t.Parallel()
+
+		// A directory exists at the path but cannot be read as a file.
+		_, err := service.LoadFlowOrBuiltin(t.TempDir(), builtin, discardLogger())
+		if err == nil || !strings.Contains(err.Error(), "failed to read flow file") {
+			t.Errorf("error = %v, want a read failure", err)
+		}
+	})
+}
+
+func TestLoadFlowOrBuiltinInvalidBuiltinFails(t *testing.T) {
+	t.Parallel()
+
+	missing := filepath.Join(t.TempDir(), "absent.json")
+
+	_, err := service.LoadFlowOrBuiltin(missing, []byte(`{"nodes": {}}`), discardLogger())
+	if err == nil || !strings.Contains(err.Error(), "start_node cannot be empty") {
+		t.Errorf("error = %v, want the same validation failure LoadFlow gives", err)
 	}
 }
 
