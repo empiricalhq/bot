@@ -11,9 +11,12 @@ import (
 	"whatsbot/pkg/utils"
 )
 
+const defaultFlowFileURL = "https://raw.githubusercontent.com/empiricalhq/bot/master/conversation.json"
+
 type Config struct {
 	LogLevel        string
 	FlowFilePath    string
+	FlowFileURL     string
 	SQLiteDBPath    string
 	Environment     string
 	VoucherPath     string
@@ -30,9 +33,14 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		LogLevel:     utils.GetEnv("LOG_LEVEL", "INFO"),
 		FlowFilePath: utils.GetEnv("FLOW_FILE_PATH", "conversation.json"),
+		FlowFileURL:  utils.GetEnv("FLOW_FILE_URL", defaultFlowFileURL),
 		SQLiteDBPath: utils.GetEnv("SQLITE_DB_PATH", "store.db"),
 		Environment:  strings.ToLower(utils.GetEnv("ENV", "prod")),
 		VoucherPath:  utils.GetEnv("VOUCHER_SAVE_PATH", "vouchers"),
+	}
+
+	if cfg.FlowFileURL == "" {
+		cfg.FlowFileURL = defaultFlowFileURL
 	}
 
 	allowedUsers := utils.GetEnv("DEV_ALLOWED_USERS", "")
@@ -64,11 +72,6 @@ func (c *Config) validate() error {
 
 	if c.SQLiteDBPath == "" {
 		return errors.New("SQLITE_DB_PATH is required")
-	}
-
-	_, err := os.Stat(c.FlowFilePath)
-	if os.IsNotExist(err) {
-		return errors.New("flow file not found: " + c.FlowFilePath)
 	}
 
 	return nil
